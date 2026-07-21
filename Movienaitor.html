@@ -1,0 +1,1325 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Movienaitor</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+<style>
+:root{
+  --bg:#191014; --bg2:#221419; --velluto:#3a2026; --velluto2:#2c181d; --velluto3:#4a2830;
+  --rosso:#8a3d3d; --rosso2:#a85454; --oro:#c9a45c; --oro2:#e0c07d; --oro-dim:#8a7347;
+  --crema:#f2e7d5; --dim:#b8a68e; --dim2:#7d6f5c; --verde:#7d9b76;
+  --ombra:0 10px 30px rgba(0,0,0,.45);
+  --serif:Georgia,'Times New Roman',serif;
+}
+*{box-sizing:border-box; margin:0}
+html,body{height:100%}
+body{background:radial-gradient(1200px 700px at 50% -10%, #241118 0%, var(--bg) 55%) fixed var(--bg);
+  color:var(--crema); font:15px/1.45 system-ui,Segoe UI,Roboto,sans-serif}
+button{font:inherit; color:inherit; background:none; border:none; cursor:pointer}
+input,select{font:inherit}
+h1,h2,h3,.serif{font-family:var(--serif)}
+[hidden]{display:none !important}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--velluto3);border-radius:5px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- gate ---------- */
+#gate{min-height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px; padding:30px; text-align:center}
+#gate .insegna{font-family:var(--serif); font-size:52px; letter-spacing:.14em; color:var(--oro2);
+  text-shadow:0 0 26px rgba(201,164,92,.35); font-weight:400}
+#gate .insegna small{display:block; font-size:15px; letter-spacing:.34em; color:var(--dim); margin-top:6px}
+#gate .cartello{background:linear-gradient(180deg,var(--velluto),var(--velluto2)); border:1px solid var(--oro-dim);
+  border-radius:14px; padding:30px 34px; max-width:520px; box-shadow:var(--ombra)}
+#gate .cartello p{color:var(--dim); margin:8px 0 18px}
+.bottone{display:inline-block; background:linear-gradient(180deg,var(--oro2),var(--oro)); color:#241610;
+  font-weight:600; padding:11px 22px; border-radius:10px; box-shadow:0 4px 14px rgba(201,164,92,.25)}
+.bottone:hover{filter:brightness(1.06)}
+.bottone.secondario{background:none; border:1px solid var(--oro-dim); color:var(--oro2); box-shadow:none}
+.bottone.piccolo{padding:7px 14px; font-size:14px}
+#gate .demo-link{color:var(--dim); text-decoration:underline; font-size:14px}
+#gate .profili-noti{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:14px 0}
+#gate input[type=text]{background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema);
+  padding:10px 14px; border-radius:10px; width:230px; text-align:center}
+#gate .swatches{display:flex; gap:8px; justify-content:center; margin:12px 0 18px}
+.swatch{width:26px; height:26px; border-radius:50%; border:2px solid transparent; cursor:pointer}
+.swatch.attivo{border-color:var(--crema); box-shadow:0 0 0 2px var(--oro)}
+
+/* ---------- header ---------- */
+#app{max-width:1460px; margin:0 auto; padding:14px 20px 40px}
+header{display:flex; align-items:center; gap:20px; padding:6px 4px 16px}
+.brand{font-family:var(--serif); font-size:26px; letter-spacing:.12em; color:var(--oro2); white-space:nowrap}
+.brand small{color:var(--dim2); font-size:11px; letter-spacing:.28em; display:block; margin-top:-2px}
+nav{display:flex; gap:6px; margin-left:10px}
+nav .tab{padding:9px 18px; border-radius:10px; color:var(--dim); border:1px solid transparent; letter-spacing:.04em}
+nav .tab.attivo{color:var(--oro2); border-color:var(--oro-dim); background:linear-gradient(180deg,var(--velluto),var(--velluto2))}
+header .spazio{flex:1}
+.io-chip{display:flex; align-items:center; gap:8px; color:var(--dim); font-size:14px}
+.io-chip .pallino{width:12px; height:12px; border-radius:50%}
+.icona{font-size:18px; padding:8px 10px; border-radius:10px; color:var(--dim)}
+.icona:hover{background:var(--velluto2); color:var(--oro2)}
+
+/* ---------- sala ---------- */
+.palco{display:grid; grid-template-columns:225px 1fr 235px; gap:18px; align-items:stretch}
+.pannello{background:linear-gradient(180deg,var(--velluto),var(--velluto2)); border:1px solid #4a2c33;
+  border-radius:14px; padding:16px; box-shadow:var(--ombra)}
+.pannello h3{color:var(--oro); font-size:15px; letter-spacing:.1em; margin-bottom:12px; font-weight:400}
+.filtro{margin-bottom:16px}
+.filtro label{display:block; color:var(--dim); font-size:12.5px; letter-spacing:.06em; margin-bottom:5px}
+.filtro input[type=text]{width:100%; background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); padding:8px 10px; border-radius:8px}
+.filtro input[type=range]{width:100%; accent-color:var(--oro)}
+.filtro .valore{color:var(--oro2); font-size:13px; margin-top:2px; min-height:18px}
+.generi-chips{display:flex; flex-wrap:wrap; gap:6px}
+.gchip{font-size:12px; padding:4px 9px; border-radius:20px; border:1px solid var(--velluto3); color:var(--dim)}
+.gchip.on{border-color:var(--oro); color:var(--oro2); background:rgba(201,164,92,.08)}
+.filtro-azzera{color:var(--dim2); font-size:12px; text-decoration:underline}
+
+/* schermo */
+.schermo-wrap{position:relative; padding:10px 30px 0}
+.schermo{position:relative; aspect-ratio:21/8.4; border:3px double var(--oro-dim); border-radius:10px;
+  background:#120a0d; overflow:hidden; box-shadow:0 0 60px rgba(201,164,92,.10), var(--ombra)}
+.schermo .sfondo{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.85}
+.schermo .velo{position:absolute; inset:0; background:linear-gradient(180deg,rgba(18,10,13,.15) 30%,rgba(18,10,13,.88) 82%)}
+.schermo .rango{position:absolute; top:8px; left:48px; font-family:var(--serif); font-size:34px; color:var(--oro2);
+  text-shadow:0 2px 10px rgba(0,0,0,.7); z-index:3}
+.schermo .info{position:absolute; left:48px; right:120px; bottom:14px; z-index:3}
+.schermo .info h2{font-size:clamp(20px,3vw,34px); color:var(--crema); text-shadow:0 2px 12px rgba(0,0,0,.8); font-weight:400}
+.schermo .meta{color:var(--dim); font-size:13.5px; margin-top:4px; text-shadow:0 1px 6px rgba(0,0,0,.9)}
+.schermo .meta b{color:var(--oro2); font-weight:600}
+.schermo .messaggio{position:absolute; inset:0; display:flex; flex-direction:column; gap:8px; align-items:center; justify-content:center;
+  color:var(--dim); font-family:var(--serif); font-size:20px; text-align:center; padding:20px; z-index:2}
+.tenda{position:absolute; top:-6px; bottom:-6px; width:34px; z-index:4; pointer-events:none;
+  background:repeating-linear-gradient(90deg,#6b3030 0 7px,#54262a 7px 14px); box-shadow:inset -8px 0 14px rgba(0,0,0,.5)}
+.tenda.sx{left:-4px; border-radius:0 8px 8px 0}
+.tenda.dx{right:-4px; transform:scaleX(-1); border-radius:0 8px 8px 0}
+#btn-play{position:absolute; right:26px; bottom:20px; z-index:5; width:74px; height:74px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,var(--oro2),var(--oro) 65%,var(--oro-dim));
+  color:#241610; font-size:30px; box-shadow:0 6px 22px rgba(201,164,92,.4); transition:transform .15s}
+#btn-play:hover{transform:scale(1.07)}
+#btn-play:disabled{filter:grayscale(.7) brightness(.6); cursor:default; transform:none}
+.schermo-clic{position:absolute; inset:0; z-index:2; cursor:pointer}
+
+/* rosa 2-5 */
+.rosa{display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:1fr; gap:12px}
+.rosa .posto{position:relative; border:1px solid #4a2c33; border-radius:10px; overflow:hidden; background:var(--bg2);
+  cursor:pointer; min-height:118px; transition:transform .12s}
+.rosa .posto:hover{transform:translateY(-2px); border-color:var(--oro-dim)}
+.rosa .posto img,.rosa .posto .segnaposto{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.rosa .posto .r-velo{position:absolute; inset:0; background:linear-gradient(180deg,transparent 40%,rgba(18,10,13,.9))}
+.rosa .posto .r-rango{position:absolute; top:6px; left:9px; font-family:var(--serif); font-size:20px; color:var(--oro2); text-shadow:0 1px 6px #000}
+.rosa .posto .r-titolo{position:absolute; left:8px; right:8px; bottom:6px; font-size:12px; color:var(--crema); text-shadow:0 1px 4px #000}
+.rosa .posto.vuoto{border-style:dashed; cursor:default; display:flex; align-items:center; justify-content:center; color:var(--dim2); font-size:13px}
+.rosa .posto.proiettato{outline:2px solid var(--oro); outline-offset:-2px}
+
+/* poltrone */
+#platea{margin-top:26px; padding:18px 10px 6px;
+  background:radial-gradient(60% 90% at 50% 0%, rgba(74,40,48,.25), transparent 70%); border-radius:20px}
+.fila{display:flex; justify-content:center; gap:14px}
+.fila+.fila{margin-top:10px}
+.poltrona{position:relative; width:74px; padding-top:26px; text-align:center; transition:transform .12s}
+.poltrona.assegnata{cursor:pointer}
+.poltrona.assegnata:hover{transform:translateY(-3px)}
+.poltrona svg{width:100%; display:block; filter:drop-shadow(0 5px 8px rgba(0,0,0,.4))}
+.poltrona .nome{font-size:12px; color:var(--dim2); margin-top:3px; letter-spacing:.03em}
+.poltrona.presente .nome{color:var(--oro2)}
+.poltrona .bolla{position:absolute; top:-8px; left:50%; transform:translateX(-50%); background:var(--crema); color:#241610;
+  font-size:12px; font-weight:600; padding:3px 10px; border-radius:8px; white-space:nowrap; box-shadow:0 3px 10px rgba(0,0,0,.4); z-index:2}
+.bolla::after{content:''; position:absolute; left:50%; bottom:-6px; transform:translateX(-50%);
+  border:6px solid transparent; border-top-color:var(--crema); border-bottom:0}
+.riga-stato{display:flex; gap:18px; align-items:center; justify-content:center; color:var(--dim2); font-size:13px; margin-top:16px; flex-wrap:wrap}
+.riga-stato .avviso{color:var(--rosso2)}
+
+/* ---------- catalogo ---------- */
+.catalogo-testa{display:flex; gap:14px; align-items:center; margin-bottom:18px; position:relative}
+#cerca{flex:1; background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); padding:12px 16px; border-radius:12px; font-size:16px}
+#risultati{position:absolute; top:100%; left:0; right:0; z-index:30; margin-top:6px; background:var(--bg2);
+  border:1px solid var(--oro-dim); border-radius:12px; overflow:hidden; box-shadow:var(--ombra); max-height:420px; overflow-y:auto}
+.risultato{display:flex; gap:12px; padding:10px 14px; cursor:pointer; align-items:center}
+.risultato:hover{background:var(--velluto2)}
+.risultato img,.risultato .mini{width:40px; height:60px; object-fit:cover; border-radius:6px; background:var(--velluto3); flex:none}
+.risultato .r-anno{color:var(--dim2); font-size:13px}
+.griglia{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:16px}
+.scheda-film{background:linear-gradient(180deg,var(--velluto),var(--velluto2)); border:1px solid #4a2c33; border-radius:14px;
+  overflow:hidden; box-shadow:var(--ombra); display:flex; flex-direction:column}
+.scheda-film .copertina{position:relative; aspect-ratio:2/3; cursor:pointer; background:var(--bg2)}
+.scheda-film .copertina img,.scheda-film .copertina .segnaposto{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.scheda-film .voto-badge{position:absolute; top:8px; right:8px; background:rgba(18,10,13,.82); color:var(--oro2);
+  font-size:12.5px; padding:3px 8px; border-radius:8px}
+.scheda-film .visto-badge{position:absolute; left:0; right:0; bottom:0; background:rgba(18,10,13,.85); color:var(--dim);
+  font-size:12px; text-align:center; padding:4px}
+.scheda-film .corpo{padding:12px 14px 14px; display:flex; flex-direction:column; gap:8px; flex:1}
+.scheda-film h4{font-size:15px; font-weight:600; line-height:1.25}
+.scheda-film .sotto{color:var(--dim2); font-size:12.5px}
+.stelle{display:flex; gap:3px; font-size:20px; cursor:pointer; user-select:none}
+.stelle span{color:#584a3a; transition:color .1s}
+.stelle span.piena{color:var(--oro2)}
+.compagnia{display:flex; flex-wrap:wrap; gap:5px}
+.pchip{font-size:11.5px; padding:3px 8px; border-radius:20px; border:1px solid var(--velluto3); color:var(--dim2); cursor:pointer; user-select:none}
+.pchip.con{border-color:var(--verde); color:var(--verde); background:rgba(125,155,118,.08)}
+.pchip.non{border-color:var(--rosso2); color:var(--rosso2); background:rgba(168,84,84,.08)}
+.scheda-film .azioni{display:flex; justify-content:space-between; align-items:center; margin-top:auto}
+.testo-link{color:var(--dim2); font-size:12.5px; text-decoration:underline}
+.testo-link:hover{color:var(--rosso2)}
+.sezione-titolo{font-family:var(--serif); color:var(--oro); letter-spacing:.1em; font-size:18px; margin:30px 0 14px; font-weight:400}
+.vuoto-msg{color:var(--dim2); padding:26px; text-align:center; border:1px dashed var(--velluto3); border-radius:14px}
+
+/* ---------- impostazioni ---------- */
+.imp-griglia{display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:18px; align-items:start}
+.campo{margin-bottom:14px}
+.campo label{display:block; color:var(--dim); font-size:13px; margin-bottom:5px}
+.campo input{width:100%; background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); padding:9px 12px; border-radius:8px}
+.campo .aiuto{color:var(--dim2); font-size:12px; margin-top:4px}
+.imp-costanti{display:grid; grid-template-columns:1fr 1fr; gap:10px 14px}
+
+/* ---------- modali & toast ---------- */
+#modale-fondo{position:fixed; inset:0; background:rgba(10,5,7,.78); z-index:90; display:flex; align-items:center; justify-content:center; padding:22px}
+.modale{background:linear-gradient(180deg,var(--velluto),var(--velluto2)); border:1px solid var(--oro-dim); border-radius:16px;
+  max-width:640px; width:100%; max-height:88vh; overflow-y:auto; padding:24px 26px; box-shadow:var(--ombra)}
+.modale h3{color:var(--oro2); font-size:20px; margin-bottom:14px; font-weight:400}
+.modale .m-riga{display:flex; gap:18px}
+.modale .m-poster{width:150px; flex:none; aspect-ratio:2/3; border-radius:10px; overflow:hidden; position:relative; background:var(--bg2)}
+.modale .m-poster img,.modale .m-poster .segnaposto{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.modale .m-meta{color:var(--dim); font-size:13.5px; margin:6px 0}
+.modale .trama{color:var(--dim); font-size:14px; margin-top:10px; line-height:1.55}
+.modale .m-azioni{display:flex; justify-content:flex-end; gap:12px; margin-top:20px}
+.modale .m-blocco{margin-top:14px}
+.modale .m-blocco>label{display:block; color:var(--oro); font-size:13px; letter-spacing:.06em; margin-bottom:6px}
+#luci{position:fixed; inset:0; background:#000; z-index:120; display:flex; align-items:center; justify-content:center;
+  flex-direction:column; gap:14px; color:var(--oro2); font-family:var(--serif); font-size:34px; opacity:0; pointer-events:none; transition:opacity .5s}
+#luci.giu{opacity:1; pointer-events:auto}
+#luci small{font-size:15px; color:var(--dim); font-family:system-ui,sans-serif; letter-spacing:.2em}
+#toasts{position:fixed; right:18px; bottom:18px; z-index:130; display:flex; flex-direction:column; gap:8px}
+.toast{background:var(--bg2); border:1px solid var(--oro-dim); color:var(--crema); padding:10px 16px; border-radius:10px;
+  box-shadow:var(--ombra); font-size:14px; animation:sale .25s ease-out}
+.toast.errore{border-color:var(--rosso2)}
+@keyframes sale{from{transform:translateY(8px); opacity:0}}
+
+@media (max-width:1080px){
+  .palco{grid-template-columns:1fr; }
+  .rosa{grid-template-columns:repeat(4,1fr)}
+  .schermo-wrap{padding:0}
+}
+@media (max-width:700px){
+  .rosa{grid-template-columns:1fr 1fr}
+  .poltrona{width:52px}
+  .poltrona .nome{font-size:10px}
+  header{flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ GATE ═══════════ -->
+<div id="gate">
+  <div class="insegna">MOVIENAITOR<small>LA SALA DEI FILM TRA AMICI</small></div>
+  <div class="cartello" id="gate-card"><!-- riempito da JS --></div>
+  <button class="demo-link" id="btn-demo">Dai un'occhiata con i dati di prova (demo)</button>
+</div>
+
+<!-- ═══════════ APP ═══════════ -->
+<div id="app" hidden>
+  <header>
+    <div class="brand">MOVIENAITOR<small>SALA PRIVATA</small></div>
+    <nav>
+      <button class="tab attivo" data-vista="sala">🎬 Sala</button>
+      <button class="tab" data-vista="catalogo">📚 Catalogo</button>
+    </nav>
+    <div class="spazio"></div>
+    <div class="io-chip"><span class="pallino" id="io-colore"></span><span id="io-nome"></span></div>
+    <button class="icona" id="btn-ricarica" title="Rileggi i dati dalla cartella condivisa">⟳</button>
+    <button class="icona tab" data-vista="impostazioni" title="Impostazioni">⚙</button>
+  </header>
+
+  <!-- ───── SALA ───── -->
+  <main id="vista-sala">
+    <div class="palco">
+      <div class="pannello">
+        <h3>STASERA</h3>
+        <div class="filtro">
+          <label>Genere</label>
+          <div class="generi-chips" id="filtro-generi"></div>
+        </div>
+        <div class="filtro">
+          <label>Durata massima</label>
+          <input type="range" id="filtro-durata" min="60" max="240" step="5" value="240">
+          <div class="valore" id="filtro-durata-val">qualsiasi</div>
+        </div>
+        <div class="filtro">
+          <label>Regista</label>
+          <input type="text" id="filtro-regista" list="lista-registi" placeholder="chiunque">
+          <datalist id="lista-registi"></datalist>
+        </div>
+        <button class="filtro-azzera" id="filtro-azzera">azzera i filtri</button>
+      </div>
+
+      <div class="schermo-wrap">
+        <div class="schermo" id="schermo"></div>
+      </div>
+
+      <div class="rosa" id="rosa"></div>
+    </div>
+
+    <div id="platea"></div>
+    <div class="riga-stato" id="riga-stato"></div>
+  </main>
+
+  <!-- ───── CATALOGO ───── -->
+  <main id="vista-catalogo" hidden>
+    <div class="catalogo-testa">
+      <input type="text" id="cerca" placeholder="Cerca un film da aggiungere alla tua lista…" autocomplete="off">
+      <div id="risultati" hidden></div>
+    </div>
+    <div class="sezione-titolo">LA MIA LISTA — DA VEDERE</div>
+    <div class="griglia" id="lista-da-vedere"></div>
+    <div class="sezione-titolo">GIÀ VISTI IN SALA</div>
+    <div class="griglia" id="lista-visti"></div>
+  </main>
+
+  <!-- ───── IMPOSTAZIONI ───── -->
+  <main id="vista-impostazioni" hidden>
+    <div class="imp-griglia">
+      <div class="pannello">
+        <h3>CHIAVI API (condivise nella cartella)</h3>
+        <div class="campo">
+          <label>Chiave TMDB (ricerca film, locandine, metadati)</label>
+          <input type="text" id="imp-tmdb" placeholder="incolla qui la chiave API v3">
+          <div class="aiuto">Gratuita: registrati su themoviedb.org → Impostazioni → API → chiave v3.</div>
+        </div>
+        <div class="campo">
+          <label>Chiave OMDb (media voti IMDb)</label>
+          <input type="text" id="imp-omdb" placeholder="facoltativa — senza, si usa il voto TMDB">
+          <div class="aiuto">Gratuita (1.000 richieste/giorno): omdbapi.com → API Key.</div>
+        </div>
+        <button class="bottone piccolo" id="imp-salva-api">Salva chiavi</button>
+      </div>
+      <div class="pannello">
+        <h3>FORMULA DELLA CLASSIFICA</h3>
+        <div class="imp-costanti" id="imp-costanti"></div>
+        <div class="aiuto" style="color:var(--dim2); font-size:12px; margin:10px 0 12px">
+          Punteggio = Desiderio × Coralità × Attesa × Coppia. Dettagli nella SPECIFICA.
+        </div>
+        <button class="bottone piccolo" id="imp-salva-costanti">Salva costanti</button>
+      </div>
+      <div class="pannello">
+        <h3>IL MIO PROFILO</h3>
+        <div class="campo"><label>Colore poltrona</label><div class="swatches" id="imp-swatches" style="justify-content:flex-start"></div></div>
+        <div class="campo"><label>Cartella collegata</label><div class="aiuto" id="imp-cartella">—</div></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px">
+          <button class="bottone piccolo secondario" id="imp-cambia-cartella">Cambia cartella</button>
+          <button class="bottone piccolo secondario" id="imp-cambia-utente">Cambia utente</button>
+          <button class="bottone piccolo secondario" id="imp-releases" hidden>Pagina rilasci (GitHub)</button>
+        </div>
+        <div class="aiuto" style="margin-top:14px">Movienaitor v<span id="imp-versione"></span> — i dati vivono solo nella vostra cartella condivisa.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="modale-fondo" hidden><div class="modale" id="modale"></div></div>
+<div id="luci"><div>🎬 Buona visione!</div><small id="luci-titolo"></small></div>
+<div id="toasts"></div>
+
+<script>
+'use strict';
+/* ════════════════════════ COSTANTI ════════════════════════ */
+const APP_VERSION = '0.1.0';
+const CONFIG_DEFAULT = {
+  tmdbKey:'', omdbKey:'',
+  bonusCoralita:0.10, capCoralita:0.30, pesoAttesa:0.50, orizzonteAttesa:60, bonusCoppia:1.15
+};
+const ETICHETTE_COSTANTI = {
+  bonusCoralita:'Bonus coralità', capCoralita:'Tetto coralità',
+  pesoAttesa:'Peso attesa', orizzonteAttesa:'Orizzonte attesa (gg)', bonusCoppia:'Bonus coppia'
+};
+const PALETTE_UTENTI = ['#c9a45c','#a85454','#7d9b76','#6f8fae','#9b7da8','#b0805a','#8fa3a0','#b39a6b'];
+const FILA_DAVANTI = 9, FILA_DIETRO = 10; // platea come nel CAD
+
+/* ════════════════════════ UTILITÀ ════════════════════════ */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const slugify = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+const oggiISO = () => new Date().toISOString().slice(0,10);
+const giorniDa = iso => Math.max(0, (Date.now() - new Date(iso+'T12:00:00').getTime()) / 864e5);
+const fmtMin = m => m ? `${Math.floor(m/60)}h ${String(m%60).padStart(2,'0')}'` : 'durata n.d.';
+const fmtNum = (n,d=2) => n.toLocaleString('it-IT',{minimumFractionDigits:d, maximumFractionDigits:d});
+const fmtData = iso => new Date(iso+'T12:00:00').toLocaleDateString('it-IT',{day:'numeric', month:'long', year:'numeric'});
+const maiuscola = s => s ? s[0].toUpperCase()+s.slice(1) : s;
+
+function toast(msg, errore=false){
+  const t = document.createElement('div');
+  t.className = 'toast'+(errore?' errore':'');
+  t.textContent = msg;
+  $('#toasts').appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .4s'; setTimeout(()=>t.remove(), 450); }, 3200);
+}
+
+function segnapostoSVG(titolo, seme){
+  let h = 0; for (const c of String(seme||titolo)) h = (h*31 + c.charCodeAt(0)) % 360;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="hsl(${h},22%,26%)"/><stop offset="1" stop-color="hsl(${(h+40)%360},18%,14%)"/>
+    </linearGradient></defs>
+    <rect width="200" height="300" fill="url(#g)"/>
+    <text x="100" y="150" font-family="Georgia,serif" font-size="17" fill="#e0c07d" text-anchor="middle">
+      ${esc(titolo).split(/\s+/).map((w,i)=>`<tspan x="100" dy="${i?20:-(String(titolo).split(/\s+/).length-1)*10}">${w}</tspan>`).join('')}
+    </text></svg>`;
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+}
+
+/* ════════════════════════ INDEXEDDB (handle cartella) ════════════════════════ */
+const idb = {
+  _db:null,
+  async db(){
+    if (this._db) return this._db;
+    this._db = await new Promise((res, rej) => {
+      const r = indexedDB.open('movienaitor', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('kv');
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+    return this._db;
+  },
+  async get(k){ const d = await this.db(); return new Promise((res, rej) => { const q = d.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); },
+  async set(k, v){ const d = await this.db(); return new Promise((res, rej) => { const q = d.transaction('kv','readwrite').objectStore('kv').put(v, k); q.onsuccess = () => res(); q.onerror = () => rej(q.error); }); },
+  async del(k){ const d = await this.db(); return new Promise((res, rej) => { const q = d.transaction('kv','readwrite').objectStore('kv').delete(k); q.onsuccess = () => res(); q.onerror = () => rej(q.error); }); }
+};
+
+/* ════════════════════════ FILE SYSTEM (FSA + demo) ════════════════════════ */
+const fsa = {
+  root:null,
+  async _dir(percorso, create){
+    let d = this.root;
+    for (let i = 0; i < percorso.length-1; i++) d = await d.getDirectoryHandle(percorso[i], {create});
+    return d;
+  },
+  async readJSON(percorso){
+    try {
+      const dir = await this._dir(percorso, false);
+      const fh = await dir.getFileHandle(percorso[percorso.length-1]);
+      return JSON.parse(await (await fh.getFile()).text());
+    } catch(e){ return null; }
+  },
+  async writeJSON(percorso, obj){
+    const dir = await this._dir(percorso, true);
+    const fh = await dir.getFileHandle(percorso[percorso.length-1], {create:true});
+    const w = await fh.createWritable();
+    await w.write(JSON.stringify(obj, null, 2));
+    await w.close();
+  },
+  async writeBlob(percorso, blob){
+    const dir = await this._dir(percorso, true);
+    const fh = await dir.getFileHandle(percorso[percorso.length-1], {create:true});
+    const w = await fh.createWritable();
+    await w.write(blob); await w.close();
+  },
+  async listaProfili(){
+    const out = [];
+    try {
+      const dir = await this.root.getDirectoryHandle('profili');
+      for await (const [nome, h] of dir.entries())
+        if (h.kind === 'file' && nome.endsWith('.json')) out.push(nome);
+    } catch(e){}
+    return out;
+  },
+  async fileURL(percorso){
+    try {
+      const dir = await this._dir(percorso, false);
+      const fh = await dir.getFileHandle(percorso[percorso.length-1]);
+      return URL.createObjectURL(await fh.getFile());
+    } catch(e){ return null; }
+  },
+  nomeCartella(){ return this.root ? this.root.name : '—'; }
+};
+
+const demoFS = {
+  files:new Map(),
+  async readJSON(p){ const v = this.files.get(p.join('/')); return v ? JSON.parse(v) : null; },
+  async writeJSON(p, obj){ this.files.set(p.join('/'), JSON.stringify(obj)); },
+  async writeBlob(){}, // niente immagini in demo
+  async listaProfili(){ return [...this.files.keys()].filter(k=>k.startsWith('profili/')).map(k=>k.slice(8)); },
+  async fileURL(){ return null; },
+  nomeCartella(){ return 'Demo (nessun salvataggio)'; }
+};
+
+// Electron: bridge nativo verso la cartella condivisa (preload → window.mvnFS).
+// Stessa interfaccia di fsa/demoFS: l'app non sa quale sta usando.
+const electronFS = {
+  cartella:null,
+  async readJSON(p){ return await window.mvnFS.readJSON(p.join('/')); },
+  async writeJSON(p, obj){ return await window.mvnFS.writeJSON(p.join('/'), obj); },
+  async writeBlob(p, blob){ return await window.mvnFS.writeBlob(p.join('/'), await blob.arrayBuffer()); },
+  async listaProfili(){ return (await window.mvnFS.list('profili')).filter(n => n.endsWith('.json')); },
+  async fileURL(p){ return await window.mvnFS.fileURL(p.join('/')); },
+  nomeCartella(){ return this.cartella ? this.cartella.name : '—'; }
+};
+
+const inElectron = !!window.mvnFS;
+let FS = fsa; // scambiato in demo/electron
+
+/* ════════════════════════ STATO ════════════════════════ */
+const S = {
+  demo:false,
+  me:null,               // slug
+  profili:[],            // [{nome, slug, creato, colore, lista:[…]}]
+  storico:[],            // [{id, data, tmdbId, titolo, partecipanti, proponenti}]
+  config:{...CONFIG_DEFAULT},
+  presenti:new Set(),
+  filtri:{durata:null, genere:[], regista:''},
+  proiettato:null,       // tmdbId scelto manualmente
+  rosa:[],               // ultima classifica calcolata
+  ultimaLettura:null,
+  urlCache:new Map()     // percorso → objectURL
+};
+const mioProfilo = () => S.profili.find(p => p.slug === S.me);
+const profiloDi = slug => S.profili.find(p => p.slug === slug);
+const nomeDi = slug => (profiloDi(slug) || {nome:slug}).nome;
+const coloreDi = slug => {
+  const p = profiloDi(slug);
+  if (p && p.colore) return p.colore;
+  const i = S.profili.findIndex(x => x.slug === slug);
+  return PALETTE_UTENTI[(i < 0 ? 0 : i) % PALETTE_UTENTI.length];
+};
+
+/* ════════════════════════ DATI DEMO ════════════════════════ */
+const DEMO_DB = [
+  {tmdbId:438631, titolo:'Dune', anno:'2021', durata:155, regista:'Denis Villeneuve', generi:['Fantascienza','Avventura'], voto:8.0, votoFonte:'imdb', trama:'Paul Atreides guida la sua casata verso il pianeta più pericoloso dell\'universo per assicurare il futuro della sua gente.'},
+  {tmdbId:335984, titolo:'Blade Runner 2049', anno:'2017', durata:164, regista:'Denis Villeneuve', generi:['Fantascienza','Dramma'], voto:8.0, votoFonte:'imdb', trama:'L\'agente K scopre un segreto sepolto che potrebbe far precipitare nel caos ciò che resta della società.'},
+  {tmdbId:194, titolo:'Il favoloso mondo di Amélie', anno:'2001', durata:122, regista:'Jean-Pierre Jeunet', generi:['Commedia','Romance'], voto:8.3, votoFonte:'imdb', trama:'Amélie decide di dedicarsi ad aggiustare la vita degli altri, finché non tocca alla sua.'},
+  {tmdbId:496243, titolo:'Parasite', anno:'2019', durata:132, regista:'Bong Joon-ho', generi:['Thriller','Dramma','Commedia'], voto:8.5, votoFonte:'imdb', trama:'La famiglia Kim si infiltra, un membro alla volta, nella casa dei ricchissimi Park.'},
+  {tmdbId:313369, titolo:'La La Land', anno:'2016', durata:128, regista:'Damien Chazelle', generi:['Commedia','Dramma','Romance','Musica'], voto:8.0, votoFonte:'imdb', trama:'Un musicista jazz e un\'aspirante attrice si innamorano inseguendo i propri sogni a Los Angeles.'},
+  {tmdbId:157336, titolo:'Interstellar', anno:'2014', durata:169, regista:'Christopher Nolan', generi:['Fantascienza','Dramma','Avventura'], voto:8.7, votoFonte:'imdb', trama:'Un gruppo di esploratori attraversa un wormhole alla ricerca di un nuovo pianeta per l\'umanità.'},
+  {tmdbId:680, titolo:'Pulp Fiction', anno:'1994', durata:154, regista:'Quentin Tarantino', generi:['Crime','Thriller'], voto:8.9, votoFonte:'imdb', trama:'Le vite di due sicari, un pugile e una coppia di rapinatori si intrecciano in quattro storie di violenza e redenzione.'},
+  {tmdbId:238, titolo:'Il padrino', anno:'1972', durata:175, regista:'Francis Ford Coppola', generi:['Crime','Dramma'], voto:9.2, votoFonte:'imdb', trama:'Il patriarca di una dinastia criminale trasferisce il controllo del suo impero clandestino al figlio riluttante.'},
+  {tmdbId:120467, titolo:'Grand Budapest Hotel', anno:'2014', durata:100, regista:'Wes Anderson', generi:['Commedia','Dramma'], voto:8.1, votoFonte:'imdb', trama:'Le avventure di Gustave H, leggendario concierge, e del suo fidato lobby boy Zero.'},
+  {tmdbId:354912, titolo:'Coco', anno:'2017', durata:105, regista:'Lee Unkrich', generi:['Animazione','Famiglia','Musica'], voto:8.4, votoFonte:'imdb', trama:'Miguel si ritrova nella Terra dei Morti, dove cerca il suo trisavolo, leggendario musicista.'},
+  {tmdbId:244786, titolo:'Whiplash', anno:'2014', durata:107, regista:'Damien Chazelle', generi:['Dramma','Musica'], voto:8.5, votoFonte:'imdb', trama:'Un giovane batterista si iscrive a un conservatorio dove un insegnante spietato lo spinge oltre ogni limite.'},
+  {tmdbId:637, titolo:'La vita è bella', anno:'1997', durata:116, regista:'Roberto Benigni', generi:['Commedia','Dramma'], voto:8.6, votoFonte:'imdb', trama:'Guido usa la fantasia per proteggere il figlio dall\'orrore di un campo di concentramento.'},
+  {tmdbId:597, titolo:'Titanic', anno:'1997', durata:194, regista:'James Cameron', generi:['Dramma','Romance'], voto:7.9, votoFonte:'imdb', trama:'Un giovane artista e una ragazza dell\'alta società si innamorano a bordo del transatlantico più famoso della storia.'},
+  {tmdbId:603, titolo:'Matrix', anno:'1999', durata:136, regista:'Lana e Lilly Wachowski', generi:['Fantascienza','Azione'], voto:8.7, votoFonte:'imdb', trama:'Un hacker scopre la vera natura della realtà e il proprio ruolo nella guerra contro chi la controlla.'},
+  {tmdbId:27205, titolo:'Inception', anno:'2010', durata:148, regista:'Christopher Nolan', generi:['Fantascienza','Azione','Thriller'], voto:8.8, votoFonte:'imdb', trama:'Un ladro che ruba segreti dai sogni riceve l\'incarico inverso: impiantare un\'idea.'}
+];
+const demoFilm = id => DEMO_DB.find(f => f.tmdbId === id);
+
+function semina(){
+  const g = giorni => new Date(Date.now() - giorni*864e5).toISOString().slice(0,10);
+  const voce = (id, des, extra={}, aggiuntoGiorni=30) => {
+    const f = demoFilm(id);
+    return {tmdbId:f.tmdbId, titolo:f.titolo, anno:f.anno, durata:f.durata, regista:f.regista,
+      generi:f.generi, voto:f.voto, votoFonte:f.votoFonte, trama:f.trama,
+      desiderio:des, conChi:[], nonCon:[], aggiunto:g(aggiuntoGiorni), ...extra};
+  };
+  const profili = [
+    {nome:'Marco', slug:'marco', creato:g(90), colore:'#c9a45c', lista:[voce(438631,5), voce(335984,4), voce(27205,3)]},
+    {nome:'Elena', slug:'elena', creato:g(80), colore:'#9b7da8', lista:[voce(194,5,{conChi:['marco']}), voce(496243,4), voce(313369,3)]},
+    {nome:'Simone', slug:'simone', creato:g(70), colore:'#6f8fae', lista:[voce(157336,5), voce(680,4,{},60)]},
+    {nome:'Stefano', slug:'stefano', creato:g(85), colore:'#7d9b76', lista:[voce(238,5,{nonCon:['simone']}), voce(120467,3)]},
+    {nome:'Francesco', slug:'francesco', creato:g(60), colore:'#b0805a', lista:[voce(354912,4,{},55), voce(244786,4), voce(438631,3)]},
+    {nome:'Cristina', slug:'cristina', creato:g(75), colore:'#a85454', lista:[voce(637,5), voce(597,2)]}
+  ];
+  const storico = [
+    {id:'demo-1', data:g(40), ts:g(40)+'T21:30:00', tmdbId:354912, titolo:'Coco', partecipanti:['marco','francesco','simone','cristina'], proponenti:['francesco']},
+    {id:'demo-2', data:g(8), ts:g(8)+'T21:30:00', tmdbId:680, titolo:'Pulp Fiction', partecipanti:['marco','simone','stefano'], proponenti:['simone']}
+  ];
+  demoFS.files.clear();
+  for (const p of profili) demoFS.files.set('profili/'+p.slug+'.json', JSON.stringify(p));
+  demoFS.files.set('storico.json', JSON.stringify({visioni:storico}));
+  demoFS.files.set('config.json', JSON.stringify({...CONFIG_DEFAULT}));
+}
+
+/* ════════════════════════ API FILM ════════════════════════ */
+async function cercaFilm(q){
+  if (S.demo){
+    const t = q.toLowerCase();
+    return DEMO_DB.filter(f => f.titolo.toLowerCase().includes(t))
+      .map(f => ({id:f.tmdbId, title:f.titolo, release_date:f.anno+'-01-01', poster_path:null}));
+  }
+  if (!S.config.tmdbKey) throw new Error('nokey');
+  const r = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${S.config.tmdbKey}&language=it-IT&include_adult=false&query=${encodeURIComponent(q)}`);
+  if (!r.ok) throw new Error('tmdb '+r.status);
+  return ((await r.json()).results || []).slice(0, 8);
+}
+
+async function dettagliFilm(id){
+  if (S.demo) return {...demoFilm(id)};
+  const k = S.config.tmdbKey;
+  const r = await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${k}&language=it-IT&append_to_response=credits,external_ids`);
+  if (!r.ok) throw new Error('tmdb '+r.status);
+  const j = await r.json();
+  const regista = ((j.credits || {}).crew || []).filter(c => c.job === 'Director').map(c => c.name).join(', ');
+  let voto = j.vote_average ? Math.round(j.vote_average*10)/10 : null, votoFonte = 'tmdb';
+  const imdbId = (j.external_ids || {}).imdb_id || j.imdb_id;
+  if (S.config.omdbKey && imdbId){
+    try {
+      const o = await (await fetch(`https://www.omdbapi.com/?apikey=${S.config.omdbKey}&i=${imdbId}`)).json();
+      const iv = parseFloat(o.imdbRating);
+      if (iv){ voto = iv; votoFonte = 'imdb'; }
+    } catch(e){}
+  }
+  return {
+    tmdbId:j.id, titolo:j.title || j.original_title, anno:(j.release_date || '').slice(0,4),
+    durata:j.runtime || null, regista, generi:(j.genres || []).map(x => x.name),
+    voto, votoFonte, trama:j.overview || '',
+    posterUrl:j.poster_path ? 'https://image.tmdb.org/t/p/w500'+j.poster_path : null,
+    sfondoUrl:j.backdrop_path ? 'https://image.tmdb.org/t/p/w780'+j.backdrop_path : null,
+    locandina:j.poster_path ? `posters/${j.id}.jpg` : null,
+    sfondo:j.backdrop_path ? `posters/${j.id}_b.jpg` : null
+  };
+}
+
+async function salvaImmagini(d){ // best effort: se il download fallisce restano gli URL remoti
+  if (S.demo) return;
+  // in Electron scarica lato main (niente CORS): più robusto per l'uso offline
+  if (inElectron && window.mvnFS.scaricaImmagine){
+    if (d.posterUrl) await window.mvnFS.scaricaImmagine(d.posterUrl, `posters/${d.tmdbId}.jpg`).catch(()=>{});
+    if (d.sfondoUrl) await window.mvnFS.scaricaImmagine(d.sfondoUrl, `posters/${d.tmdbId}_b.jpg`).catch(()=>{});
+    return;
+  }
+  const scarica = async (url, nome) => {
+    try {
+      const b = await (await fetch(url)).blob();
+      await FS.writeBlob(['posters', nome], b);
+    } catch(e){ console.warn('poster non scaricato', nome, e); }
+  };
+  if (d.posterUrl) await scarica(d.posterUrl, `${d.tmdbId}.jpg`);
+  if (d.sfondoUrl) await scarica(d.sfondoUrl, `${d.tmdbId}_b.jpg`);
+}
+
+async function urlImmagine(voce, tipo){ // tipo: 'locandina' | 'sfondo'
+  const percorso = voce[tipo], url = voce[tipo === 'locandina' ? 'posterUrl' : 'sfondoUrl'];
+  if (percorso){
+    if (S.urlCache.has(percorso)) return S.urlCache.get(percorso) || url || null;
+    const u = await FS.fileURL(percorso.split('/'));
+    S.urlCache.set(percorso, u);
+    if (u) return u;
+  }
+  return url || null;
+}
+
+/* ════════════════════════ LOGICA (SPECIFICA §6-8) ════════════════════════ */
+function entryAttiva(voce, slug){
+  // confronto a data-ora: una visione "spegne" la voce solo se posteriore all'aggiunta,
+  // così «rimettilo in lista» funziona anche la sera stessa della visione
+  const aggiunto = voce.aggiunto || '0000-01-01';
+  return !S.storico.some(v => v.tmdbId === voce.tmdbId && v.partecipanti.includes(slug)
+    && (v.ts || v.data + 'T23:59:59') >= aggiunto);
+}
+function ultimaPropostaDi(slug){
+  let ultima = null;
+  for (const v of S.storico) if ((v.proponenti || []).includes(slug) && (!ultima || v.data > ultima)) ultima = v.data;
+  if (ultima) return giorniDa(ultima);
+  const p = profiloDi(slug);
+  return p && p.creato ? giorniDa(p.creato) : S.config.orizzonteAttesa;
+}
+
+function classifica(){
+  const cfg = S.config, setP = S.presenti;
+  const candidati = new Map();
+  for (const pr of S.profili){
+    if (!setP.has(pr.slug)) continue;
+    for (const voce of (pr.lista || [])){
+      if (!voce.tmdbId || !entryAttiva(voce, pr.slug)) continue;
+      let c = candidati.get(voce.tmdbId);
+      if (!c){ c = {film:{...voce}, prop:[]}; candidati.set(voce.tmdbId, c); }
+      else for (const k of ['durata','regista','voto','trama','locandina','sfondo','posterUrl','sfondoUrl','anno'])
+        if (!c.film[k] && voce[k]) c.film[k] = voce[k];
+      c.prop.push({slug:pr.slug, desiderio:voce.desiderio || 3, conChi:voce.conChi || [], nonCon:voce.nonCon || []});
+    }
+  }
+  const esclusi = {vincoli:0, durata:0, genere:0, regista:0};
+  const rosa = [];
+  const f = S.filtri;
+  for (const c of candidati.values()){
+    const film = c.film;
+    let violato = false;
+    for (const p of c.prop){
+      if (p.conChi.length && !p.conChi.every(x => setP.has(x))) { violato = true; break; }
+      if (p.nonCon.some(x => setP.has(x))) { violato = true; break; }
+    }
+    if (violato){ esclusi.vincoli++; continue; }
+    if (f.durata && film.durata && film.durata > f.durata){ esclusi.durata++; continue; }
+    if (f.genere.length && !(film.generi || []).some(g => f.genere.includes(g))){ esclusi.genere++; continue; }
+    if (f.regista && !(film.regista || '').toLowerCase().includes(f.regista.toLowerCase())){ esclusi.regista++; continue; }
+
+    const n = c.prop.length;
+    const D = c.prop.reduce((s,p) => s + p.desiderio, 0) / n / 5;
+    const B = Math.min(1 + cfg.bonusCoralita*(n-1), 1 + cfg.capCoralita);
+    let A = 0;
+    for (const p of c.prop) A = Math.max(A, Math.min(ultimaPropostaDi(p.slug), cfg.orizzonteAttesa) / cfg.orizzonteAttesa);
+    const W = 1 + cfg.pesoAttesa*A;
+    let M = 1;
+    for (const p of c.prop){
+      if (!p.conChi.length) continue;
+      const attesi = new Set([p.slug, ...p.conChi]);
+      if (attesi.size === setP.size && [...setP].every(x => attesi.has(x))){ M = cfg.bonusCoppia; break; }
+    }
+    rosa.push({film, prop:c.prop, S:D*B*W*M, D, B, W, A, M});
+  }
+  rosa.sort((a,b) => b.S - a.S || (b.film.voto || 0) - (a.film.voto || 0) || String(a.film.titolo).localeCompare(b.film.titolo));
+  return {rosa:rosa.slice(0,5), totale:rosa.length, esclusi};
+}
+
+/* ════════════════════════ CARICAMENTO DATI ════════════════════════ */
+async function caricaTutto(){
+  const cfg = await FS.readJSON(['config.json']);
+  S.config = {...CONFIG_DEFAULT, ...(cfg || {})};
+  if (!cfg && !S.demo) await FS.writeJSON(['config.json'], S.config).catch(()=>{});
+  const nomi = await FS.listaProfili();
+  const profili = [];
+  for (const n of nomi){
+    const p = await FS.readJSON(['profili', n]);
+    if (p && p.slug && Array.isArray(p.lista)) profili.push(p);
+    else if (p !== null) console.warn('profilo illeggibile ignorato:', n);
+  }
+  profili.sort((a,b) => (a.creato || '').localeCompare(b.creato || '') || a.slug.localeCompare(b.slug));
+  S.profili = profili;
+  const st = await FS.readJSON(['storico.json']);
+  S.storico = (st && Array.isArray(st.visioni)) ? st.visioni : [];
+  S.storico.sort((a,b) => a.data.localeCompare(b.data));
+  S.presenti = new Set([...S.presenti].filter(s => profiloDi(s)));
+  if (S.me && profiloDi(S.me)) S.presenti.add(S.me);
+  S.ultimaLettura = new Date();
+  S.urlCache.clear();
+}
+
+async function salvaMioProfilo(){
+  const p = mioProfilo();
+  if (p) await FS.writeJSON(['profili', p.slug+'.json'], p);
+}
+
+async function registraVisione(voce){
+  const attuale = await FS.readJSON(['storico.json']) || {visioni:[]};
+  if (!Array.isArray(attuale.visioni)) attuale.visioni = [];
+  const ids = new Set(attuale.visioni.map(v => v.id));
+  for (const v of S.storico) if (!ids.has(v.id)){ attuale.visioni.push(v); ids.add(v.id); }
+  attuale.visioni.push(voce);
+  await FS.writeJSON(['storico.json'], attuale);
+  S.storico = attuale.visioni.sort((a,b) => a.data.localeCompare(b.data));
+}
+
+/* ════════════════════════ GATE ════════════════════════ */
+function gateBenvenuto(msg){
+  $('#gate-card').innerHTML = `
+    <h2 class="serif" style="color:var(--oro); font-weight:400; margin-bottom:6px">Benvenuto in sala</h2>
+    <p>${esc(msg || 'Collega la cartella condivisa su Drive: è lì che vivono liste, locandine e storico di tutti.')}</p>
+    <button class="bottone" id="btn-collega">📁 Collega la cartella condivisa</button>`;
+  $('#btn-collega').onclick = async () => {
+    try {
+      const h = await window.showDirectoryPicker({mode:'readwrite', id:'movienaitor'});
+      fsa.root = h;
+      await idb.set('dir', h);
+      await entra();
+    } catch(e){ if (e.name !== 'AbortError') toast('Cartella non collegata: '+e.message, true); }
+  };
+}
+function gateRiconnetti(){
+  $('#gate-card').innerHTML = `
+    <h2 class="serif" style="color:var(--oro); font-weight:400; margin-bottom:6px">Bentornato</h2>
+    <p>Il browser chiede conferma per riaprire la cartella condivisa.</p>
+    <button class="bottone" id="btn-rientra">🎟 Rientra in sala</button>
+    <p style="margin-top:14px"><button class="testo-link" id="btn-altra-cartella">usa un'altra cartella</button></p>`;
+  $('#btn-rientra').onclick = async () => {
+    const h = await idb.get('dir');
+    if (h && await h.requestPermission({mode:'readwrite'}) === 'granted'){ fsa.root = h; await entra(); }
+    else gateBenvenuto('Permesso negato: ricollega la cartella.');
+  };
+  $('#btn-altra-cartella').onclick = () => gateBenvenuto();
+}
+function gateNonSupportato(){
+  $('#gate-card').innerHTML = `
+    <h2 class="serif" style="color:var(--rosso2); font-weight:400; margin-bottom:6px">Browser non supportato</h2>
+    <p>Movienaitor ha bisogno dell'accesso alla cartella condivisa (File System Access API).<br>Apri questo file con <b>Chrome</b> o <b>Edge</b>, oppure installa l'app desktop.</p>`;
+}
+function gateBenvenutoElectron(){
+  $('#gate-card').innerHTML = `
+    <h2 class="serif" style="color:var(--oro); font-weight:400; margin-bottom:6px">Benvenuto in sala</h2>
+    <p>Scegli la cartella condivisa su Drive: è lì che vivono liste, locandine e storico di tutti.</p>
+    <button class="bottone" id="btn-collega">📁 Scegli la cartella condivisa</button>`;
+  $('#btn-collega').onclick = async () => {
+    const info = await window.mvnFS.scegliCartella();
+    if (info){ electronFS.cartella = info; await entra(); }
+  };
+}
+function gestisciUpdate(d){
+  if (!d) return;
+  if (d.tipo === 'disponibile'){ toast(`Aggiornamento ${d.versione} in arrivo… lo scarico`); window.mvnUpdate.azione('scarica'); }
+  else if (d.tipo === 'pronto'){
+    apriModale(`<h3>Aggiornamento pronto</h3>
+      <p style="color:var(--dim); line-height:1.6">La versione <b style="color:var(--oro2)">${esc(d.versione)}</b> è pronta.<br>Riavvio l'app per applicarla?</p>
+      <div class="m-azioni"><button class="bottone piccolo secondario" id="u-dopo">Più tardi</button><button class="bottone piccolo" id="u-ora">▶ Riavvia ora</button></div>`);
+    $('#u-dopo').onclick = chiudiModale;
+    $('#u-ora').onclick = () => window.mvnUpdate.azione('riavvia');
+  }
+}
+function gateNome(){
+  const noti = S.profili.map(p => `<button class="bottone piccolo secondario btn-sono" data-slug="${esc(p.slug)}">Sono ${esc(p.nome)}</button>`).join('');
+  $('#gate-card').innerHTML = `
+    <h2 class="serif" style="color:var(--oro); font-weight:400; margin-bottom:6px">Chi sei?</h2>
+    ${noti ? `<div class="profili-noti">${noti}</div><p>oppure prendi una poltrona nuova:</p>` : '<p>Prendi la tua poltrona: il nome resterà salvato.</p>'}
+    <input type="text" id="nuovo-nome" placeholder="Il tuo nome" maxlength="20">
+    <div class="swatches" id="gate-swatches"></div>
+    <button class="bottone" id="btn-nuovo">🎟 Entra in sala</button>`;
+  let colore = PALETTE_UTENTI[S.profili.length % PALETTE_UTENTI.length];
+  const sw = $('#gate-swatches');
+  sw.innerHTML = PALETTE_UTENTI.map(c => `<div class="swatch${c===colore?' attivo':''}" data-c="${c}" style="background:${c}"></div>`).join('');
+  sw.onclick = e => {
+    const el = e.target.closest('.swatch'); if (!el) return;
+    colore = el.dataset.c;
+    $$('#gate-swatches .swatch').forEach(x => x.classList.toggle('attivo', x === el));
+  };
+  $$('.btn-sono').forEach(b => b.onclick = async () => {
+    S.me = b.dataset.slug;
+    localStorage.setItem('mvn_me', S.me);
+    await avviaApp();
+  });
+  $('#btn-nuovo').onclick = async () => {
+    const nome = $('#nuovo-nome').value.trim();
+    if (!nome) return toast('Scrivi il tuo nome', true);
+    const slug = slugify(nome);
+    if (!slug) return toast('Nome non valido', true);
+    if (profiloDi(slug)){ S.me = slug; }
+    else {
+      const p = {nome:maiuscola(nome), slug, creato:oggiISO(), colore, lista:[]};
+      S.profili.push(p);
+      S.me = slug;
+      await FS.writeJSON(['profili', slug+'.json'], p);
+    }
+    localStorage.setItem('mvn_me', S.me);
+    await avviaApp();
+  };
+}
+
+async function entra(){
+  await caricaTutto();
+  const ricordato = localStorage.getItem('mvn_me');
+  if (ricordato && profiloDi(ricordato)){ S.me = ricordato; await avviaApp(); }
+  else gateNome();
+}
+
+async function avviaApp(){
+  S.presenti = new Set([S.me]);
+  $('#gate').hidden = true;
+  $('#app').hidden = false;
+  $('#io-nome').textContent = nomeDi(S.me);
+  $('#io-colore').style.background = coloreDi(S.me);
+  disegnaTutto();
+}
+
+/* ════════════════════════ RENDER — SALA ════════════════════════ */
+function disegnaTutto(){
+  disegnaFiltri();
+  disegnaSala();
+  disegnaCatalogo();
+  disegnaImpostazioni();
+}
+
+function tuttiGeneri(){
+  const g = new Set();
+  for (const p of S.profili) for (const v of (p.lista || [])) (v.generi || []).forEach(x => g.add(x));
+  return [...g].sort((a,b) => a.localeCompare(b));
+}
+function tuttiRegisti(){
+  const r = new Set();
+  for (const p of S.profili) for (const v of (p.lista || [])) if (v.regista) v.regista.split(', ').forEach(x => r.add(x));
+  return [...r].sort();
+}
+
+function disegnaFiltri(){
+  $('#filtro-generi').innerHTML = tuttiGeneri().map(g =>
+    `<button class="gchip${S.filtri.genere.includes(g)?' on':''}" data-g="${esc(g)}">${esc(g)}</button>`).join('') || '<span style="color:var(--dim2);font-size:12px">nessun film in lista</span>';
+  $('#lista-registi').innerHTML = tuttiRegisti().map(r => `<option value="${esc(r)}">`).join('');
+  const d = S.filtri.durata;
+  $('#filtro-durata').value = d || 240;
+  $('#filtro-durata-val').textContent = d ? '≤ '+fmtMin(d) : 'qualsiasi';
+  $('#filtro-regista').value = S.filtri.regista;
+}
+
+function poltronaSVG(colore, presente){
+  const velluto = presente ? colore : '#5a2830';
+  return `<svg viewBox="0 0 90 84">
+    ${presente ? `<circle cx="45" cy="16" r="11" fill="#1b1013" stroke="${colore}" stroke-width="2"/>` : ''}
+    <path d="M16 74 V34 Q16 18 32 18 H58 Q74 18 74 34 V74 Z" fill="${velluto}" stroke="#201114" stroke-width="2.5" ${presente?'':'opacity=".8"'}/>
+    <rect x="22" y="52" width="46" height="22" rx="6" fill="${presente ? colore : '#4a2228'}" stroke="#201114" stroke-width="2" ${presente?'style="filter:brightness(.8)"':''}/>
+    <rect x="6" y="46" width="13" height="30" rx="6" fill="#4a2228" stroke="#201114" stroke-width="2"/>
+    <rect x="71" y="46" width="13" height="30" rx="6" fill="#4a2228" stroke="#201114" stroke-width="2"/>
+  </svg>`;
+}
+
+function disegnaPlatea(){
+  const utenti = S.profili.map(p => p.slug);
+  const posti = [];
+  const davanti = Math.min(utenti.length, FILA_DAVANTI);
+  const inizioDavanti = Math.floor((FILA_DAVANTI - davanti) / 2);
+  const dietroN = Math.min(Math.max(utenti.length - FILA_DAVANTI, 0), FILA_DIETRO);
+  const inizioDietro = Math.floor((FILA_DIETRO - dietroN) / 2);
+  for (let i = 0; i < FILA_DAVANTI; i++) posti.push({fila:0, slug:(i >= inizioDavanti && i < inizioDavanti + davanti) ? utenti[i - inizioDavanti] : null});
+  for (let i = 0; i < FILA_DIETRO; i++) posti.push({fila:1, slug:(i >= inizioDietro && i < inizioDietro + dietroN) ? utenti[FILA_DAVANTI + i - inizioDietro] : null});
+  const fila = n => posti.filter(p => p.fila === n).map(p => {
+    if (!p.slug) return `<div class="poltrona">${poltronaSVG('#000', false)}<div class="nome">&nbsp;</div></div>`;
+    const presente = S.presenti.has(p.slug);
+    return `<div class="poltrona assegnata${presente?' presente':''}" data-slug="${esc(p.slug)}" title="${presente?'Presente — clic per togliere':'Assente — clic per aggiungere'}">
+      ${presente ? `<div class="bolla">${esc(nomeDi(p.slug))}</div>` : ''}
+      ${poltronaSVG(coloreDi(p.slug), presente)}
+      <div class="nome">${esc(nomeDi(p.slug))}</div>
+    </div>`;
+  }).join('');
+  $('#platea').innerHTML = `<div class="fila">${fila(0)}</div><div class="fila">${fila(1)}</div>`;
+  $$('#platea .poltrona.assegnata').forEach(el => el.onclick = () => {
+    const s = el.dataset.slug;
+    if (S.presenti.has(s)) S.presenti.delete(s); else S.presenti.add(s);
+    S.proiettato = null;
+    disegnaSala();
+  });
+}
+
+async function disegnaSala(){
+  disegnaPlatea();
+  const schermo = $('#schermo'), rosaEl = $('#rosa');
+  if (!S.presenti.size){
+    schermo.innerHTML = `<div class="tenda sx"></div><div class="tenda dx"></div>
+      <div class="messaggio">La sala è vuota…<br><small style="font-size:14px; color:var(--dim2)">clicca le poltrone di chi c'è stasera</small></div>`;
+    rosaEl.innerHTML = '';
+    $('#riga-stato').innerHTML = '';
+    return;
+  }
+  const ris = classifica();
+  S.rosa = ris.rosa;
+  if (S.proiettato && !ris.rosa.some(r => r.film.tmdbId === S.proiettato)) S.proiettato = null;
+  const scelto = S.proiettato ? ris.rosa.find(r => r.film.tmdbId === S.proiettato) : ris.rosa[0];
+
+  if (!scelto){
+    const e = ris.esclusi;
+    const motivi = [
+      e.durata ? `${e.durata} troppo lunghi` : '', e.genere ? `${e.genere} di altro genere` : '',
+      e.regista ? `${e.regista} di altri registi` : '', e.vincoli ? `${e.vincoli} per vincoli di compagnia` : ''
+    ].filter(Boolean).join(' · ');
+    schermo.innerHTML = `<div class="tenda sx"></div><div class="tenda dx"></div>
+      <div class="messaggio">Niente in cartellone stasera<br>
+      <small style="font-size:14px; color:var(--dim2)">${motivi || 'le liste dei presenti sono vuote: passate dal Catalogo'}</small></div>`;
+    rosaEl.innerHTML = '';
+  } else {
+    const f = scelto.film;
+    const rango = ris.rosa.indexOf(scelto) + 1;
+    schermo.innerHTML = `
+      <div class="tenda sx"></div><div class="tenda dx"></div>
+      <img class="sfondo" hidden><div class="velo"></div>
+      <div class="rango serif">${rango}</div>
+      <button class="schermo-clic" title="Scheda film"></button>
+      <div class="info">
+        <h2>${esc(f.titolo)}</h2>
+        <div class="meta">${esc(f.anno || '')} · ${fmtMin(f.durata)} · ${esc((f.generi || []).join(', ') || '—')}
+          ${f.voto ? ` · <b>★ ${fmtNum(f.voto,1)}</b> ${f.votoFonte === 'imdb' ? 'IMDb' : 'TMDB'}` : ''}<br>
+          🎟 ${scelto.prop.length} ${scelto.prop.length === 1 ? 'proponente' : 'proponenti'} ·
+          <span title="Desiderio ${fmtNum(scelto.D)} × Coralità ${fmtNum(scelto.B)} × Attesa ${fmtNum(scelto.W)} × Coppia ${fmtNum(scelto.M)}">🏆 ${fmtNum(scelto.S)}</span>
+          ${scelto.M > 1 ? ' · 💛 serata su misura' : ''}
+        </div>
+      </div>
+      <button id="btn-play" title="Elegge il film della serata e lo registra per tutti i presenti">▶</button>`;
+    $('.schermo-clic').onclick = () => modaleScheda(scelto);
+    $('#btn-play').onclick = () => modalePlay(scelto);
+    const img = $('#schermo .sfondo');
+    urlImmagine(f, 'sfondo').then(u => u || urlImmagine(f, 'locandina'))
+      .then(u => { img.src = u || segnapostoSVG('', f.tmdbId); img.hidden = false; });
+
+    // griglia 2-5: sempre i ranghi 2..5 (il proiettato è evidenziato)
+    const celle = [];
+    for (let i = 1; i < 5; i++){
+      const r = ris.rosa[i];
+      if (!r){ celle.push(`<div class="posto vuoto">${i+1}º —</div>`); continue; }
+      celle.push(`<div class="posto${r === scelto ? ' proiettato' : ''}" data-id="${r.film.tmdbId}" title="${esc(r.film.titolo)} — clic per proiettarlo">
+        <img hidden><div class="segnaposto"></div>
+        <div class="r-velo"></div><div class="r-rango serif">${i+1}</div>
+        <div class="r-titolo">${esc(r.film.titolo)}</div>
+      </div>`);
+    }
+    rosaEl.innerHTML = celle.join('');
+    $$('#rosa .posto[data-id]').forEach(el => {
+      el.onclick = () => { S.proiettato = parseInt(el.dataset.id, 10); disegnaSala(); };
+      const r = ris.rosa.find(x => x.film.tmdbId === parseInt(el.dataset.id, 10));
+      const img2 = el.querySelector('img'), seg = el.querySelector('.segnaposto');
+      seg.style.background = `url("${segnapostoSVG(r.film.titolo, r.film.tmdbId)}") center/cover`;
+      urlImmagine(r.film, 'locandina').then(u => { if (u){ img2.src = u; img2.hidden = false; seg.remove(); } });
+    });
+  }
+
+  const e = ris.esclusi, fuori = e.durata + e.genere + e.regista + e.vincoli;
+  $('#riga-stato').innerHTML = `
+    <span>🎞 ${ris.totale} in cartellone</span>
+    ${fuori ? `<span class="avviso">esclusi: ${[e.durata && e.durata+' per durata', e.genere && e.genere+' per genere', e.regista && e.regista+' per regista', e.vincoli && e.vincoli+' per compagnia'].filter(Boolean).join(', ')}</span>` : ''}
+    <span>${S.presenti.size} in sala</span>
+    <span>aggiornato ${S.ultimaLettura ? S.ultimaLettura.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'}) : '—'}</span>
+    <span>v${APP_VERSION}${S.demo ? ' · DEMO (niente salvataggio su disco)' : ''}</span>`;
+}
+
+/* ════════════════════════ RENDER — CATALOGO ════════════════════════ */
+function stelleHTML(n, editabile=true){
+  return `<div class="stelle${editabile?'':' sole'}">${[1,2,3,4,5].map(i =>
+    `<span class="${i<=n?'piena':''}" data-v="${i}">★</span>`).join('')}</div>`;
+}
+function chipsCompagnia(voce){
+  const altri = S.profili.filter(p => p.slug !== S.me);
+  if (!altri.length) return '<span style="color:var(--dim2); font-size:12px">nessun altro profilo registrato</span>';
+  return altri.map(p => {
+    const stato = (voce.conChi || []).includes(p.slug) ? 'con' : (voce.nonCon || []).includes(p.slug) ? 'non' : '';
+    const segno = stato === 'con' ? '✓ ' : stato === 'non' ? '✗ ' : '';
+    return `<button class="pchip ${stato}" data-slug="${esc(p.slug)}" title="clic: neutro → ✓ lo voglio vedere con · ✗ non con">${segno}${esc(p.nome)}</button>`;
+  }).join('');
+}
+function cicloCompagnia(voce, slug){
+  voce.conChi = voce.conChi || []; voce.nonCon = voce.nonCon || [];
+  if (voce.conChi.includes(slug)){ voce.conChi = voce.conChi.filter(x => x !== slug); voce.nonCon.push(slug); }
+  else if (voce.nonCon.includes(slug)){ voce.nonCon = voce.nonCon.filter(x => x !== slug); }
+  else voce.conChi.push(slug);
+}
+
+function disegnaCatalogo(){
+  const mio = mioProfilo();
+  const daVedere = (mio ? mio.lista : []).filter(v => entryAttiva(v, S.me));
+  const spente = (mio ? mio.lista : []).filter(v => !entryAttiva(v, S.me));
+
+  $('#lista-da-vedere').innerHTML = daVedere.map(v => cardFilm(v)).join('') ||
+    `<div class="vuoto-msg" style="grid-column:1/-1">La tua lista è vuota: cerca un film qui sopra 🍿</div>`;
+  daVedere.forEach(v => agganciaCard(v));
+
+  // visti: dallo storico (tutte le visioni a cui ho partecipato) + voci spente
+  const vistiMap = new Map();
+  for (const vis of S.storico) if (vis.partecipanti.includes(S.me)) vistiMap.set(vis.tmdbId, vis);
+  const cards = [];
+  for (const [id, vis] of [...vistiMap.entries()].reverse()){
+    const voce = (mio ? mio.lista : []).find(v => v.tmdbId === id) || {tmdbId:id, titolo:vis.titolo};
+    cards.push(`<div class="scheda-film" data-visto="${id}">
+      <div class="copertina">
+        <img hidden><div class="segnaposto" style="background:url('${segnapostoSVG(voce.titolo, id)}') center/cover"></div>
+        <div class="visto-badge">visto ${fmtData(vis.data)} · con ${vis.partecipanti.filter(s => s !== S.me).map(nomeDi).join(', ') || 'me stesso'}</div>
+      </div>
+      <div class="corpo">
+        <h4>${esc(voce.titolo)}</h4>
+        <div class="azioni"><button class="testo-link btn-riguarda" data-id="${id}" style="color:var(--verde)">↺ rimettilo in lista</button></div>
+      </div>
+    </div>`);
+  }
+  for (const v of spente) if (!vistiMap.has(v.tmdbId)) cards.push(''); // voce spenta senza visione mia: non capita, tenuta per robustezza
+  $('#lista-visti').innerHTML = cards.join('') || `<div class="vuoto-msg" style="grid-column:1/-1">Ancora nessuna serata registrata.</div>`;
+  $$('#lista-visti .scheda-film').forEach(el => {
+    const id = parseInt(el.dataset.visto, 10);
+    const voce = (mio ? mio.lista : []).find(v => v.tmdbId === id);
+    if (voce) urlImmagine(voce, 'locandina').then(u => { const img = el.querySelector('img'); if (u && img){ img.src = u; img.hidden = false; el.querySelector('.segnaposto').remove(); } });
+  });
+  $$('.btn-riguarda').forEach(b => b.onclick = () => riguarda(parseInt(b.dataset.id, 10)));
+}
+
+function cardFilm(v){
+  return `<div class="scheda-film" data-id="${v.tmdbId}">
+    <div class="copertina" title="Scheda film">
+      <img hidden><div class="segnaposto" style="background:url('${segnapostoSVG(v.titolo, v.tmdbId)}') center/cover"></div>
+      ${v.voto ? `<div class="voto-badge">★ ${fmtNum(v.voto,1)} ${v.votoFonte === 'imdb' ? 'IMDb' : 'TMDB'}</div>` : ''}
+    </div>
+    <div class="corpo">
+      <h4>${esc(v.titolo)}</h4>
+      <div class="sotto">${esc(v.anno || '')} · ${fmtMin(v.durata)}${v.regista ? ' · '+esc(v.regista) : ''}</div>
+      ${stelleHTML(v.desiderio || 3)}
+      <div class="compagnia">${chipsCompagnia(v)}</div>
+      <div class="azioni"><span></span><button class="testo-link btn-togli">rimuovi</button></div>
+    </div>
+  </div>`;
+}
+function agganciaCard(v){
+  const el = document.querySelector(`.scheda-film[data-id="${v.tmdbId}"]`);
+  if (!el) return;
+  urlImmagine(v, 'locandina').then(u => { const img = el.querySelector('.copertina img'); if (u){ img.src = u; img.hidden = false; el.querySelector('.copertina .segnaposto').remove(); } });
+  el.querySelector('.copertina').onclick = () => modaleScheda({film:v, prop:null});
+  el.querySelector('.stelle').onclick = async e => {
+    const s = e.target.closest('span[data-v]'); if (!s) return;
+    v.desiderio = parseInt(s.dataset.v, 10);
+    el.querySelectorAll('.stelle span').forEach((x,i) => x.classList.toggle('piena', i < v.desiderio));
+    await salvaMioProfilo(); disegnaSala();
+  };
+  el.querySelector('.compagnia').onclick = async e => {
+    const c = e.target.closest('.pchip'); if (!c) return;
+    cicloCompagnia(v, c.dataset.slug);
+    e.currentTarget.innerHTML = chipsCompagnia(v);
+    await salvaMioProfilo(); disegnaSala();
+  };
+  el.querySelector('.btn-togli').onclick = async () => {
+    const mio = mioProfilo();
+    mio.lista = mio.lista.filter(x => x !== v);
+    await salvaMioProfilo();
+    disegnaCatalogo(); disegnaFiltri(); disegnaSala();
+    toast(`«${v.titolo}» tolto dalla lista`);
+  };
+}
+
+async function riguarda(id){
+  const mio = mioProfilo();
+  let voce = mio.lista.find(v => v.tmdbId === id);
+  if (voce){ voce.aggiunto = new Date().toISOString(); }
+  else {
+    let d = null;
+    try { d = await dettagliFilm(id); } catch(e){}
+    const vis = S.storico.find(v => v.tmdbId === id);
+    const ora = new Date().toISOString();
+    voce = d ? {...d, desiderio:3, conChi:[], nonCon:[], aggiunto:ora}
+             : {tmdbId:id, titolo:vis ? vis.titolo : 'Film', desiderio:3, conChi:[], nonCon:[], aggiunto:ora};
+    mio.lista.push(voce);
+    if (d) salvaImmagini(d);
+  }
+  await salvaMioProfilo();
+  disegnaCatalogo(); disegnaFiltri(); disegnaSala();
+  toast(`«${voce.titolo}» di nuovo in lista ↺`);
+}
+
+/* ricerca */
+let cercaTimer = null;
+function agganciaRicerca(){
+  const input = $('#cerca'), box = $('#risultati');
+  input.oninput = () => {
+    clearTimeout(cercaTimer);
+    const q = input.value.trim();
+    if (q.length < 2){ box.hidden = true; return; }
+    cercaTimer = setTimeout(async () => {
+      try {
+        const ris = await cercaFilm(q);
+        box.innerHTML = ris.length ? ris.map(r => `
+          <div class="risultato" data-id="${r.id}">
+            ${r.poster_path ? `<img src="https://image.tmdb.org/t/p/w92${r.poster_path}">` : '<div class="mini"></div>'}
+            <div><div>${esc(r.title)}</div><div class="r-anno">${esc((r.release_date || '').slice(0,4) || '—')}</div></div>
+          </div>`).join('') : '<div class="risultato">Nessun risultato</div>';
+        box.hidden = false;
+        $$('#risultati .risultato[data-id]').forEach(el => el.onclick = () => { box.hidden = true; input.value = ''; modaleAggiungi(parseInt(el.dataset.id, 10)); });
+      } catch(e){
+        box.innerHTML = `<div class="risultato">${e.message === 'nokey'
+          ? 'Manca la chiave TMDB: impostala in ⚙ Impostazioni'
+          : 'Ricerca non riuscita (sei offline?)'}</div>`;
+        box.hidden = false;
+      }
+    }, 350);
+  };
+  document.addEventListener('click', e => { if (!e.target.closest('.catalogo-testa')) box.hidden = true; });
+}
+
+/* ════════════════════════ MODALI ════════════════════════ */
+function apriModale(html){ $('#modale').innerHTML = html; $('#modale-fondo').hidden = false; }
+function chiudiModale(){ $('#modale-fondo').hidden = true; }
+$('#modale-fondo') && ($('#modale-fondo').onclick = e => { if (e.target.id === 'modale-fondo') chiudiModale(); });
+
+async function modaleAggiungi(id){
+  apriModale('<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero la scheda del film.</p>');
+  let d;
+  try { d = await dettagliFilm(id); }
+  catch(e){ return apriModale(`<h3>Ahi</h3><p style="color:var(--dim)">Scheda non recuperata: ${esc(e.message)}</p><div class="m-azioni"><button class="bottone piccolo" onclick="chiudiModale()">Chiudi</button></div>`); }
+  const mio = mioProfilo();
+  const doppione = mio.lista.find(v => v.tmdbId === d.tmdbId && entryAttiva(v, S.me));
+  const voce = {...d, desiderio:3, conChi:[], nonCon:[], aggiunto:new Date().toISOString()};
+  apriModale(`
+    <h3>${esc(d.titolo)}</h3>
+    <div class="m-riga">
+      <div class="m-poster"><img ${d.posterUrl ? `src="${esc(d.posterUrl)}"` : 'hidden'}><div class="segnaposto" style="background:url('${segnapostoSVG(d.titolo, d.tmdbId)}') center/cover; z-index:-1"></div></div>
+      <div style="flex:1">
+        <div class="m-meta">${esc(d.anno || '')} · ${fmtMin(d.durata)}${d.regista ? ' · '+esc(d.regista) : ''}<br>
+          ${esc((d.generi || []).join(', '))}${d.voto ? ` · ★ ${fmtNum(d.voto,1)} ${d.votoFonte === 'imdb' ? 'IMDb' : 'TMDB'}` : ''}</div>
+        ${doppione ? '<div class="m-meta" style="color:var(--rosso2)">⚠ È già nella tua lista.</div>' : `
+        <div class="m-blocco"><label>QUANTO VOGLIO VEDERLO</label><div id="m-stelle">${stelleHTML(3)}</div></div>
+        <div class="m-blocco"><label>COMPAGNIA (facoltativo)</label><div class="compagnia" id="m-chips">${chipsCompagnia(voce)}</div></div>`}
+      </div>
+    </div>
+    ${d.trama ? `<div class="trama">${esc(d.trama)}</div>` : ''}
+    <div class="m-azioni">
+      <button class="bottone piccolo secondario" id="m-annulla">Annulla</button>
+      ${doppione ? '' : '<button class="bottone piccolo" id="m-aggiungi">🎬 Aggiungi alla mia lista</button>'}
+    </div>`);
+  $('#m-annulla').onclick = chiudiModale;
+  if (doppione) return;
+  $('#m-stelle').onclick = e => {
+    const s = e.target.closest('span[data-v]'); if (!s) return;
+    voce.desiderio = parseInt(s.dataset.v, 10);
+    $('#m-stelle').innerHTML = stelleHTML(voce.desiderio);
+  };
+  $('#m-chips').onclick = e => {
+    const c = e.target.closest('.pchip'); if (!c) return;
+    cicloCompagnia(voce, c.dataset.slug);
+    $('#m-chips').innerHTML = chipsCompagnia(voce);
+  };
+  $('#m-aggiungi').onclick = async () => {
+    mio.lista.push(voce);
+    await salvaMioProfilo();
+    chiudiModale();
+    disegnaCatalogo(); disegnaFiltri(); disegnaSala();
+    toast(`«${voce.titolo}» aggiunto alla tua lista 🍿`);
+    salvaImmagini(voce).then(() => { S.urlCache.clear(); disegnaCatalogo(); });
+  };
+}
+
+function modaleScheda(r){
+  const f = r.film;
+  apriModale(`
+    <h3>${esc(f.titolo)}</h3>
+    <div class="m-riga">
+      <div class="m-poster"><img hidden><div class="segnaposto" style="background:url('${segnapostoSVG(f.titolo, f.tmdbId)}') center/cover"></div></div>
+      <div style="flex:1">
+        <div class="m-meta">${esc(f.anno || '')} · ${fmtMin(f.durata)}${f.regista ? ' · '+esc(f.regista) : ''}<br>
+          ${esc((f.generi || []).join(', ') || '—')}${f.voto ? ` · ★ ${fmtNum(f.voto,1)} ${f.votoFonte === 'imdb' ? 'IMDb' : 'TMDB'}` : ''}</div>
+        ${r.prop ? `<div class="m-meta">🎟 Lo propongono <b style="color:var(--oro2)">${r.prop.length}</b> ${r.prop.length === 1 ? 'persona' : 'persone'} in sala</div>
+        <div class="m-meta" style="color:var(--dim2)">Punteggio ${fmtNum(r.S)} = desiderio ${fmtNum(r.D)} × coralità ${fmtNum(r.B)} × attesa ${fmtNum(r.W)} × coppia ${fmtNum(r.M)}</div>` : ''}
+      </div>
+    </div>
+    ${f.trama ? `<div class="trama">${esc(f.trama)}</div>` : ''}
+    <div class="m-azioni"><button class="bottone piccolo" id="m-chiudi">Chiudi</button></div>`);
+  $('#m-chiudi').onclick = chiudiModale;
+  urlImmagine(f, 'locandina').then(u => { const img = $('.m-poster img'); if (u && img){ img.src = u; img.hidden = false; } });
+}
+
+function modalePlay(r){
+  const f = r.film;
+  const nomi = [...S.presenti].map(nomeDi).join(', ');
+  apriModale(`
+    <h3>Si spengono le luci…</h3>
+    <p style="color:var(--dim); line-height:1.6">Il film della serata è <b style="color:var(--oro2)">«${esc(f.titolo)}»</b>.<br>
+    Lo registro come <b>visto</b> per: ${esc(nomi)}.<br>
+    <span style="color:var(--dim2); font-size:13px">Per i proponenti riparte il timer dell'attesa; il film esce dalle loro liste.</span></p>
+    <div class="m-azioni">
+      <button class="bottone piccolo secondario" id="m-annulla">Non ancora</button>
+      <button class="bottone piccolo" id="m-conferma">▶ Buona visione</button>
+    </div>`);
+  $('#m-annulla').onclick = chiudiModale;
+  $('#m-conferma').onclick = async () => {
+    chiudiModale();
+    const voce = {
+      id:`${Date.now().toString(36)}-${S.me}`, data:oggiISO(), ts:new Date().toISOString(),
+      tmdbId:f.tmdbId, titolo:f.titolo,
+      partecipanti:[...S.presenti], proponenti:r.prop.map(p => p.slug)
+    };
+    try { await registraVisione(voce); }
+    catch(e){ return toast('Registrazione non riuscita: '+e.message, true); }
+    $('#luci-titolo').textContent = `${f.titolo} — registrato per ${voce.partecipanti.length} spettatori`;
+    $('#luci').classList.add('giu');
+    setTimeout(() => { $('#luci').classList.remove('giu'); }, 2300);
+    S.proiettato = null;
+    disegnaSala(); disegnaCatalogo();
+  };
+}
+
+/* ════════════════════════ IMPOSTAZIONI ════════════════════════ */
+function disegnaImpostazioni(){
+  $('#imp-tmdb').value = S.config.tmdbKey || '';
+  $('#imp-omdb').value = S.config.omdbKey || '';
+  $('#imp-versione').textContent = APP_VERSION;
+  $('#imp-cartella').textContent = FS.nomeCartella();
+  if (inElectron) $('#imp-releases').hidden = false;
+  $('#imp-costanti').innerHTML = Object.keys(ETICHETTE_COSTANTI).map(k => `
+    <div class="campo" style="margin:0"><label>${ETICHETTE_COSTANTI[k]}</label>
+    <input type="number" step="0.05" id="imp-c-${k}" value="${S.config[k]}"></div>`).join('');
+  const mio = mioProfilo();
+  $('#imp-swatches').innerHTML = PALETTE_UTENTI.map(c =>
+    `<div class="swatch${mio && mio.colore === c ? ' attivo' : ''}" data-c="${c}" style="background:${c}"></div>`).join('');
+  $('#imp-swatches').onclick = async e => {
+    const el = e.target.closest('.swatch'); if (!el || !mio) return;
+    mio.colore = el.dataset.c;
+    await salvaMioProfilo();
+    disegnaImpostazioni(); disegnaSala();
+    $('#io-colore').style.background = mio.colore;
+  };
+}
+function agganciaImpostazioni(){
+  $('#imp-salva-api').onclick = async () => {
+    S.config.tmdbKey = $('#imp-tmdb').value.trim();
+    S.config.omdbKey = $('#imp-omdb').value.trim();
+    await FS.writeJSON(['config.json'], S.config);
+    toast('Chiavi salvate nella cartella condivisa 🔑');
+  };
+  $('#imp-salva-costanti').onclick = async () => {
+    for (const k of Object.keys(ETICHETTE_COSTANTI)){
+      const v = parseFloat($('#imp-c-'+k).value);
+      if (!isNaN(v)) S.config[k] = v;
+    }
+    await FS.writeJSON(['config.json'], S.config);
+    disegnaSala();
+    toast('Costanti della formula salvate 🧮');
+  };
+  $('#imp-cambia-cartella').onclick = async () => {
+    if (S.demo) return toast('In demo non c\'è nessuna cartella', true);
+    if (inElectron){
+      const info = await window.mvnFS.scegliCartella();
+      if (info){ electronFS.cartella = info; await ricarica(); disegnaImpostazioni(); toast('Cartella cambiata 📁'); }
+      return;
+    }
+    try {
+      const h = await window.showDirectoryPicker({mode:'readwrite', id:'movienaitor'});
+      fsa.root = h; await idb.set('dir', h);
+      await ricarica(); toast('Cartella cambiata 📁');
+    } catch(e){}
+  };
+  $('#imp-releases') && ($('#imp-releases').onclick = () => window.mvnFS.apriReleases());
+  $('#imp-cambia-utente').onclick = () => {
+    localStorage.removeItem('mvn_me');
+    location.reload();
+  };
+}
+
+/* ════════════════════════ RICARICA & AVVIO ════════════════════════ */
+async function ricarica(silenziosa){
+  await caricaTutto();
+  disegnaTutto();
+  if (!silenziosa) toast('Dati riletti dalla cartella ⟳');
+}
+
+function agganciaGlobali(){
+  $$('nav .tab, header .tab').forEach(b => b.onclick = () => {
+    $$('.tab').forEach(x => x.classList.toggle('attivo', x === b));
+    for (const v of ['sala','catalogo','impostazioni']) $('#vista-'+v).hidden = v !== b.dataset.vista;
+  });
+  $('#btn-ricarica').onclick = () => ricarica();
+  $('#filtro-durata').oninput = e => {
+    const v = parseInt(e.target.value, 10);
+    S.filtri.durata = v >= 240 ? null : v;
+    $('#filtro-durata-val').textContent = S.filtri.durata ? '≤ '+fmtMin(v) : 'qualsiasi';
+    disegnaSala();
+  };
+  $('#filtro-regista').oninput = e => { S.filtri.regista = e.target.value.trim(); disegnaSala(); };
+  $('#filtro-generi').onclick = e => {
+    const c = e.target.closest('.gchip'); if (!c) return;
+    const g = c.dataset.g;
+    S.filtri.genere = S.filtri.genere.includes(g) ? S.filtri.genere.filter(x => x !== g) : [...S.filtri.genere, g];
+    disegnaFiltri(); disegnaSala();
+  };
+  $('#filtro-azzera').onclick = () => { S.filtri = {durata:null, genere:[], regista:''}; disegnaFiltri(); disegnaSala(); };
+  window.addEventListener('focus', () => {
+    if (!$('#app').hidden && !S.demo && S.ultimaLettura && Date.now() - S.ultimaLettura.getTime() > 15000) ricarica(true);
+  });
+  agganciaRicerca();
+  agganciaImpostazioni();
+  $('#btn-demo').onclick = async () => {
+    S.demo = true; FS = demoFS;
+    semina();
+    await caricaTutto();
+    S.me = 'marco';
+    await avviaApp();
+    toast('Demo: dati finti, nessun salvataggio su disco');
+  };
+}
+
+async function init(){
+  agganciaGlobali();
+  if (inElectron){
+    FS = electronFS;
+    if (window.mvnUpdate) window.mvnUpdate.onEvento(gestisciUpdate);
+    const info = await window.mvnFS.cartellaCorrente();
+    if (info){ electronFS.cartella = info; return entra(); }
+    return gateBenvenutoElectron();
+  }
+  if (!window.showDirectoryPicker) return gateNonSupportato();
+  let h = null;
+  try { h = await idb.get('dir'); } catch(e){}
+  if (h){
+    try {
+      const stato = await h.queryPermission({mode:'readwrite'});
+      if (stato === 'granted'){ fsa.root = h; return entra(); }
+      return gateRiconnetti();
+    } catch(e){ await idb.del('dir').catch(()=>{}); }
+  }
+  gateBenvenuto();
+}
+window.addEventListener('load', init);
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+Thumbs.db
+desktop.ini
+node_modules/
+.claude/settings.local.json
+
+# Electron
+electron/dist/
+electron/renderer/index.html
+
+# Profili reali degli utenti: restano solo nella cartella Drive, mai nel repo pubblico.
+# (Nel repo c'è esempio-profilo.json come modello.)
+profili/
+

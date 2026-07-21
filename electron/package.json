@@ -1,0 +1,42 @@
+{
+  "name": "movienaitor",
+  "productName": "Movienaitor",
+  "version": "0.1.0",
+  "description": "Movienaitor — la sala dei film tra amici (wrapper desktop)",
+  "author": "Marco",
+  "main": "main.js",
+  "scripts": {
+    "prestart": "node copia-html.js",
+    "start": "electron .",
+    "predist": "node copia-html.js",
+    "dist": "electron-builder --win",
+    "publish": "electron-builder --win --publish always"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "marco.movienaitor",
+    "productName": "Movienaitor",
+    "directories": { "output": "dist" },
+    "files": ["main.js", "preload.js", "renderer/**", "build/**"],
+    "win": { "target": "nsis", "icon": "build/icon.ico" },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "artifactName": "Movienaitor-Setup-${version}.exe",
+      "deleteAppDataOnUninstall": false
+    },
+    "publish": [{
+      "provider": "github",
+      "owner": "marcomartinellione-create",
+      "repo": "Movienaitor"
+    }],
+    "asar": true
+  }
+}
