@@ -20,11 +20,16 @@ const REPO_RELEASES = `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases`;
 // ── cartella condivisa (persistita in userData/mvn-config.json) ──────────────
 const CFG = () => path.join(app.getPath('userData'), 'mvn-config.json');
 let cartella = null;
+// Config persistente in userData: cartella collegata + ultimo profilo scelto ("chi sei").
+// Sta qui, non in localStorage, perché su app://mvn il localStorage non sopravvive ai riavvii.
+async function leggiCfg(){ try { return JSON.parse(await fs.readFile(CFG(), 'utf8')) || {}; } catch (e) { return {}; } }
+async function scriviCfg(patch){ const c = await leggiCfg(); Object.assign(c, patch); try { await fs.writeFile(CFG(), JSON.stringify(c)); } catch (e) {} }
 async function caricaCartella(){
-  try { const j = JSON.parse(await fs.readFile(CFG(), 'utf8')); if (j.cartella) cartella = j.cartella; } catch (e) {}
+  const j = await leggiCfg();
+  if (j.cartella) cartella = j.cartella;
   if (cartella && !fss.existsSync(cartella)) cartella = null; // sync spostata/rimossa
 }
-async function salvaCartella(){ try { await fs.writeFile(CFG(), JSON.stringify({ cartella })); } catch (e) {} }
+async function salvaCartella(){ await scriviCfg({ cartella }); }
 
 // ogni percorso relativo deve restare DENTRO la cartella condivisa
 function risolvi(rel){
@@ -51,6 +56,10 @@ function registraIPC(){
     return { path: cartella, name: path.basename(cartella) };
   });
   ipcMain.handle('mvn:corrente', () => cartella ? { path: cartella, name: path.basename(cartella) } : null);
+
+  // "chi sei": ultimo profilo scelto, ricordato tra i riavvii
+  ipcMain.handle('mvn:getMe', async () => (await leggiCfg()).lastProfile || null);
+  ipcMain.handle('mvn:setMe', async (e, slug) => { await scriviCfg({ lastProfile: slug || null }); return true; });
 
   ipcMain.handle('mvn:readJSON', async (e, rel) => {
     try { return JSON.parse(await fs.readFile(risolvi(rel), 'utf8')); } catch (err) { return null; }
@@ -135,6 +144,8 @@ function diagnostica(win){
         `url: location.href, gate: (document.querySelector('#gate-card')||{}).textContent && document.querySelector('#gate-card').textContent.replace(/\\s+/g,' ').trim().slice(0,70), ` +
         `btnCollega: !!document.querySelector('#btn-collega')})`);
       console.log('DIAG base', base);
+      if (process.env.MVN_DIAG_SETME){ await wc.executeJavaScript(`window.mvnFS.ricordaProfilo(${JSON.stringify(process.env.MVN_DIAG_SETME)})`); console.log('DIAG setme', process.env.MVN_DIAG_SETME); }
+      console.log('DIAG getme', JSON.stringify(await wc.executeJavaScript('window.mvnFS.profiloRicordato()')));
       if (process.env.MVN_DIAG_DIR){
         const rt = await wc.executeJavaScript(`(async()=>{
           await window.mvnFS.writeJSON('profili/_diag.json', {nome:'Diag', slug:'_diag', lista:[1,2,3]});

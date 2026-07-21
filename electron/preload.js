@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld('mvnFS', {
   list:              (rel)     => ipcRenderer.invoke('mvn:list', rel),
   fileURL:           (rel)     => ipcRenderer.invoke('mvn:fileURL', rel),
   scaricaImmagine:   (url,rel) => ipcRenderer.invoke('mvn:scarica', url, rel),
+  profiloRicordato:  ()        => ipcRenderer.invoke('mvn:getMe'),
+  ricordaProfilo:    (slug)    => ipcRenderer.invoke('mvn:setMe', slug),
   apriReleases:      ()        => ipcRenderer.invoke('mvn:releases'),
   versione:          ()        => ipcRenderer.invoke('mvn:versione')
 });
