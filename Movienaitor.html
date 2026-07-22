@@ -117,16 +117,12 @@ header .spazio{flex:1}
   background:radial-gradient(60% 90% at 50% 0%, rgba(74,40,48,.25), transparent 70%); border-radius:20px}
 .fila{display:flex; justify-content:center; gap:14px}
 .fila+.fila{margin-top:10px}
-.poltrona{position:relative; width:74px; padding-top:26px; text-align:center; transition:transform .12s}
+.poltrona{position:relative; width:74px; padding-top:6px; text-align:center; transition:transform .12s}
 .poltrona.assegnata{cursor:pointer}
 .poltrona.assegnata:hover{transform:translateY(-3px)}
 .poltrona svg{width:100%; display:block; filter:drop-shadow(0 5px 8px rgba(0,0,0,.4))}
 .poltrona .nome{font-size:12px; color:var(--dim2); margin-top:3px; letter-spacing:.03em}
 .poltrona.presente .nome{color:var(--oro2)}
-.poltrona .bolla{position:absolute; top:-8px; left:50%; transform:translateX(-50%); background:var(--crema); color:#241610;
-  font-size:12px; font-weight:600; padding:3px 10px; border-radius:8px; white-space:nowrap; box-shadow:0 3px 10px rgba(0,0,0,.4); z-index:2}
-.bolla::after{content:''; position:absolute; left:50%; bottom:-6px; transform:translateX(-50%);
-  border:6px solid transparent; border-top-color:var(--crema); border-bottom:0}
 .riga-stato{display:flex; gap:18px; align-items:center; justify-content:center; color:var(--dim2); font-size:13px; margin-top:16px; flex-wrap:wrap}
 .riga-stato .avviso{color:var(--rosso2)}
 
@@ -163,6 +159,18 @@ header .spazio{flex:1}
 .testo-link:hover{color:var(--rosso2)}
 .sezione-titolo{font-family:var(--serif); color:var(--oro); letter-spacing:.1em; font-size:18px; margin:30px 0 14px; font-weight:400}
 .vuoto-msg{color:var(--dim2); padding:26px; text-align:center; border:1px dashed var(--velluto3); border-radius:14px}
+
+/* aiuti contestuali: ? cerchiato con tooltip (solo nei menù, non in Sala) */
+.aiuto-q{display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; flex:none;
+  border-radius:50%; border:1px solid var(--oro-dim); color:var(--oro-dim); font:600 11px/1 system-ui,sans-serif;
+  cursor:help; margin-left:8px; vertical-align:middle; position:relative; letter-spacing:0}
+.aiuto-q:hover,.aiuto-q.aperto{border-color:var(--oro2); color:var(--oro2)}
+.aiuto-q .tip{position:absolute; top:150%; left:0; width:240px; max-width:70vw; z-index:50;
+  background:var(--bg2); border:1px solid var(--oro-dim); color:var(--crema); box-shadow:var(--ombra);
+  font:400 12.5px/1.45 system-ui,sans-serif; letter-spacing:normal; text-transform:none; text-align:left;
+  padding:9px 12px; border-radius:9px; opacity:0; transform:translateY(-4px); pointer-events:none; transition:opacity .14s, transform .14s}
+.aiuto-q:hover .tip,.aiuto-q.aperto .tip{opacity:1; transform:none}
+.aiuto-q .tip::before{content:''; position:absolute; bottom:100%; left:6px; border:6px solid transparent; border-bottom-color:var(--oro-dim)}
 
 /* ---------- impostazioni ---------- */
 .imp-griglia{display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:18px; align-items:start}
@@ -268,11 +276,12 @@ header .spazio{flex:1}
   <main id="vista-catalogo" hidden>
     <div class="catalogo-testa">
       <input type="text" id="cerca" placeholder="Cerca un film da aggiungere alla tua lista…" autocomplete="off">
+      <span class="aiuto-q" tabindex="0">?<span class="tip">Scrivi il titolo di un film: dai risultati che compaiono scegli quello da aggiungere alla tua lista. Serve la chiave TMDB (in ⚙ Impostazioni) e una connessione a internet.</span></span>
       <div id="risultati" hidden></div>
     </div>
-    <div class="sezione-titolo">LA MIA LISTA — DA VEDERE</div>
+    <div class="sezione-titolo">LA MIA LISTA — DA VEDERE<span class="aiuto-q" tabindex="0">?<span class="tip">I film che vuoi vedere. Le stelle (1–5) dicono quanto ti va di vederlo; i nomi ✓/✗ scelgono con chi vederlo o con chi no. Sono i dati che la Sala usa per comporre la Top 5 della serata.</span></span></div>
     <div class="griglia" id="lista-da-vedere"></div>
-    <div class="sezione-titolo">GIÀ VISTI IN SALA</div>
+    <div class="sezione-titolo">GIÀ VISTI IN SALA<span class="aiuto-q" tabindex="0">?<span class="tip">I film già guardati nelle serate confermate col Play. Restano qui come storico; puoi rimetterne uno in lista se lo vuoi rivedere.</span></span></div>
     <div class="griglia" id="lista-visti"></div>
   </main>
 
@@ -280,7 +289,7 @@ header .spazio{flex:1}
   <main id="vista-impostazioni" hidden>
     <div class="imp-griglia">
       <div class="pannello">
-        <h3>CHIAVI API (condivise nella cartella)</h3>
+        <h3>CHIAVI API (condivise nella cartella)<span class="aiuto-q" tabindex="0">?<span class="tip">Le chiavi per cercare i film (TMDB) e per i voti IMDb (OMDb, facoltativa). Si mettono una volta sola e valgono per tutto il gruppo, perché sono salvate nella cartella condivisa. Sono gratuite.</span></span></h3>
         <div class="campo">
           <label>Chiave TMDB (ricerca film, locandine, metadati)</label>
           <input type="text" id="imp-tmdb" placeholder="incolla qui la chiave API v3">
@@ -294,7 +303,7 @@ header .spazio{flex:1}
         <button class="bottone piccolo" id="imp-salva-api">Salva chiavi</button>
       </div>
       <div class="pannello">
-        <h3>FORMULA DELLA CLASSIFICA</h3>
+        <h3>FORMULA DELLA CLASSIFICA<span class="aiuto-q" tabindex="0">?<span class="tip">Regola come la Sala ordina la Top 5: parte dal desiderio dei presenti, aggiunge un bonus se in più lo vogliono, una spinta per chi non "vince" un film da tanto tempo, e un bonus coppia. Più alto un valore, più pesa quel fattore.</span></span></h3>
         <div class="imp-costanti" id="imp-costanti"></div>
         <div class="aiuto" style="color:var(--dim2); font-size:12px; margin:10px 0 12px">
           Punteggio = Desiderio × Coralità × Attesa × Coppia. Dettagli nella SPECIFICA.
@@ -302,7 +311,7 @@ header .spazio{flex:1}
         <button class="bottone piccolo" id="imp-salva-costanti">Salva costanti</button>
       </div>
       <div class="pannello">
-        <h3>IL MIO PROFILO</h3>
+        <h3>IL MIO PROFILO<span class="aiuto-q" tabindex="0">?<span class="tip">Il colore della tua poltrona in Sala, la cartella condivisa a cui l'app è collegata, e i comandi per cambiare cartella o cambiare utente (torni alla scelta del nome).</span></span></h3>
         <div class="campo"><label>Colore poltrona</label><div class="swatches" id="imp-swatches" style="justify-content:flex-start"></div></div>
         <div class="campo"><label>Cartella collegata</label><div class="aiuto" id="imp-cartella">—</div></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px">
@@ -323,7 +332,7 @@ header .spazio{flex:1}
 <script>
 'use strict';
 /* ════════════════════════ COSTANTI ════════════════════════ */
-const APP_VERSION = '0.1.2';
+const APP_VERSION = '0.1.3';
 const CONFIG_DEFAULT = {
   tmdbKey:'', omdbKey:'',
   bonusCoralita:0.10, capCoralita:0.30, pesoAttesa:0.50, orizzonteAttesa:60, bonusCoppia:1.15
@@ -901,7 +910,6 @@ function disegnaPlatea(){
     if (!p.slug) return `<div class="poltrona">${poltronaSVG('#000', false)}<div class="nome">&nbsp;</div></div>`;
     const presente = S.presenti.has(p.slug);
     return `<div class="poltrona assegnata${presente?' presente':''}" data-slug="${esc(p.slug)}" title="${presente?'Presente — clic per togliere':'Assente — clic per aggiungere'}">
-      ${presente ? `<div class="bolla">${esc(nomeDi(p.slug))}</div>` : ''}
       ${poltronaSVG(coloreDi(p.slug), presente)}
       <div class="nome">${esc(nomeDi(p.slug))}</div>
     </div>`;
@@ -1311,6 +1319,12 @@ function agganciaGlobali(){
     for (const v of ['sala','catalogo','impostazioni']) $('#vista-'+v).hidden = v !== b.dataset.vista;
   });
   $('#btn-ricarica').onclick = () => ricarica();
+  // aiuti "?": hover di default, ma anche click/tap (utile su touch) con chiusura degli altri
+  document.addEventListener('click', e => {
+    const q = e.target.closest('.aiuto-q');
+    $$('.aiuto-q.aperto').forEach(x => { if (x !== q) x.classList.remove('aperto'); });
+    if (q) q.classList.toggle('aperto');
+  });
   $('#filtro-durata').oninput = e => {
     const v = parseInt(e.target.value, 10);
     S.filtri.durata = v >= 240 ? null : v;

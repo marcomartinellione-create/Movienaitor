@@ -24,6 +24,9 @@ let cartella = null;
 // Sta qui, non in localStorage, perché su app://mvn il localStorage non sopravvive ai riavvii.
 async function leggiCfg(){ try { return JSON.parse(await fs.readFile(CFG(), 'utf8')) || {}; } catch (e) { return {}; } }
 async function scriviCfg(patch){ const c = await leggiCfg(); Object.assign(c, patch); try { await fs.writeFile(CFG(), JSON.stringify(c)); } catch (e) {} }
+// variante sincrona: serve alla chiusura della finestra (gli handler async non fanno in tempo)
+function scriviCfgSync(patch){ let c = {}; try { c = JSON.parse(fss.readFileSync(CFG(), 'utf8')) || {}; } catch (e) {} Object.assign(c, patch); try { fss.writeFileSync(CFG(), JSON.stringify(c)); } catch (e) {} }
+let statoWin = {}; // {width,height,x,y,maximized,fullscreen} — ricordato tra i riavvii
 async function caricaCartella(){
   const j = await leggiCfg();
   if (j.cartella) cartella = j.cartella;
@@ -113,16 +116,32 @@ function registraIPC(){
 }
 
 function createWindow(){
-  const win = new BrowserWindow({
-    width: 1280, height: 840, minWidth: 940, minHeight: 620,
-    backgroundColor: '#191014', title: 'Movienaitor',
+  const s = statoWin || {};
+  const opts = {
+    width: s.width || 1280, height: s.height || 840, minWidth: 940, minHeight: 620,
+    backgroundColor: '#191014', title: 'Movienaitor', show: false,
     icon: path.join(__dirname, 'build', 'icon.ico'),
     webPreferences: {
       contextIsolation: true, nodeIntegration: false, sandbox: true,
       preload: path.join(__dirname, 'preload.js')
     }
-  });
+  };
+  if (typeof s.x === 'number' && typeof s.y === 'number') { opts.x = s.x; opts.y = s.y; }
+  const win = new BrowserWindow(opts);
   win.removeMenu();
+  // ripropone com'era l'ultima volta: schermo intero o finestra (o massimizzata)
+  if (s.fullscreen) win.setFullScreen(true);
+  else if (s.maximized) win.maximize();
+  win.once('ready-to-show', () => win.show());
+  // F11 per entrare/uscire da schermo intero (niente menù nell'app)
+  win.webContents.on('before-input-event', (e, input) => {
+    if (input.type === 'keyDown' && input.key === 'F11') { win.setFullScreen(!win.isFullScreen()); e.preventDefault(); }
+  });
+  // alla chiusura salva lo stato (dimensioni "normali" + flag) per il prossimo avvio
+  win.on('close', () => {
+    const b = win.getNormalBounds();
+    scriviCfgSync({ finestra: { width: b.width, height: b.height, x: b.x, y: b.y, maximized: win.isMaximized(), fullscreen: win.isFullScreen() } });
+  });
   win.loadURL('app://mvn/index.html');
   if (process.env.MVN_DIAG) diagnostica(win);
   return win;
@@ -144,6 +163,7 @@ function diagnostica(win){
         `url: location.href, gate: (document.querySelector('#gate-card')||{}).textContent && document.querySelector('#gate-card').textContent.replace(/\\s+/g,' ').trim().slice(0,70), ` +
         `btnCollega: !!document.querySelector('#btn-collega')})`);
       console.log('DIAG base', base);
+      console.log('DIAG statoWin', JSON.stringify(statoWin));
       if (process.env.MVN_DIAG_SETME){ await wc.executeJavaScript(`window.mvnFS.ricordaProfilo(${JSON.stringify(process.env.MVN_DIAG_SETME)})`); console.log('DIAG setme', process.env.MVN_DIAG_SETME); }
       console.log('DIAG getme', JSON.stringify(await wc.executeJavaScript('window.mvnFS.profiloRicordato()')));
       if (process.env.MVN_DIAG_DIR){
@@ -188,6 +208,7 @@ if (!app.requestSingleInstanceLock()){
   });
   app.whenReady().then(async () => {
     await caricaCartella();
+    statoWin = (await leggiCfg()).finestra || {};
     if (process.env.MVN_DIAG_DIR) cartella = process.env.MVN_DIAG_DIR; // solo per la verifica automatica
     registraIPC();
     // serve renderer/ sotto app://mvn/… con protezione path traversal

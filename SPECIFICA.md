@@ -326,10 +326,12 @@ Vince Dune: desiderio corale e soprattutto elena che "aspetta" da 50 giorni.
 ## 11b. App desktop (Electron) — dettagli
 
 - `electron/main.js` sceglie la cartella condivisa col picker nativo e serve il renderer
-  da `app://mvn`. In `userData/mvn-config.json` persistono **cartella collegata** e
-  **ultimo profilo scelto** ("chi sei"): su `app://mvn` il `localStorage` NON sopravvive
-  ai riavvii, perciò dalla v0.1.1 il profilo sta nel config (bridge `getMe`/`setMe`), non
-  più in `localStorage`. I/O fs con scrittura atomica (temp+rename).
+  da `app://mvn`. In `userData/mvn-config.json` persistono **cartella collegata**,
+  **ultimo profilo scelto** ("chi sei") e **stato finestra** (dimensioni + schermo
+  intero/finestra/massimizzata, dalla v0.1.3; F11 per il fullscreen): su `app://mvn` il
+  `localStorage` NON sopravvive ai riavvii, perciò questi stati stanno nel config (bridge
+  `getMe`/`setMe`, salvataggio finestra sincrono alla chiusura), non in `localStorage`.
+  I/O fs con scrittura atomica (temp+rename).
 - `electron/preload.js` espone `window.mvnFS` (readJSON/writeJSON/writeBlob/list/fileURL/
   scaricaImmagine) e `window.mvnUpdate`. Le locandine in Electron si scaricano lato main
   (niente CORS) → cache offline affidabile.
