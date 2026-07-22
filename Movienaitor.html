@@ -172,6 +172,24 @@ header .spazio{flex:1}
 .aiuto-q:hover .tip,.aiuto-q.aperto .tip{opacity:1; transform:none}
 .aiuto-q .tip::before{content:''; position:absolute; bottom:100%; left:6px; border:6px solid transparent; border-bottom-color:var(--oro-dim)}
 
+/* selettore colore poltrona: griglia stile CAD + picker personalizzato */
+.cp-tabs{display:flex; gap:8px; margin-bottom:14px}
+.cp-tab{padding:7px 15px; border-radius:8px; color:var(--dim); border:1px solid transparent; cursor:pointer; font-size:14px; background:none}
+.cp-tab.on{color:var(--oro2); border-color:var(--oro-dim); background:var(--velluto2)}
+.cp-griglia{display:grid; grid-template-columns:repeat(24,1fr); gap:2px}
+.cp-cella{aspect-ratio:1; border-radius:2px; cursor:pointer; border:1px solid rgba(0,0,0,.3); padding:0}
+.cp-cella:hover{outline:2px solid var(--crema); outline-offset:-1px; position:relative; z-index:1}
+.cp-cella.sel{outline:2px solid var(--oro2); outline-offset:-1px; position:relative; z-index:1}
+.cp-sv{position:relative; width:100%; height:170px; border-radius:8px; cursor:crosshair; border:1px solid var(--velluto3); touch-action:none;
+  background-image:linear-gradient(to top,#000,rgba(0,0,0,0)),linear-gradient(to right,#fff,rgba(255,255,255,0))}
+.cp-dot{position:absolute; width:15px; height:15px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 3px rgba(0,0,0,.8); transform:translate(-50%,-50%); pointer-events:none}
+.cp-hue{-webkit-appearance:none; appearance:none; width:100%; height:14px; border-radius:7px; margin:16px 0; cursor:pointer;
+  background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
+.cp-hue::-webkit-slider-thumb{-webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%; background:#fff; border:2px solid #444; cursor:pointer}
+.cp-riga{display:flex; gap:14px; align-items:center}
+.cp-prev{width:48px; height:48px; border-radius:8px; border:2px solid var(--velluto3); flex:none}
+.chip-colore{display:inline-block; width:28px; height:28px; border-radius:50%; border:2px solid var(--velluto3); vertical-align:middle; cursor:pointer; flex:none}
+
 /* ---------- impostazioni ---------- */
 .imp-griglia{display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:18px; align-items:start}
 .campo{margin-bottom:14px}
@@ -312,7 +330,12 @@ header .spazio{flex:1}
       </div>
       <div class="pannello">
         <h3>IL MIO PROFILO<span class="aiuto-q" tabindex="0">?<span class="tip">Il colore della tua poltrona in Sala, la cartella condivisa a cui l'app è collegata, e i comandi per cambiare cartella o cambiare utente (torni alla scelta del nome).</span></span></h3>
-        <div class="campo"><label>Colore poltrona</label><div class="swatches" id="imp-swatches" style="justify-content:flex-start"></div></div>
+        <div class="campo"><label>Colore poltrona</label>
+          <div style="display:flex; align-items:center; gap:10px">
+            <span class="chip-colore" id="imp-chip"></span>
+            <button class="bottone piccolo secondario" id="imp-scegli-colore">Cambia colore</button>
+          </div>
+        </div>
         <div class="campo"><label>Cartella collegata</label><div class="aiuto" id="imp-cartella">—</div></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px">
           <button class="bottone piccolo secondario" id="imp-cambia-cartella">Cambia cartella</button>
@@ -361,6 +384,22 @@ function tinta(hex, f){ // f>0 schiarisce verso il bianco, f<0 scurisce verso il
   const mix = c => Math.round(f >= 0 ? c + (255 - c)*f : c*(1 + f));
   return '#' + [16, 8, 0].map(i => mix((n >> i) & 255).toString(16).padStart(2, '0')).join('');
 }
+
+// conversioni colore per il selettore (griglia CAD + picker personalizzato)
+function hexRGB(hex){ const n = parseInt(String(hex).replace('#',''), 16); return [(n>>16)&255, (n>>8)&255, n&255]; }
+function rgbHex(r,g,b){ return '#' + [r,g,b].map(v => Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join(''); }
+function hslRGB(h,s,l){ const c=(1-Math.abs(2*l-1))*s, x=c*(1-Math.abs((h/60)%2-1)), m=l-c/2;
+  let r=0,g=0,b=0; if(h<60){r=c;g=x;} else if(h<120){r=x;g=c;} else if(h<180){g=c;b=x;}
+  else if(h<240){g=x;b=c;} else if(h<300){r=x;b=c;} else {r=c;b=x;}
+  return [(r+m)*255,(g+m)*255,(b+m)*255]; }
+function hslHex(h,s,l){ const [r,g,b]=hslRGB(h,s,l); return rgbHex(r,g,b); }
+function hsvRGB(h,s,v){ const c=v*s, x=c*(1-Math.abs((h/60)%2-1)), m=v-c;
+  let r=0,g=0,b=0; if(h<60){r=c;g=x;} else if(h<120){r=x;g=c;} else if(h<180){g=c;b=x;}
+  else if(h<240){g=x;b=c;} else if(h<300){r=x;b=c;} else {r=c;b=x;}
+  return [(r+m)*255,(g+m)*255,(b+m)*255]; }
+function rgbHSV(r,g,b){ r/=255;g/=255;b/=255; const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;
+  let h=0; if(d){ if(mx===r)h=((g-b)/d)%6; else if(mx===g)h=(b-r)/d+2; else h=(r-g)/d+4; h*=60; if(h<0)h+=360; }
+  return [h, mx?d/mx:0, mx]; }
 
 function toast(msg, errore=false){
   const t = document.createElement('div');
@@ -784,16 +823,15 @@ function gateNome(){
     <h2 class="serif" style="color:var(--oro); font-weight:400; margin-bottom:6px">Chi sei?</h2>
     ${noti ? `<div class="profili-noti">${noti}</div><p>oppure prendi una poltrona nuova:</p>` : '<p>Prendi la tua poltrona: il nome resterà salvato.</p>'}
     <input type="text" id="nuovo-nome" placeholder="Il tuo nome" maxlength="20">
-    <div class="swatches" id="gate-swatches"></div>
+    <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin:14px 0 18px">
+      <span class="chip-colore" id="gate-chip"></span>
+      <button class="testo-link" id="gate-scegli">scegli il colore della poltrona</button>
+    </div>
     <button class="bottone" id="btn-nuovo">🎟 Entra in sala</button>`;
   let colore = PALETTE_UTENTI[S.profili.length % PALETTE_UTENTI.length];
-  const sw = $('#gate-swatches');
-  sw.innerHTML = PALETTE_UTENTI.map(c => `<div class="swatch${c===colore?' attivo':''}" data-c="${c}" style="background:${c}"></div>`).join('');
-  sw.onclick = e => {
-    const el = e.target.closest('.swatch'); if (!el) return;
-    colore = el.dataset.c;
-    $$('#gate-swatches .swatch').forEach(x => x.classList.toggle('attivo', x === el));
-  };
+  const aggiornaChip = () => { $('#gate-chip').style.background = colore; };
+  aggiornaChip();
+  $('#gate-chip').onclick = $('#gate-scegli').onclick = () => apriColorPicker(colore, c => { colore = c; aggiornaChip(); });
   $$('.btn-sono').forEach(b => b.onclick = async () => {
     S.me = b.dataset.slug;
     await ricordaMe(S.me);
@@ -1151,6 +1189,71 @@ function agganciaRicerca(){
 /* ════════════════════════ MODALI ════════════════════════ */
 function apriModale(html){ $('#modale').innerHTML = html; $('#modale-fondo').hidden = false; }
 function chiudiModale(){ $('#modale-fondo').hidden = true; }
+
+/* ── Selettore colore: tavolozza stile CAD + "crea il tuo" (grafico HSV/RGB) ── */
+function cellaColore(hex){ return `<button type="button" class="cp-cella" data-c="${hex}" style="background:${hex}" title="${hex}"></button>`; }
+function grigliaCAD(){
+  const N = 24; let html = '';
+  const righe = [{s:.9,l:.88},{s:.9,l:.76},{s:.95,l:.64},{s:1,l:.5},{s:.95,l:.42},{s:.92,l:.32},{s:.9,l:.22}];
+  for (const {s,l} of righe) for (let i=0;i<N;i++){ const h=Math.round(i*360/N); html+=cellaColore(hslHex(h,s,l)); }
+  for (let i=0;i<N;i++){ const h=Math.round(i*360/N); html+=cellaColore(hslHex(h,.4,.78)); }   // pastelli
+  for (let i=0;i<N;i++){ const v=Math.round(255*(1-i/(N-1))); html+=cellaColore(rgbHex(v,v,v)); } // grigi bianco→nero
+  return html;
+}
+function apriColorPicker(iniziale, onScegli){
+  let [h,s,v] = rgbHSV(...hexRGB(iniziale || '#c9a45c'));
+  let sel = iniziale || '#c9a45c';
+  apriModale(`
+    <h3>Colore poltrona</h3>
+    <div class="cp-tabs">
+      <button type="button" class="cp-tab on" data-t="tav">Tavolozza</button>
+      <button type="button" class="cp-tab" data-t="perso">Crea il tuo</button>
+    </div>
+    <div id="cp-tav"><div class="cp-griglia">${grigliaCAD()}</div></div>
+    <div id="cp-perso" hidden>
+      <div class="cp-sv" id="cp-sv"><div class="cp-dot" id="cp-dot"></div></div>
+      <input type="range" class="cp-hue" id="cp-hue" min="0" max="360" value="0">
+      <div class="cp-riga">
+        <span class="cp-prev" id="cp-prev"></span>
+        <div><label style="color:var(--dim);font-size:12px">Codice (hex)</label>
+          <input type="text" id="cp-hex" maxlength="7" spellcheck="false"
+            style="display:block;background:var(--bg2);border:1px solid var(--velluto3);color:var(--crema);padding:7px 10px;border-radius:8px;width:130px;margin-top:3px"></div>
+      </div>
+    </div>
+    <div class="m-azioni">
+      <button class="bottone piccolo secondario" id="cp-annulla">Annulla</button>
+      <button class="bottone piccolo" id="cp-ok">✓ Scegli</button>
+    </div>`);
+  const griglia = $('#cp-tav .cp-griglia');
+  function applica(){
+    const [r,g,b] = hsvRGB(h,s,v); sel = rgbHex(r,g,b);
+    $('#cp-prev').style.background = sel;
+    $('#cp-sv').style.backgroundColor = hslHex(h,1,.5);
+    $('#cp-dot').style.left = (s*100)+'%';
+    $('#cp-dot').style.top = ((1-v)*100)+'%';
+    $('#cp-hue').value = Math.round(h);
+    const hx = $('#cp-hex'); if (document.activeElement !== hx) hx.value = sel;
+    $$('#cp-tav .cp-cella').forEach(c => c.classList.toggle('sel', c.dataset.c.toLowerCase() === sel.toLowerCase()));
+  }
+  $$('.cp-tab').forEach(t => t.onclick = () => {
+    $$('.cp-tab').forEach(x => x.classList.toggle('on', x === t));
+    $('#cp-tav').hidden = t.dataset.t !== 'tav';
+    $('#cp-perso').hidden = t.dataset.t !== 'perso';
+  });
+  griglia.onclick = e => { const c = e.target.closest('.cp-cella'); if (!c) return; [h,s,v] = rgbHSV(...hexRGB(c.dataset.c)); applica(); };
+  griglia.ondblclick = e => { const c = e.target.closest('.cp-cella'); if (!c) return; chiudiModale(); onScegli(c.dataset.c); };
+  $('#cp-hue').oninput = e => { h = +e.target.value; applica(); };
+  $('#cp-hex').onchange = e => { const t = e.target.value.trim().replace(/^#?/, '#'); if (/^#[0-9a-fA-F]{6}$/.test(t)){ [h,s,v] = rgbHSV(...hexRGB(t)); applica(); } };
+  const sv = $('#cp-sv');
+  function svAt(e){ const r = sv.getBoundingClientRect(); const x = (e.touches?e.touches[0].clientX:e.clientX), y = (e.touches?e.touches[0].clientY:e.clientY);
+    s = Math.max(0,Math.min(1,(x-r.left)/r.width)); v = Math.max(0,Math.min(1,1-(y-r.top)/r.height)); applica(); }
+  sv.addEventListener('pointerdown', e => { e.preventDefault(); svAt(e);
+    const mv = ev => svAt(ev), up = () => { document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); };
+    document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); });
+  $('#cp-annulla').onclick = chiudiModale;
+  $('#cp-ok').onclick = () => { chiudiModale(); onScegli(sel); };
+  applica();
+}
 $('#modale-fondo') && ($('#modale-fondo').onclick = e => { if (e.target.id === 'modale-fondo') chiudiModale(); });
 
 async function modaleAggiungi(id){
@@ -1260,14 +1363,16 @@ function disegnaImpostazioni(){
     <div class="campo" style="margin:0"><label>${ETICHETTE_COSTANTI[k]}</label>
     <input type="number" step="0.05" id="imp-c-${k}" value="${S.config[k]}"></div>`).join('');
   const mio = mioProfilo();
-  $('#imp-swatches').innerHTML = PALETTE_UTENTI.map(c =>
-    `<div class="swatch${mio && mio.colore === c ? ' attivo' : ''}" data-c="${c}" style="background:${c}"></div>`).join('');
-  $('#imp-swatches').onclick = async e => {
-    const el = e.target.closest('.swatch'); if (!el || !mio) return;
-    mio.colore = el.dataset.c;
-    await salvaMioProfilo();
-    disegnaImpostazioni(); disegnaSala();
-    $('#io-colore').style.background = mio.colore;
+  if (mio) $('#imp-chip').style.background = mio.colore;
+  $('#imp-scegli-colore').onclick = () => {
+    const p = mioProfilo(); if (!p) return;
+    apriColorPicker(p.colore, async c => {
+      p.colore = c;
+      await salvaMioProfilo();
+      $('#imp-chip').style.background = c;
+      $('#io-colore').style.background = c;
+      disegnaSala();
+    });
   };
 }
 function agganciaImpostazioni(){

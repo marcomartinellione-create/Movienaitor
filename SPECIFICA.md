@@ -141,6 +141,9 @@ Nessun profilo è cablato nell'app: gli utenti sono **esattamente** i file prese
 cartella — formato in [`esempio-profilo.json`](esempio-profilo.json).
 I profili reali del gruppo **non stanno nel repo pubblico** (scelta 2026-07-22): restano
 solo nella cartella Drive condivisa. Il repo contiene un solo profilo d'esempio.
+Il **colore della poltrona** si sceglie con un selettore dedicato (`apriColorPicker`):
+tavolozza in stile CAD (griglia tinta × luminosità + grigi) e scheda "Crea il tuo" con
+quadrato saturazione/valore, barra tinta e codice hex.
 
 ## 5. Catalogo (lista personale)
 
