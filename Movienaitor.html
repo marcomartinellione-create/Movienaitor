@@ -79,8 +79,8 @@ header .spazio{flex:1}
 .filtro-azzera{color:var(--dim2); font-size:12px; text-decoration:underline}
 
 /* schermo */
-.schermo-wrap{position:relative; padding:10px 30px 0}
-.schermo{position:relative; aspect-ratio:21/8.4; border:3px double var(--oro-dim); border-radius:10px;
+.schermo-wrap{position:relative; padding:0 24px; display:flex; flex-direction:column}
+.schermo{position:relative; flex:1; min-height:240px; border:3px double var(--oro-dim); border-radius:10px;
   background:#120a0d; overflow:hidden; box-shadow:0 0 60px rgba(201,164,92,.10), var(--ombra)}
 .schermo .sfondo{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.85}
 .schermo .velo{position:absolute; inset:0; background:linear-gradient(180deg,rgba(18,10,13,.15) 30%,rgba(18,10,13,.88) 82%)}
@@ -248,7 +248,8 @@ header .spazio{flex:1}
 @media (max-width:1080px){
   .palco{grid-template-columns:1fr; }
   .rosa{grid-template-columns:repeat(4,1fr)}
-  .schermo-wrap{padding:0}
+  .schermo-wrap{padding:0; display:block}
+  .schermo{aspect-ratio:21/9; flex:none; min-height:0}
 }
 @media (max-width:700px){
   .rosa{grid-template-columns:1fr 1fr}
@@ -400,7 +401,7 @@ header .spazio{flex:1}
 <script>
 'use strict';
 /* ════════════════════════ COSTANTI ════════════════════════ */
-const APP_VERSION = '0.1.5';
+const APP_VERSION = '0.1.6';
 const CONFIG_DEFAULT = {
   tmdbKey:'', omdbKey:'',
   bonusCoralita:0.10, capCoralita:0.30, incrementoAttesa:0.10, bonusCoppia:1.15
