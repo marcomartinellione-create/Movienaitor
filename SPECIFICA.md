@@ -331,13 +331,9 @@ l'**Archivio** dell'host mostra invece tutti gli episodi (serve la scorta comple
   - fondo sala `#1c1114`, velluto `#3a1f24`, rosso sipario `#8a3d3d`,
     oro `#c9a45c`, oro chiaro `#e0c07d`, testo crema `#f2e7d5`.
 - Poltrona vuota = sagoma scura; occupata = si "accende" col colore e il nome dell'utente.
-- Proiettore/schermo con cornice dorata, altezza definita (`--proi-h`, `adattaSala()`).
-  A destra i film 2°–5° in **griglia 2×2** di locandine (2:3) alta il **90% del proiettore**;
-  a sinistra il pannello "STASERA" **a specchio** (stessa impronta: larghezza + altezza),
-  entrambe le colonne centrate verticalmente. Larghezze ricavate dalle locandine.
-- **Sipario** (2026-07-22): due tende di velluto coprono lo schermo quando non c'è un film
-  in proiezione (sala vuota o niente in cartellone) e scorrono aperte quando compare un
-  film (classe `.schermo.aperto`).
+- Proiettore/schermo cinemascope (aspect-ratio 21/8.4) con cornice dorata e tende di
+  velluto ai lati; locandina/backdrop del 1° a tutto schermo, 2°–5° in una "mensola" 2×2
+  di locandine più piccole a destra. Colonne palco 225 / 1fr / 235.
 - Play = grande bottone dorato; alla pressione dissolvenza "luci in sala".
 - Pensata per stare bene anche **proiettata sulla TV** durante la scelta (testi grandi,
   contrasto AA, niente colori squillanti).
