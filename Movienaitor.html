@@ -40,8 +40,8 @@ h1,h2,h3,.serif{font-family:var(--serif)}
 .bottone.piccolo{padding:7px 14px; font-size:14px}
 #gate .demo-link{color:var(--dim); text-decoration:underline; font-size:14px}
 #gate .profili-noti{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:14px 0}
-.gate-host{display:flex; align-items:center; gap:8px; justify-content:center; color:var(--dim); font-size:13px; margin:0 auto 16px; max-width:400px; cursor:pointer}
-.gate-host input{accent-color:var(--oro); width:16px; height:16px}
+.gate-host{display:flex; align-items:center; gap:8px; justify-content:center; color:var(--dim); font-size:13px; line-height:1.3; margin:0 auto 16px; max-width:400px; cursor:pointer; text-align:left}
+.gate-host input{accent-color:var(--oro); width:16px; height:16px; flex:none; margin:0}
 #gate input[type=text]{background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema);
   padding:10px 14px; border-radius:10px; width:230px; text-align:center}
 #gate .swatches{display:flex; gap:8px; justify-content:center; margin:12px 0 18px}
@@ -64,7 +64,7 @@ header .spazio{flex:1}
 .icona:hover{background:var(--velluto2); color:var(--oro2)}
 
 /* ---------- sala ---------- */
-.palco{display:grid; grid-template-columns:225px 1fr 235px; gap:18px; align-items:stretch}
+.palco{display:grid; grid-template-columns:235px 1fr 235px; gap:18px; align-items:stretch}
 .pannello{background:linear-gradient(180deg,var(--velluto),var(--velluto2)); border:1px solid #4a2c33;
   border-radius:14px; padding:16px; box-shadow:var(--ombra)}
 .pannello h3{color:var(--oro); font-size:15px; letter-spacing:.1em; margin-bottom:12px; font-weight:400}
@@ -92,12 +92,18 @@ header .spazio{flex:1}
 .schermo .info h2{font-size:clamp(20px,3vw,34px); color:var(--crema); text-shadow:0 2px 12px rgba(0,0,0,.8); font-weight:400}
 .schermo .meta{color:var(--dim); font-size:13.5px; margin-top:4px; text-shadow:0 1px 6px rgba(0,0,0,.9)}
 .schermo .meta b{color:var(--oro2); font-weight:600}
+.schermo-inner{position:absolute; inset:0}
 .schermo .messaggio{position:absolute; inset:0; display:flex; flex-direction:column; gap:8px; align-items:center; justify-content:center;
-  color:var(--dim); font-family:var(--serif); font-size:20px; text-align:center; padding:20px; z-index:2}
-.tenda{position:absolute; top:-6px; bottom:-6px; width:34px; z-index:4; pointer-events:none;
-  background:repeating-linear-gradient(90deg,#6b3030 0 7px,#54262a 7px 14px); box-shadow:inset -8px 0 14px rgba(0,0,0,.5)}
-.tenda.sx{left:-4px; border-radius:0 8px 8px 0}
-.tenda.dx{right:-4px; transform:scaleX(-1); border-radius:0 8px 8px 0}
+  color:var(--dim); font-family:var(--serif); font-size:20px; text-align:center; padding:20px; z-index:6}
+/* sipario: due tende di velluto. Di base CHIUSE (coprono lo schermo); si aprono
+   scorrendo ai lati quando c'è un film in proiezione (.schermo.aperto). */
+.tenda{position:absolute; top:-6px; bottom:-6px; width:54%; z-index:4; pointer-events:none;
+  background:repeating-linear-gradient(90deg,#7a3838 0 12px,#5a282c 12px 24px);
+  transition:transform .9s cubic-bezier(.55,.06,.3,1)}
+.tenda.sx{left:-4px; box-shadow:inset -22px 0 34px rgba(0,0,0,.55)}
+.tenda.dx{right:-4px; box-shadow:inset 22px 0 34px rgba(0,0,0,.55)}
+.schermo.aperto .tenda.sx{transform:translateX(calc(-100% + 30px))}
+.schermo.aperto .tenda.dx{transform:translateX(calc(100% - 30px))}
 #btn-play{position:absolute; right:26px; bottom:20px; z-index:5; width:74px; height:74px; border-radius:50%;
   background:radial-gradient(circle at 35% 30%,var(--oro2),var(--oro) 65%,var(--oro-dim));
   color:#241610; font-size:30px; box-shadow:0 6px 22px rgba(201,164,92,.4); transition:transform .15s}
@@ -105,10 +111,10 @@ header .spazio{flex:1}
 #btn-play:disabled{filter:grayscale(.7) brightness(.6); cursor:default; transform:none}
 .schermo-clic{position:absolute; inset:0; z-index:2; cursor:pointer}
 
-/* rosa 2-5 */
-.rosa{display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:1fr; gap:12px}
+/* rosa 2-5: locandine con proporzioni corrette (2:3) */
+.rosa{display:grid; grid-template-columns:1fr 1fr; gap:12px; align-content:start}
 .rosa .posto{position:relative; border:1px solid #4a2c33; border-radius:10px; overflow:hidden; background:var(--bg2);
-  cursor:pointer; min-height:118px; transition:transform .12s}
+  cursor:pointer; aspect-ratio:2/3; transition:transform .12s}
 .rosa .posto:hover{transform:translateY(-2px); border-color:var(--oro-dim)}
 .rosa .posto img,.rosa .posto .segnaposto{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
 .rosa .posto .r-velo{position:absolute; inset:0; background:linear-gradient(180deg,transparent 40%,rgba(18,10,13,.9))}
@@ -164,6 +170,27 @@ header .spazio{flex:1}
 .testo-link:hover{color:var(--rosso2)}
 .sezione-titolo{font-family:var(--serif); color:var(--oro); letter-spacing:.1em; font-size:18px; margin:30px 0 14px; font-weight:400}
 .vuoto-msg{color:var(--dim2); padding:26px; text-align:center; border:1px dashed var(--velluto3); border-radius:14px}
+/* barre percentuali dei generi (Catalogo) */
+.generi-perc{display:flex; flex-direction:column; gap:7px; max-width:580px}
+.gp-riga{display:flex; align-items:center; gap:12px}
+.gp-nome{width:130px; flex:none; color:var(--dim); font-size:13px; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.gp-barra{flex:1; height:12px; background:var(--velluto2); border-radius:6px; overflow:hidden}
+.gp-fill{display:block; height:100%; background:linear-gradient(90deg,var(--oro-dim),var(--oro2)); border-radius:6px; transition:width .4s}
+.gp-val{width:40px; flex:none; color:var(--oro2); font-size:12.5px}
+/* archivio: lista compatta a icone piccole con flag "pronto" */
+.arch-filtro{display:flex; gap:8px; margin-bottom:14px}
+.arch-filtro button{padding:6px 14px; border-radius:8px; border:1px solid var(--velluto3); color:var(--dim); background:none; cursor:pointer; font-size:13px}
+.arch-filtro button.on{border-color:var(--oro-dim); color:var(--oro2); background:var(--velluto2)}
+.arch-lista{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:8px}
+.arch-riga{display:flex; align-items:center; gap:11px; padding:7px 10px; border:1px solid #3a2229; border-radius:10px; background:var(--velluto2)}
+.arch-riga.pronto{border-color:var(--verde)}
+.arch-thumb{width:34px; height:50px; flex:none; border-radius:5px; object-fit:cover; background:var(--bg2); cursor:pointer}
+.arch-info{flex:1; min-width:0}
+.arch-info h5{font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.arch-info .arch-meta{color:var(--dim2); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.arch-flag{flex:none; display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none; font-size:12px; color:var(--dim2);
+  border:1px solid var(--velluto3); border-radius:20px; padding:4px 10px}
+.arch-riga.pronto .arch-flag{color:var(--verde); border-color:var(--verde); background:rgba(125,155,118,.1)}
 
 /* aiuti contestuali: ? cerchiato con tooltip (solo nei menù, non in Sala) */
 .aiuto-q{display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; flex:none;
@@ -289,7 +316,10 @@ header .spazio{flex:1}
       </div>
 
       <div class="schermo-wrap">
-        <div class="schermo" id="schermo"></div>
+        <div class="schermo" id="schermo">
+          <div class="schermo-inner" id="schermo-inner"></div>
+          <div class="tenda sx"></div><div class="tenda dx"></div>
+        </div>
       </div>
 
       <div class="rosa" id="rosa"></div>
@@ -306,6 +336,7 @@ header .spazio{flex:1}
       <span class="aiuto-q" tabindex="0">?<span class="tip">Scrivi il titolo di un film: dai risultati che compaiono scegli quello da aggiungere alla tua lista. Serve la chiave TMDB (in ⚙ Impostazioni) e una connessione a internet.</span></span>
       <div id="risultati" hidden></div>
     </div>
+    <div id="generi-catalogo"></div>
     <div class="sezione-titolo">LA MIA LISTA — DA VEDERE<span class="aiuto-q" tabindex="0">?<span class="tip">I film che vuoi vedere. Le stelle (1–5) dicono quanto ti va di vederlo; i nomi ✓/✗ scelgono con chi vederlo o con chi no. Sono i dati che la Sala usa per comporre la Top 5 della serata.</span></span></div>
     <div class="griglia" id="lista-da-vedere"></div>
     <div class="sezione-titolo">GIÀ VISTI IN SALA<span class="aiuto-q" tabindex="0">?<span class="tip">I film già guardati nelle serate confermate col Play. Restano qui come storico; puoi rimetterne uno in lista se lo vuoi rivedere.</span></span></div>
@@ -314,11 +345,12 @@ header .spazio{flex:1}
 
   <!-- ───── ARCHIVIO (solo host) ───── -->
   <main id="vista-archivio" hidden>
-    <div class="sezione-titolo" style="margin-top:6px">ARCHIVIO FILM<span class="aiuto-q" tabindex="0">?<span class="tip">Tutti i film che qualcuno vuole ancora vedere, senza preferenze né liste: solo i titoli. Serve all'host per procurarsi in anticipo i film che potrebbero uscire estratti in Sala.</span></span></div>
-    <div class="catalogo-testa" style="margin:0 0 16px">
-      <input type="text" id="cerca-archivio" placeholder="Filtra l'archivio per titolo o regista…" autocomplete="off">
+    <div class="sezione-titolo" style="margin-top:6px">ARCHIVIO FILM<span class="aiuto-q" tabindex="0">?<span class="tip">Tutti i film che qualcuno vuole ancora vedere, senza preferenze né liste. Segna con la bandierina quelli che hai già procurato (pronti alla visione); il filtro ti fa vedere solo quelli che ti restano da preparare.</span></span></div>
+    <div class="arch-filtro" id="arch-filtro">
+      <button data-f="tutti" class="on">Tutti</button>
+      <button data-f="daPreparare">Da preparare</button>
     </div>
-    <div class="griglia" id="lista-archivio"></div>
+    <div class="arch-lista" id="lista-archivio"></div>
   </main>
 
   <!-- ───── IMPOSTAZIONI ───── -->
@@ -360,7 +392,7 @@ header .spazio{flex:1}
             <button class="bottone piccolo secondario" id="imp-salva-pw">Salva</button>
           </div>
         </div>
-        <div class="campo"><label class="gate-host" style="justify-content:flex-start; margin:0; max-width:none; color:var(--dim)"><input type="checkbox" id="imp-host"> Modalità host (mostra la tab Archivio qui)</label></div>
+        <div class="campo"><label class="gate-host" style="justify-content:flex-start; margin:0; max-width:none; color:var(--dim)"><input type="checkbox" id="imp-host"> <span>Modalità host</span></label></div>
         <div class="campo"><label>Cartella collegata</label><div class="aiuto" id="imp-cartella">—</div></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px">
           <button class="bottone piccolo secondario" id="imp-cambia-cartella">Cambia cartella</button>
@@ -577,6 +609,8 @@ const S = {
   filtri:{durata:null, genere:[], regista:''},
   proiettato:null,       // tmdbId scelto manualmente
   rosa:[],               // ultima classifica calcolata
+  archivioPronti:new Set(), // tmdbId segnati "pronto alla visione" dall'host
+  archivioFiltro:'tutti',   // 'tutti' | 'daPreparare'
   ultimaLettura:null,
   urlCache:new Map()     // percorso → objectURL
 };
@@ -805,6 +839,8 @@ async function caricaTutto(){
   const st = await FS.readJSON(['storico.json']);
   S.storico = (st && Array.isArray(st.visioni)) ? st.visioni : [];
   S.storico.sort((a,b) => a.data.localeCompare(b.data));
+  const arch = await FS.readJSON(['archivio.json']);
+  S.archivioPronti = new Set((arch && Array.isArray(arch.pronti)) ? arch.pronti : []);
   S.presenti = new Set([...S.presenti].filter(s => profiloDi(s)));
   if (S.me && profiloDi(S.me)) S.presenti.add(S.me);
   S.ultimaLettura = new Date();
@@ -815,6 +851,8 @@ async function salvaMioProfilo(){
   const p = mioProfilo();
   if (p) await FS.writeJSON(['profili', p.slug+'.json'], p);
 }
+// stato "pronto alla visione" dell'archivio (scritto dall'host, file condiviso)
+async function salvaArchivio(){ await FS.writeJSON(['archivio.json'], {pronti:[...S.archivioPronti]}); }
 
 async function registraVisione(voce){
   const attuale = await FS.readJSON(['storico.json']) || {visioni:[]};
@@ -880,7 +918,7 @@ function gestisciUpdate(d){
     $('#u-ora').onclick = () => window.mvnUpdate.azione('riavvia');
   }
 }
-function gateNome(){
+function gateNome(conIndietro){
   const noti = S.profili.map(p => `<button class="bottone piccolo secondario btn-sono" data-slug="${esc(p.slug)}">${p.password ? '🔒 ' : ''}Sono ${esc(p.nome)}</button>`).join('');
   $('#gate-card').innerHTML = `
     <h2 class="serif" style="color:var(--oro); font-weight:400; margin-bottom:6px">Chi sei?</h2>
@@ -890,12 +928,15 @@ function gateNome(){
       <span class="chip-colore" id="gate-chip"></span>
       <button class="testo-link" id="gate-scegli">scegli il colore della poltrona</button>
     </div>
-    <label class="gate-host"><input type="checkbox" id="gate-host"> Sono l'host (questo è il PC del cinema: mostra la tab Archivio)</label>
-    <button class="bottone" id="btn-nuovo">🎟 Entra in sala</button>`;
+    <label class="gate-host"><input type="checkbox" id="gate-host"> <span>Sono l'host (questo è il PC del cinema: mostra la tab Archivio)</span></label>
+    <button class="bottone" id="btn-nuovo">🎟 Entra in sala</button>
+    ${conIndietro ? '<div style="margin-top:14px"><button class="testo-link" id="gate-indietro">← Indietro (resto come sono)</button></div>' : ''}`;
   let colore = PALETTE_UTENTI[S.profili.length % PALETTE_UTENTI.length];
   const aggiornaChip = () => { $('#gate-chip').style.background = colore; };
   aggiornaChip();
   $('#gate-host').checked = S.host;
+  $('#btn-demo').hidden = !!conIndietro; // niente demo se sto solo cambiando utente
+  if (conIndietro) $('#gate-indietro').onclick = () => { $('#gate').hidden = true; $('#app').hidden = false; };
   $('#gate-chip').onclick = $('#gate-scegli').onclick = () => apriColorPicker(colore, c => { colore = c; aggiornaChip(); });
   const entraCome = async (slug) => {
     S.me = slug; S.host = $('#gate-host').checked;
@@ -952,29 +993,35 @@ function disegnaTutto(){
 // preferenze né liste — la scorta che l'host può procurarsi in anticipo.
 function disegnaArchivio(){
   if (!S.host) return;
-  const filtro = ($('#cerca-archivio').value || '').trim().toLowerCase();
+  $$('#arch-filtro button').forEach(b => b.classList.toggle('on', b.dataset.f === S.archivioFiltro));
   const mappa = new Map();
   for (const p of S.profili) for (const v of (p.lista || []))
     if (v.tmdbId && entryAttiva(v, p.slug) && !mappa.has(v.tmdbId)) mappa.set(v.tmdbId, v);
   let film = [...mappa.values()];
-  if (filtro) film = film.filter(v => (v.titolo || '').toLowerCase().includes(filtro) || (v.regista || '').toLowerCase().includes(filtro));
+  if (S.archivioFiltro === 'daPreparare') film = film.filter(v => !S.archivioPronti.has(v.tmdbId));
   film.sort((a, b) => String(a.titolo).localeCompare(String(b.titolo)));
-  $('#lista-archivio').innerHTML = film.map(v => `
-    <div class="scheda-film" data-arch="${v.tmdbId}">
-      <div class="copertina" title="${esc(v.titolo)}">
-        <img hidden><div class="segnaposto" style="background:url('${segnapostoSVG(v.titolo, v.tmdbId)}') center/cover"></div>
-        ${v.voto ? `<div class="voto-badge">★ ${fmtNum(v.voto,1)} ${v.votoFonte === 'imdb' ? 'IMDb' : 'TMDB'}</div>` : ''}
+  $('#lista-archivio').innerHTML = film.map(v => {
+    const pronto = S.archivioPronti.has(v.tmdbId);
+    return `<div class="arch-riga${pronto ? ' pronto' : ''}" data-arch="${v.tmdbId}">
+      <img class="arch-thumb" src="${segnapostoSVG(v.titolo, v.tmdbId)}" alt="">
+      <div class="arch-info">
+        <h5>${esc(v.titolo)}</h5>
+        <div class="arch-meta">${esc(v.anno || '')} · ${fmtMin(v.durata)}${v.collezioneNome ? ' · 🎞 '+esc(v.collezioneNome) : ''}</div>
       </div>
-      <div class="corpo">
-        <h4>${esc(v.titolo)}</h4>
-        <div class="sotto">${esc(v.anno || '')} · ${fmtMin(v.durata)}${v.regista ? ' · '+esc(v.regista) : ''}</div>
-        ${v.collezioneNome ? `<div class="sotto" style="color:var(--oro-dim)">🎞 ${esc(v.collezioneNome)}</div>` : ''}
-      </div>
-    </div>`).join('') || `<div class="vuoto-msg" style="grid-column:1/-1">Nessun film da vedere nell'archivio${filtro ? ' per «'+esc(filtro)+'»' : ''}.</div>`;
-  $$('#lista-archivio .scheda-film').forEach(el => {
-    const v = mappa.get(parseInt(el.dataset.arch, 10));
-    urlImmagine(v, 'locandina').then(u => { const img = el.querySelector('img'); if (u && img){ img.src = u; img.hidden = false; el.querySelector('.segnaposto').remove(); } });
-    el.querySelector('.copertina').onclick = () => modaleScheda({ film: v, prop: null });
+      <span class="arch-flag">${pronto ? '✓ pronto' : '⚑ segna'}</span>
+    </div>`;
+  }).join('') || `<div class="vuoto-msg" style="grid-column:1/-1">${S.archivioFiltro === 'daPreparare' ? 'Sono tutti pronti 🎉' : 'Nessun film da vedere nell\'archivio.'}</div>`;
+  $$('#lista-archivio .arch-riga').forEach(el => {
+    const id = parseInt(el.dataset.arch, 10);
+    const v = mappa.get(id);
+    const img = el.querySelector('.arch-thumb');
+    urlImmagine(v, 'locandina').then(u => { if (u) img.src = u; });
+    img.onclick = () => modaleScheda({ film: v, prop: null });
+    el.querySelector('.arch-flag').onclick = async () => {
+      if (S.archivioPronti.has(id)) S.archivioPronti.delete(id); else S.archivioPronti.add(id);
+      await salvaArchivio();
+      disegnaArchivio();
+    };
   });
 }
 
@@ -1063,10 +1110,10 @@ function disegnaPlatea(){
 
 async function disegnaSala(){
   disegnaPlatea();
-  const schermo = $('#schermo'), rosaEl = $('#rosa');
+  const schermo = $('#schermo'), inner = $('#schermo-inner'), rosaEl = $('#rosa');
   if (!S.presenti.size){
-    schermo.innerHTML = `<div class="tenda sx"></div><div class="tenda dx"></div>
-      <div class="messaggio">La sala è vuota…<br><small style="font-size:14px; color:var(--dim2)">clicca le poltrone di chi c'è stasera</small></div>`;
+    schermo.classList.remove('aperto'); // sipario chiuso
+    inner.innerHTML = `<div class="messaggio">La sala è vuota…<br><small style="font-size:14px; color:var(--dim2)">clicca le poltrone di chi c'è stasera</small></div>`;
     rosaEl.innerHTML = '';
     $('#riga-stato').innerHTML = '';
     return;
@@ -1082,15 +1129,14 @@ async function disegnaSala(){
       e.durata ? `${e.durata} troppo lunghi` : '', e.genere ? `${e.genere} di altro genere` : '',
       e.regista ? `${e.regista} di altri registi` : '', e.vincoli ? `${e.vincoli} per vincoli di compagnia` : ''
     ].filter(Boolean).join(' · ');
-    schermo.innerHTML = `<div class="tenda sx"></div><div class="tenda dx"></div>
-      <div class="messaggio">Niente in cartellone stasera<br>
+    schermo.classList.remove('aperto'); // sipario chiuso: niente in proiezione
+    inner.innerHTML = `<div class="messaggio">Niente in cartellone stasera<br>
       <small style="font-size:14px; color:var(--dim2)">${motivi || 'le liste dei presenti sono vuote: passate dal Catalogo'}</small></div>`;
     rosaEl.innerHTML = '';
   } else {
     const f = scelto.film;
     const rango = ris.rosa.indexOf(scelto) + 1;
-    schermo.innerHTML = `
-      <div class="tenda sx"></div><div class="tenda dx"></div>
+    inner.innerHTML = `
       <img class="sfondo" hidden><div class="velo"></div>
       <div class="rango serif">${rango}</div>
       <button class="schermo-clic" title="Scheda film"></button>
@@ -1104,6 +1150,7 @@ async function disegnaSala(){
         </div>
       </div>
       <button id="btn-play" title="Elegge il film della serata e lo registra per tutti i presenti">▶</button>`;
+    schermo.classList.add('aperto'); // c'è un film: apri il sipario
     $('.schermo-clic').onclick = () => modaleScheda(scelto);
     $('#btn-play').onclick = () => modalePlay(scelto);
     const img = $('#schermo .sfondo');
@@ -1167,10 +1214,27 @@ function cicloCompagnia(voce, slug){
   else voce.conChi.push(slug);
 }
 
+function disegnaGeneriCatalogo(){
+  const mio = mioProfilo();
+  const daVedere = (mio ? mio.lista : []).filter(v => entryAttiva(v, S.me));
+  const cont = $('#generi-catalogo');
+  if (!daVedere.length){ cont.innerHTML = ''; return; }
+  const conteggio = {};
+  for (const v of daVedere) for (const g of (v.generi || [])) conteggio[g] = (conteggio[g] || 0) + 1;
+  const righe = Object.entries(conteggio).sort((a, b) => b[1] - a[1]);
+  const tot = daVedere.length;
+  cont.innerHTML = `<div class="sezione-titolo" style="margin-top:6px">GENERI DELLA TUA LISTA<span class="aiuto-q" tabindex="0">?<span class="tip">Quanto pesano i generi nei film che vuoi vedere: la percentuale è la quota di film della tua lista che hanno quel genere (un film può averne più d'uno).</span></span></div>
+    <div class="generi-perc">${righe.map(([g, n]) => {
+      const perc = Math.round(n / tot * 100);
+      return `<div class="gp-riga"><span class="gp-nome" title="${esc(g)}">${esc(g)}</span><span class="gp-barra"><span class="gp-fill" style="width:${perc}%"></span></span><span class="gp-val">${perc}%</span></div>`;
+    }).join('')}</div>`;
+}
+
 function disegnaCatalogo(){
   const mio = mioProfilo();
   const daVedere = (mio ? mio.lista : []).filter(v => entryAttiva(v, S.me));
   const spente = (mio ? mio.lista : []).filter(v => !entryAttiva(v, S.me));
+  disegnaGeneriCatalogo();
 
   $('#lista-da-vedere').innerHTML = daVedere.map(v => cardFilm(v)).join('') ||
     `<div class="vuoto-msg" style="grid-column:1/-1">La tua lista è vuota: cerca un film qui sopra 🍿</div>`;
@@ -1540,9 +1604,10 @@ function agganciaImpostazioni(){
     } catch(e){}
   };
   $('#imp-releases') && ($('#imp-releases').onclick = () => window.mvnFS.apriReleases());
-  $('#imp-cambia-utente').onclick = async () => {
-    await ricordaMe(null);
-    location.reload();
+  $('#imp-cambia-utente').onclick = () => {
+    $('#app').hidden = true;
+    $('#gate').hidden = false;
+    gateNome(true); // gate con tasto Indietro: si può tornare alla sessione corrente
   };
   $('#imp-salva-pw').onclick = async () => {
     const p = mioProfilo(); if (!p) return;
@@ -1587,7 +1652,11 @@ function agganciaGlobali(){
     disegnaSala();
   };
   $('#filtro-regista').oninput = e => { S.filtri.regista = e.target.value.trim(); disegnaSala(); };
-  $('#cerca-archivio').oninput = () => disegnaArchivio();
+  $('#arch-filtro').onclick = e => {
+    const b = e.target.closest('button[data-f]'); if (!b) return;
+    S.archivioFiltro = b.dataset.f;
+    disegnaArchivio();
+  };
   $('#filtro-generi').onclick = e => {
     const c = e.target.closest('.gchip'); if (!c) return;
     const g = c.dataset.g;

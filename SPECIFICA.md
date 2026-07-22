@@ -162,7 +162,11 @@ dispositivo, in `mvn-config.json`/localStorage; anche toggle in Impostazioni). S
 compare una terza tab **Archivio** che elenca **tutti** i film ancora da vedere di tutti
 (dedup, senza preferenze né liste — solo i titoli), così il PC del cinema può procurarsi
 in anticipo i film che potrebbero essere estratti. Le tre tab sono separate da una linea
-verticale.
+verticale. L'Archivio è una **lista compatta a icone piccole**; ogni film ha una
+bandierina **"pronto alla visione"** (l'host segna quelli già procurati) e un filtro
+**Tutti / Da preparare**. Lo stato "pronto" è condiviso in `archivio.json` (scritto
+dall'host). **Cambia utente** apre il gate come overlay con un tasto **Indietro** che
+torna alla sessione corrente senza cambiare profilo.
 
 ## 5. Catalogo (lista personale)
 
@@ -188,6 +192,7 @@ durata, generi, regista. Per la **media voti IMDb** vera si aggiunge **OMDb API*
 | C4 | Rimuovi | togli dalla lista, **con conferma** (i visti restano nello storico) |
 | C5 | I miei visti | sezione derivata dallo storico: film, data, con chi |
 | C6 | Riaggiungi un visto | un film già visto può tornare in lista (rewatch consapevole) |
+| C7 | Generi | in cima al Catalogo, barre percentuali della distribuzione dei generi nella lista "da vedere" (un film può avere più generi) |
 
 Doppioni: lo stesso film in liste di persone diverse è normale (si fondono in Home);
 nella **stessa** lista il film è unico per `tmdbId`.
@@ -326,8 +331,12 @@ l'**Archivio** dell'host mostra invece tutti gli episodi (serve la scorta comple
   - fondo sala `#1c1114`, velluto `#3a1f24`, rosso sipario `#8a3d3d`,
     oro `#c9a45c`, oro chiaro `#e0c07d`, testo crema `#f2e7d5`.
 - Poltrona vuota = sagoma scura; occupata = si "accende" col colore e il nome dell'utente.
-- Proiettore/schermo con cornice dorata, locandina del 1° a tutto schermo; 2°–5° su una
-  "mensola" di locandine più piccole.
+- Proiettore/schermo con cornice dorata, che riempie l'altezza della colonna centrale
+  (pareggia i pannelli laterali, simmetrici); 2°–5° su una "mensola" di locandine in
+  proporzione 2:3.
+- **Sipario** (2026-07-22): due tende di velluto coprono lo schermo quando non c'è un film
+  in proiezione (sala vuota o niente in cartellone) e scorrono aperte quando compare un
+  film (classe `.schermo.aperto`).
 - Play = grande bottone dorato; alla pressione dissolvenza "luci in sala".
 - Pensata per stare bene anche **proiettata sulla TV** durante la scelta (testi grandi,
   contrasto AA, niente colori squillanti).
