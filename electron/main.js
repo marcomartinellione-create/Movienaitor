@@ -63,6 +63,9 @@ function registraIPC(){
   // "chi sei": ultimo profilo scelto, ricordato tra i riavvii
   ipcMain.handle('mvn:getMe', async () => (await leggiCfg()).lastProfile || null);
   ipcMain.handle('mvn:setMe', async (e, slug) => { await scriviCfg({ lastProfile: slug || null }); return true; });
+  // modalità host (questo PC prepara i film): ricordata tra i riavvii
+  ipcMain.handle('mvn:getHost', async () => !!(await leggiCfg()).host);
+  ipcMain.handle('mvn:setHost', async (e, on) => { await scriviCfg({ host: !!on }); return true; });
 
   ipcMain.handle('mvn:readJSON', async (e, rel) => {
     try { return JSON.parse(await fs.readFile(risolvi(rel), 'utf8')); } catch (err) { return null; }

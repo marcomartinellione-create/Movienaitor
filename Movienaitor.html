@@ -40,6 +40,8 @@ h1,h2,h3,.serif{font-family:var(--serif)}
 .bottone.piccolo{padding:7px 14px; font-size:14px}
 #gate .demo-link{color:var(--dim); text-decoration:underline; font-size:14px}
 #gate .profili-noti{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:14px 0}
+.gate-host{display:flex; align-items:center; gap:8px; justify-content:center; color:var(--dim); font-size:13px; margin:0 auto 16px; max-width:400px; cursor:pointer}
+.gate-host input{accent-color:var(--oro); width:16px; height:16px}
 #gate input[type=text]{background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema);
   padding:10px 14px; border-radius:10px; width:230px; text-align:center}
 #gate .swatches{display:flex; gap:8px; justify-content:center; margin:12px 0 18px}
@@ -54,6 +56,7 @@ header{display:flex; align-items:center; gap:20px; padding:6px 4px 16px}
 nav{display:flex; gap:6px; margin-left:10px}
 nav .tab{padding:9px 18px; border-radius:10px; color:var(--dim); border:1px solid transparent; letter-spacing:.04em}
 nav .tab.attivo{color:var(--oro2); border-color:var(--oro-dim); background:linear-gradient(180deg,var(--velluto),var(--velluto2))}
+.nav-sep{color:var(--velluto3); font-size:20px; line-height:1; align-self:center; user-select:none; pointer-events:none}
 header .spazio{flex:1}
 .io-chip{display:flex; align-items:center; gap:8px; color:var(--dim); font-size:14px}
 .io-chip .pallino{width:12px; height:12px; border-radius:50%}
@@ -252,7 +255,10 @@ header .spazio{flex:1}
     <div class="brand">MOVIENAITOR<small>SALA PRIVATA</small></div>
     <nav>
       <button class="tab attivo" data-vista="sala">🎬 Sala</button>
+      <span class="nav-sep">|</span>
       <button class="tab" data-vista="catalogo">📚 Catalogo</button>
+      <span class="nav-sep" id="sep-archivio" hidden>|</span>
+      <button class="tab" id="tab-archivio" data-vista="archivio" hidden>🗄 Archivio</button>
     </nav>
     <div class="spazio"></div>
     <div class="io-chip"><span class="pallino" id="io-colore"></span><span id="io-nome"></span></div>
@@ -306,6 +312,15 @@ header .spazio{flex:1}
     <div class="griglia" id="lista-visti"></div>
   </main>
 
+  <!-- ───── ARCHIVIO (solo host) ───── -->
+  <main id="vista-archivio" hidden>
+    <div class="sezione-titolo" style="margin-top:6px">ARCHIVIO FILM<span class="aiuto-q" tabindex="0">?<span class="tip">Tutti i film che qualcuno vuole ancora vedere, senza preferenze né liste: solo i titoli. Serve all'host per procurarsi in anticipo i film che potrebbero uscire estratti in Sala.</span></span></div>
+    <div class="catalogo-testa" style="margin:0 0 16px">
+      <input type="text" id="cerca-archivio" placeholder="Filtra l'archivio per titolo o regista…" autocomplete="off">
+    </div>
+    <div class="griglia" id="lista-archivio"></div>
+  </main>
+
   <!-- ───── IMPOSTAZIONI ───── -->
   <main id="vista-impostazioni" hidden>
     <div class="imp-griglia">
@@ -339,6 +354,13 @@ header .spazio{flex:1}
             <button class="bottone piccolo secondario" id="imp-scegli-colore">Cambia colore</button>
           </div>
         </div>
+        <div class="campo"><label>Password profilo (facoltativa)<span class="aiuto-q" tabindex="0">?<span class="tip">Serve solo a evitare che qualcuno entri per sbaglio nel tuo profilo. Non è una protezione vera: resta in chiaro nel file. Lascia vuoto per non averla.</span></span></label>
+          <div style="display:flex; gap:10px">
+            <input type="text" id="imp-pw" placeholder="vuota = nessuna" autocomplete="off" spellcheck="false" style="flex:1">
+            <button class="bottone piccolo secondario" id="imp-salva-pw">Salva</button>
+          </div>
+        </div>
+        <div class="campo"><label class="gate-host" style="justify-content:flex-start; margin:0; max-width:none; color:var(--dim)"><input type="checkbox" id="imp-host"> Modalità host (mostra la tab Archivio qui)</label></div>
         <div class="campo"><label>Cartella collegata</label><div class="aiuto" id="imp-cartella">—</div></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px">
           <button class="bottone piccolo secondario" id="imp-cambia-cartella">Cambia cartella</button>
@@ -361,11 +383,11 @@ header .spazio{flex:1}
 const APP_VERSION = '0.1.4';
 const CONFIG_DEFAULT = {
   tmdbKey:'', omdbKey:'',
-  bonusCoralita:0.10, capCoralita:0.30, pesoAttesa:0.50, orizzonteAttesa:60, bonusCoppia:1.15
+  bonusCoralita:0.10, capCoralita:0.30, incrementoAttesa:0.10, bonusCoppia:1.15
 };
 const ETICHETTE_COSTANTI = {
   bonusCoralita:'Bonus coralità', capCoralita:'Tetto coralità',
-  pesoAttesa:'Peso attesa', orizzonteAttesa:'Orizzonte attesa (gg)', bonusCoppia:'Bonus coppia'
+  incrementoAttesa:'Attesa: +x per visione', bonusCoppia:'Bonus coppia'
 };
 const PALETTE_UTENTI = ['#c9a45c','#a85454','#7d9b76','#6f8fae','#9b7da8','#b0805a','#8fa3a0','#b39a6b'];
 const FILA_DAVANTI = 9, FILA_DIETRO = 10; // platea come nel CAD
@@ -525,10 +547,28 @@ async function ricordaMe(slug){
   if (inElectron && window.mvnFS.ricordaProfilo){ try { await window.mvnFS.ricordaProfilo(slug || null); } catch(e){} }
   try { if (slug) localStorage.setItem('mvn_me', slug); else localStorage.removeItem('mvn_me'); } catch(e){}
 }
+// modalità host: questo dispositivo prepara i film → mostra la tab Archivio
+async function leggiHost(){
+  if (inElectron && window.mvnFS.hostRicordato){ try { return !!(await window.mvnFS.hostRicordato()); } catch(e){} }
+  try { return localStorage.getItem('mvn_host') === '1'; } catch(e){ return false; }
+}
+async function ricordaHost(on){
+  if (inElectron && window.mvnFS.ricordaHost){ try { await window.mvnFS.ricordaHost(!!on); } catch(e){} }
+  try { if (on) localStorage.setItem('mvn_host', '1'); else localStorage.removeItem('mvn_host'); } catch(e){}
+}
+function applicaHost(){
+  $('#tab-archivio').hidden = !S.host;
+  $('#sep-archivio').hidden = !S.host;
+  if (!S.host && !$('#vista-archivio').hidden){ // se ero in Archivio e l'host si spegne, torno in Sala
+    $$('.tab').forEach(x => x.classList.toggle('attivo', x.dataset.vista === 'sala'));
+    for (const v of ['sala','catalogo','archivio','impostazioni']) $('#vista-'+v).hidden = v !== 'sala';
+  }
+}
 
 /* ════════════════════════ STATO ════════════════════════ */
 const S = {
   demo:false,
+  host:false,            // questo dispositivo è l'host (tab Archivio)
   me:null,               // slug
   profili:[],            // [{nome, slug, creato, colore, lista:[…]}]
   storico:[],            // [{id, data, tmdbId, titolo, partecipanti, proponenti}]
@@ -552,7 +592,8 @@ const coloreDi = slug => {
 
 /* ════════════════════════ DATI DEMO ════════════════════════ */
 const DEMO_DB = [
-  {tmdbId:438631, titolo:'Dune', anno:'2021', durata:155, regista:'Denis Villeneuve', generi:['Fantascienza','Avventura'], voto:8.0, votoFonte:'imdb', trama:'Paul Atreides guida la sua casata verso il pianeta più pericoloso dell\'universo per assicurare il futuro della sua gente.'},
+  {tmdbId:438631, titolo:'Dune', anno:'2021', durata:155, regista:'Denis Villeneuve', generi:['Fantascienza','Avventura'], voto:8.0, votoFonte:'imdb', collezione:726871, collezioneNome:'Dune - Collezione', trama:'Paul Atreides guida la sua casata verso il pianeta più pericoloso dell\'universo per assicurare il futuro della sua gente.'},
+  {tmdbId:693134, titolo:'Dune - Parte Due', anno:'2024', durata:166, regista:'Denis Villeneuve', generi:['Fantascienza','Avventura'], voto:8.5, votoFonte:'imdb', collezione:726871, collezioneNome:'Dune - Collezione', trama:'Paul Atreides si unisce ai Fremen e intraprende un cammino di vendetta contro i cospiratori che hanno distrutto la sua famiglia.'},
   {tmdbId:335984, titolo:'Blade Runner 2049', anno:'2017', durata:164, regista:'Denis Villeneuve', generi:['Fantascienza','Dramma'], voto:8.0, votoFonte:'imdb', trama:'L\'agente K scopre un segreto sepolto che potrebbe far precipitare nel caos ciò che resta della società.'},
   {tmdbId:194, titolo:'Il favoloso mondo di Amélie', anno:'2001', durata:122, regista:'Jean-Pierre Jeunet', generi:['Commedia','Romance'], voto:8.3, votoFonte:'imdb', trama:'Amélie decide di dedicarsi ad aggiustare la vita degli altri, finché non tocca alla sua.'},
   {tmdbId:496243, titolo:'Parasite', anno:'2019', durata:132, regista:'Bong Joon-ho', generi:['Thriller','Dramma','Commedia'], voto:8.5, votoFonte:'imdb', trama:'La famiglia Kim si infiltra, un membro alla volta, nella casa dei ricchissimi Park.'},
@@ -576,10 +617,11 @@ function semina(){
     const f = demoFilm(id);
     return {tmdbId:f.tmdbId, titolo:f.titolo, anno:f.anno, durata:f.durata, regista:f.regista,
       generi:f.generi, voto:f.voto, votoFonte:f.votoFonte, trama:f.trama,
+      collezione:f.collezione || null, collezioneNome:f.collezioneNome || null, uscita:f.anno ? f.anno+'-01-01' : null,
       desiderio:des, conChi:[], nonCon:[], aggiunto:g(aggiuntoGiorni), ...extra};
   };
   const profili = [
-    {nome:'Marco', slug:'marco', creato:g(90), colore:'#c9a45c', lista:[voce(438631,5), voce(335984,4), voce(27205,3)]},
+    {nome:'Marco', slug:'marco', creato:g(90), colore:'#c9a45c', lista:[voce(438631,5), voce(693134,5), voce(335984,4), voce(27205,3)]},
     {nome:'Elena', slug:'elena', creato:g(80), colore:'#9b7da8', lista:[voce(194,5,{conChi:['marco']}), voce(496243,4), voce(313369,3)]},
     {nome:'Simone', slug:'simone', creato:g(70), colore:'#6f8fae', lista:[voce(157336,5), voce(680,4,{},60)]},
     {nome:'Stefano', slug:'stefano', creato:g(85), colore:'#7d9b76', lista:[voce(238,5,{nonCon:['simone']}), voce(120467,3)]},
@@ -627,6 +669,9 @@ async function dettagliFilm(id){
   }
   return {
     tmdbId:j.id, titolo:j.title || j.original_title, anno:(j.release_date || '').slice(0,4),
+    uscita:j.release_date || null,
+    collezione:j.belongs_to_collection ? j.belongs_to_collection.id : null,
+    collezioneNome:j.belongs_to_collection ? j.belongs_to_collection.name : null,
     durata:j.runtime || null, regista, generi:(j.genres || []).map(x => x.name),
     voto, votoFonte, trama:j.overview || '',
     posterUrl:j.poster_path ? 'https://image.tmdb.org/t/p/w500'+j.poster_path : null,
@@ -673,13 +718,16 @@ function entryAttiva(voce, slug){
   return !S.storico.some(v => v.tmdbId === voce.tmdbId && v.partecipanti.includes(slug)
     && (v.ts || v.data + 'T23:59:59') >= aggiunto);
 }
-function ultimaPropostaDi(slug){
-  let ultima = null;
-  for (const v of S.storico) if ((v.proponenti || []).includes(slug) && (!ultima || v.data > ultima)) ultima = v.data;
-  if (ultima) return giorniDa(ultima);
-  const p = profiloDi(slug);
-  return p && p.creato ? giorniDa(p.creato) : S.config.orizzonteAttesa;
+// Attesa = quante VISIONI sono passate da quando un film della persona è stato scelto
+// (proponente di una serata col Play). Ogni visione "persa" vale +incrementoAttesa.
+// Se non ha mai vinto, contano tutte le visioni registrate.
+function visioniDaUltimaScelta(slug){
+  let idxUltimoWin = -1;
+  for (let i = 0; i < S.storico.length; i++) if ((S.storico[i].proponenti || []).includes(slug)) idxUltimoWin = i;
+  return S.storico.length - 1 - idxUltimoWin;
 }
+// ordine di uscita per le saghe (release_date se disponibile, altrimenti l'anno)
+const ordineSaga = f => f.uscita || (f.anno ? f.anno + '-00-00' : '9999');
 
 function classifica(){
   const cfg = S.config, setP = S.presenti;
@@ -695,10 +743,22 @@ function classifica(){
       c.prop.push({slug:pr.slug, desiderio:voce.desiderio || 3, conChi:voce.conChi || [], nonCon:voce.nonCon || []});
     }
   }
+  // Saghe: se più film della stessa collezione sono candidati, ne resta UNO solo —
+  // il primo per ordine di uscita ancora "da vedere" per il gruppo. Così una saga si
+  // propone sempre in ordine (il 1º prima), mai a caso, e gli episodi successivi
+  // ricompaiono solo quando il precedente è stato visto da chi lo voleva.
+  const primoDiColl = new Map();
+  for (const c of candidati.values()){
+    const cid = c.film.collezione; if (!cid) continue;
+    const prev = primoDiColl.get(cid);
+    if (!prev || ordineSaga(c.film) < ordineSaga(prev.film)) primoDiColl.set(cid, c);
+  }
+  const finali = [...candidati.values()].filter(c => !c.film.collezione || primoDiColl.get(c.film.collezione) === c);
+
   const esclusi = {vincoli:0, durata:0, genere:0, regista:0};
   const rosa = [];
   const f = S.filtri;
-  for (const c of candidati.values()){
+  for (const c of finali){
     const film = c.film;
     let violato = false;
     for (const p of c.prop){
@@ -713,9 +773,9 @@ function classifica(){
     const n = c.prop.length;
     const D = c.prop.reduce((s,p) => s + p.desiderio, 0) / n / 5;
     const B = Math.min(1 + cfg.bonusCoralita*(n-1), 1 + cfg.capCoralita);
-    let A = 0;
-    for (const p of c.prop) A = Math.max(A, Math.min(ultimaPropostaDi(p.slug), cfg.orizzonteAttesa) / cfg.orizzonteAttesa);
-    const W = 1 + cfg.pesoAttesa*A;
+    let A = 0; // visioni di attesa: il massimo tra i proponenti presenti
+    for (const p of c.prop) A = Math.max(A, visioniDaUltimaScelta(p.slug));
+    const W = 1 + cfg.incrementoAttesa*A;
     let M = 1;
     for (const p of c.prop){
       if (!p.conChi.length) continue;
@@ -821,44 +881,49 @@ function gestisciUpdate(d){
   }
 }
 function gateNome(){
-  const noti = S.profili.map(p => `<button class="bottone piccolo secondario btn-sono" data-slug="${esc(p.slug)}">Sono ${esc(p.nome)}</button>`).join('');
+  const noti = S.profili.map(p => `<button class="bottone piccolo secondario btn-sono" data-slug="${esc(p.slug)}">${p.password ? '🔒 ' : ''}Sono ${esc(p.nome)}</button>`).join('');
   $('#gate-card').innerHTML = `
     <h2 class="serif" style="color:var(--oro); font-weight:400; margin-bottom:6px">Chi sei?</h2>
     ${noti ? `<div class="profili-noti">${noti}</div><p>oppure prendi una poltrona nuova:</p>` : '<p>Prendi la tua poltrona: il nome resterà salvato.</p>'}
     <input type="text" id="nuovo-nome" placeholder="Il tuo nome" maxlength="20">
-    <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin:14px 0 18px">
+    <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin:14px 0 10px">
       <span class="chip-colore" id="gate-chip"></span>
       <button class="testo-link" id="gate-scegli">scegli il colore della poltrona</button>
     </div>
+    <label class="gate-host"><input type="checkbox" id="gate-host"> Sono l'host (questo è il PC del cinema: mostra la tab Archivio)</label>
     <button class="bottone" id="btn-nuovo">🎟 Entra in sala</button>`;
   let colore = PALETTE_UTENTI[S.profili.length % PALETTE_UTENTI.length];
   const aggiornaChip = () => { $('#gate-chip').style.background = colore; };
   aggiornaChip();
+  $('#gate-host').checked = S.host;
   $('#gate-chip').onclick = $('#gate-scegli').onclick = () => apriColorPicker(colore, c => { colore = c; aggiornaChip(); });
-  $$('.btn-sono').forEach(b => b.onclick = async () => {
-    S.me = b.dataset.slug;
-    await ricordaMe(S.me);
+  const entraCome = async (slug) => {
+    S.me = slug; S.host = $('#gate-host').checked;
+    await ricordaMe(S.me); await ricordaHost(S.host);
     await avviaApp();
+  };
+  $$('.btn-sono').forEach(b => b.onclick = () => {
+    const p = profiloDi(b.dataset.slug);
+    if (p && p.password) promptPassword(p.nome, val => { if (val === p.password) entraCome(p.slug); else toast('Password errata', true); });
+    else entraCome(b.dataset.slug);
   });
   $('#btn-nuovo').onclick = async () => {
     const nome = $('#nuovo-nome').value.trim();
     if (!nome) return toast('Scrivi il tuo nome', true);
     const slug = slugify(nome);
     if (!slug) return toast('Nome non valido', true);
-    if (profiloDi(slug)){ S.me = slug; }
-    else {
+    if (!profiloDi(slug)){
       const p = {nome:maiuscola(nome), slug, creato:oggiISO(), colore, lista:[]};
       S.profili.push(p);
-      S.me = slug;
       await FS.writeJSON(['profili', slug+'.json'], p);
     }
-    await ricordaMe(S.me);
-    await avviaApp();
+    await entraCome(slug);
   };
 }
 
 async function entra(){
   await caricaTutto();
+  S.host = await leggiHost();
   const ricordato = await leggiMe();
   if (ricordato && profiloDi(ricordato)){ S.me = ricordato; await avviaApp(); }
   else gateNome();
@@ -870,6 +935,7 @@ async function avviaApp(){
   $('#app').hidden = false;
   $('#io-nome').textContent = nomeDi(S.me);
   $('#io-colore').style.background = coloreDi(S.me);
+  applicaHost();
   disegnaTutto();
 }
 
@@ -878,7 +944,38 @@ function disegnaTutto(){
   disegnaFiltri();
   disegnaSala();
   disegnaCatalogo();
+  disegnaArchivio();
   disegnaImpostazioni();
+}
+
+// Archivio (solo host): tutti i film ancora "da vedere" da qualcuno, dedup, senza
+// preferenze né liste — la scorta che l'host può procurarsi in anticipo.
+function disegnaArchivio(){
+  if (!S.host) return;
+  const filtro = ($('#cerca-archivio').value || '').trim().toLowerCase();
+  const mappa = new Map();
+  for (const p of S.profili) for (const v of (p.lista || []))
+    if (v.tmdbId && entryAttiva(v, p.slug) && !mappa.has(v.tmdbId)) mappa.set(v.tmdbId, v);
+  let film = [...mappa.values()];
+  if (filtro) film = film.filter(v => (v.titolo || '').toLowerCase().includes(filtro) || (v.regista || '').toLowerCase().includes(filtro));
+  film.sort((a, b) => String(a.titolo).localeCompare(String(b.titolo)));
+  $('#lista-archivio').innerHTML = film.map(v => `
+    <div class="scheda-film" data-arch="${v.tmdbId}">
+      <div class="copertina" title="${esc(v.titolo)}">
+        <img hidden><div class="segnaposto" style="background:url('${segnapostoSVG(v.titolo, v.tmdbId)}') center/cover"></div>
+        ${v.voto ? `<div class="voto-badge">★ ${fmtNum(v.voto,1)} ${v.votoFonte === 'imdb' ? 'IMDb' : 'TMDB'}</div>` : ''}
+      </div>
+      <div class="corpo">
+        <h4>${esc(v.titolo)}</h4>
+        <div class="sotto">${esc(v.anno || '')} · ${fmtMin(v.durata)}${v.regista ? ' · '+esc(v.regista) : ''}</div>
+        ${v.collezioneNome ? `<div class="sotto" style="color:var(--oro-dim)">🎞 ${esc(v.collezioneNome)}</div>` : ''}
+      </div>
+    </div>`).join('') || `<div class="vuoto-msg" style="grid-column:1/-1">Nessun film da vedere nell'archivio${filtro ? ' per «'+esc(filtro)+'»' : ''}.</div>`;
+  $$('#lista-archivio .scheda-film').forEach(el => {
+    const v = mappa.get(parseInt(el.dataset.arch, 10));
+    urlImmagine(v, 'locandina').then(u => { const img = el.querySelector('img'); if (u && img){ img.src = u; img.hidden = false; el.querySelector('.segnaposto').remove(); } });
+    el.querySelector('.copertina').onclick = () => modaleScheda({ film: v, prop: null });
+  });
 }
 
 function tuttiGeneri(){
@@ -1138,13 +1235,13 @@ function agganciaCard(v){
     e.currentTarget.innerHTML = chipsCompagnia(v);
     await salvaMioProfilo(); disegnaSala();
   };
-  el.querySelector('.btn-togli').onclick = async () => {
+  el.querySelector('.btn-togli').onclick = () => confermaModale(`Togliere «${v.titolo}» dalla tua lista?`, 'Rimuovi', async () => {
     const mio = mioProfilo();
     mio.lista = mio.lista.filter(x => x !== v);
     await salvaMioProfilo();
-    disegnaCatalogo(); disegnaFiltri(); disegnaSala();
+    disegnaCatalogo(); disegnaFiltri(); disegnaSala(); disegnaArchivio();
     toast(`«${v.titolo}» tolto dalla lista`);
-  };
+  });
 }
 
 async function riguarda(id){
@@ -1198,6 +1295,34 @@ function agganciaRicerca(){
 /* ════════════════════════ MODALI ════════════════════════ */
 function apriModale(html){ $('#modale').innerHTML = html; $('#modale-fondo').hidden = false; }
 function chiudiModale(){ $('#modale-fondo').hidden = true; }
+
+// conferma generica (sì/no)
+function confermaModale(testo, okLabel, onOk){
+  apriModale(`<h3>Conferma</h3>
+    <p style="color:var(--dim); line-height:1.6">${esc(testo)}</p>
+    <div class="m-azioni">
+      <button class="bottone piccolo secondario" id="cf-no">Annulla</button>
+      <button class="bottone piccolo" id="cf-si">${esc(okLabel || 'OK')}</button>
+    </div>`);
+  $('#cf-no').onclick = chiudiModale;
+  $('#cf-si').onclick = () => { chiudiModale(); onOk(); };
+}
+// richiesta password profilo (solo anti-errore: la password è in chiaro nel JSON)
+function promptPassword(nome, onOk){
+  apriModale(`<h3>Password di ${esc(nome)}</h3>
+    <p style="color:var(--dim)">Questo profilo ha una password: serve solo a non entrare per sbaglio nel profilo di un altro.</p>
+    <input type="text" id="pw-in" autocomplete="off" spellcheck="false"
+      style="width:100%; background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); padding:9px 12px; border-radius:8px">
+    <div class="m-azioni">
+      <button class="bottone piccolo secondario" id="pw-annulla">Annulla</button>
+      <button class="bottone piccolo" id="pw-ok">🎟 Entra</button>
+    </div>`);
+  const vai = () => { const val = $('#pw-in').value; chiudiModale(); onOk(val); };
+  $('#pw-annulla').onclick = chiudiModale;
+  $('#pw-ok').onclick = vai;
+  $('#pw-in').onkeydown = e => { if (e.key === 'Enter') vai(); };
+  setTimeout(() => $('#pw-in').focus(), 30);
+}
 
 /* ── Selettore colore: tavolozza stile CAD + "crea il tuo" (grafico HSV/RGB) ── */
 function cellaColore(hex){ return `<button type="button" class="cp-cella" data-c="${hex}" style="background:${hex}" title="${hex}"></button>`; }
@@ -1372,7 +1497,8 @@ function disegnaImpostazioni(){
     <div class="campo" style="margin:0"><label>${ETICHETTE_COSTANTI[k]}</label>
     <input type="number" step="0.05" id="imp-c-${k}" value="${S.config[k]}"></div>`).join('');
   const mio = mioProfilo();
-  if (mio) $('#imp-chip').style.background = mio.colore;
+  if (mio){ $('#imp-chip').style.background = mio.colore; $('#imp-pw').value = mio.password || ''; }
+  $('#imp-host').checked = S.host;
   $('#imp-scegli-colore').onclick = () => {
     const p = mioProfilo(); if (!p) return;
     apriColorPicker(p.colore, async c => {
@@ -1418,6 +1544,20 @@ function agganciaImpostazioni(){
     await ricordaMe(null);
     location.reload();
   };
+  $('#imp-salva-pw').onclick = async () => {
+    const p = mioProfilo(); if (!p) return;
+    const val = $('#imp-pw').value.trim();
+    if (val) p.password = val; else delete p.password;
+    await salvaMioProfilo();
+    toast(val ? 'Password impostata 🔒' : 'Password rimossa');
+  };
+  $('#imp-host').onchange = async e => {
+    S.host = e.target.checked;
+    await ricordaHost(S.host);
+    applicaHost();
+    if (S.host) disegnaArchivio();
+    toast(S.host ? 'Modalità host attiva: tab Archivio 🗄' : 'Modalità host disattivata');
+  };
 }
 
 /* ════════════════════════ RICARICA & AVVIO ════════════════════════ */
@@ -1430,7 +1570,8 @@ async function ricarica(silenziosa){
 function agganciaGlobali(){
   $$('nav .tab, header .tab').forEach(b => b.onclick = () => {
     $$('.tab').forEach(x => x.classList.toggle('attivo', x === b));
-    for (const v of ['sala','catalogo','impostazioni']) $('#vista-'+v).hidden = v !== b.dataset.vista;
+    for (const v of ['sala','catalogo','archivio','impostazioni']) $('#vista-'+v).hidden = v !== b.dataset.vista;
+    if (b.dataset.vista === 'archivio') disegnaArchivio();
   });
   $('#btn-ricarica').onclick = () => ricarica();
   // aiuti "?": hover di default, ma anche click/tap (utile su touch) con chiusura degli altri
@@ -1446,6 +1587,7 @@ function agganciaGlobali(){
     disegnaSala();
   };
   $('#filtro-regista').oninput = e => { S.filtri.regista = e.target.value.trim(); disegnaSala(); };
+  $('#cerca-archivio').oninput = () => disegnaArchivio();
   $('#filtro-generi').onclick = e => {
     const c = e.target.closest('.gchip'); if (!c) return;
     const g = c.dataset.g;

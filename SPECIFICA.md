@@ -69,6 +69,7 @@ Google Drive non fonde le modifiche: se due dispositivi scrivono lo stesso file 
   "slug": "marco",
   "creato": "2026-07-21",
   "colore": "#c9a45c",
+  "password": "",
   "lista": [
     {
       "tmdbId": 438631,
@@ -78,6 +79,9 @@ Google Drive non fonde le modifiche: se due dispositivi scrivono lo stesso file 
       "regista": "Denis Villeneuve",
       "generi": ["Fantascienza", "Avventura"],
       "voto": 8.0,
+      "uscita": "2021-09-15",
+      "collezione": 726871,
+      "collezioneNome": "Dune - Collezione",
       "locandina": "posters/438631.jpg",
       "desiderio": 5,
       "conChi": [],
@@ -89,6 +93,9 @@ Google Drive non fonde le modifiche: se due dispositivi scrivono lo stesso file 
 ```
 
 - `voto` = media voti IMDb (vedi §5.1).
+- `password` (profilo, facoltativa, in chiaro): solo anti-errore, vedi §4.
+- `collezione`/`collezioneNome`/`uscita` (film): id saga TMDB + nome + data d'uscita, per
+  la logica saghe (§8.5). Assenti se il film non fa parte di una collezione.
 - `conChi` (white list) e `nonCon` (black list): slug scelti tra i profili **già registrati**
   nella cartella (escluso se stesso). Vedi §7.
 - I metadati del film (durata, regista, generi, voto, locandina) si salvano **al momento
@@ -145,6 +152,18 @@ Il **colore della poltrona** si sceglie con un selettore dedicato (`apriColorPic
 tavolozza in stile CAD (griglia tinta × luminosità + grigi) e scheda "Crea il tuo" con
 quadrato saturazione/valore, barra tinta e codice hex.
 
+**Password profilo** (facoltativa, 2026-07-22): un profilo può avere una `password` nel
+suo JSON — **in chiaro**, non è protezione: serve solo a non entrare per sbaglio nel
+profilo di un altro. Alla selezione di un profilo con password l'app la chiede (lucchetto
+🔒 accanto al nome). Si imposta/rimuove in ⚙ Impostazioni.
+
+**Modalità host** (2026-07-22): al login una casella "Sono l'host" (ricordata per
+dispositivo, in `mvn-config.json`/localStorage; anche toggle in Impostazioni). Se attiva,
+compare una terza tab **Archivio** che elenca **tutti** i film ancora da vedere di tutti
+(dedup, senza preferenze né liste — solo i titoli), così il PC del cinema può procurarsi
+in anticipo i film che potrebbero essere estratti. Le tre tab sono separate da una linea
+verticale.
+
 ## 5. Catalogo (lista personale)
 
 ### 5.1 Fonte dati film
@@ -166,7 +185,7 @@ durata, generi, regista. Per la **media voti IMDb** vera si aggiunge **OMDb API*
 | C1 | Cerca film | barra di ricerca con risultati live (locandina, titolo, anno) |
 | C2 | Aggiungi film | imposta: **desiderio 1–5** (stelle), **conChi** (chip ✓), **nonCon** (chip ✗) |
 | C3 | Modifica | cambia desiderio/conChi/nonCon di un film già in lista |
-| C4 | Rimuovi | togli dalla lista (i visti restano nello storico) |
+| C4 | Rimuovi | togli dalla lista, **con conferma** (i visti restano nello storico) |
 | C5 | I miei visti | sezione derivata dallo storico: film, data, con chi |
 | C6 | Riaggiungi un visto | un film già visto può tornare in lista (rewatch consapevole) |
 
@@ -248,16 +267,15 @@ Per ogni film candidato `f` sopravvissuto ai filtri:
   la coralità è premiata a parte, in modo limitato:
 - **Coralità** `B(f)` = `1 + 0,10 × (|Prop(f)| − 1)`, massimo 1,30.
   (+10% per ogni proponente oltre il primo, fino a +30%.)
-- **Equità (attesa)** — "più tempo passa da quando non viene preso un film di una
-  persona, più i suoi film salgono":
-  - per ogni persona `p`: `t(p)` = giorni dall'ultima voce di storico in cui `p` è tra i
-    **proponenti** (partecipare ai film degli altri non azzera il timer). Se non è mai
-    successo: giorni dalla creazione del profilo.
-  - `A(p) = min(t(p), 60) / 60` → 0–1 (saturazione a 60 giorni: l'attesa spinge fino a
-    un tetto, non all'infinito).
+- **Equità (attesa)** — misurata in **numero di visioni** (non più in giorni), scelta di
+  Marco 2026-07-22:
+  - per ogni persona `p`: `A(p)` = quante serate (Play) sono passate da quando un film
+    **della sua lista** è stato scelto (cioè `p` era tra i `proponenti`). Se non ha mai
+    "vinto", contano tutte le serate registrate. Le serate che non la riguardano contano
+    lo stesso come attesa.
   - `A(f) = max A(p) per p ∈ Prop(f)` — basta un proponente "a digiuno" per far salire
-    il film: è esattamente l'equità voluta.
-  - `W(f) = 1 + 0,5 × A(f)` → 1,0–1,5 (fino a +50%).
+    il film.
+  - `W(f) = 1 + 0,10 × A(f)` (ogni serata "persa" vale +0,10; nessun tetto).
 - **Bonus coppia** `M(f)` = 1,15 se presenti = {proponente} ∪ sua `conChi` (non vuota);
   altrimenti 1,00.
 
@@ -277,10 +295,10 @@ Presenti: marco, elena, simone.
 
 | Film | Proponenti (desiderio) | D | B | Attesa | W | M | **S** |
 |---|---|---|---|---|---|---|---|
-| Dune | marco (5), elena (4) | 0,90 | 1,10 | elena: 50 gg → 0,83 | 1,42 | 1,00 | **1,40** |
-| Amélie | simone (5) | 1,00 | 1,00 | simone: scelto ieri → 0,02 | 1,01 | 1,00 | **1,01** |
+| Dune | marco (5), elena (4) | 0,90 | 1,10 | elena: 3 serate senza un suo film → +0,30 | 1,30 | 1,00 | **1,29** |
+| Amélie | simone (5) | 1,00 | 1,00 | simone: ha appena vinto → 0 | 1,00 | 1,00 | **1,00** |
 
-Vince Dune: desiderio corale e soprattutto elena che "aspetta" da 50 giorni.
+Vince Dune: desiderio corale e soprattutto elena che "aspetta" da 3 serate.
 
 ### 8.4 Costanti (in `config.json`, tarabili senza toccare l'app)
 
@@ -288,9 +306,19 @@ Vince Dune: desiderio corale e soprattutto elena che "aspetta" da 50 giorni.
 |---|---|---|
 | `bonusCoralita` | 0,10 | spinta per proponente extra |
 | `capCoralita` | 0,30 | tetto coralità |
-| `pesoAttesa` | 0,50 | spinta massima dell'attesa |
-| `orizzonteAttesa` | 60 | giorni per saturare l'attesa |
+| `incrementoAttesa` | 0,10 | spinta per ogni serata in cui un film della persona non è stato scelto |
 | `bonusCoppia` | 1,15 | moltiplicatore white list al completo |
+
+### 8.5 Saghe (2026-07-22)
+
+Se più film di una stessa **collezione** TMDB (es. la saga di Dune) sono candidati, la
+Sala ne propone **uno solo**: il primo per ordine di uscita ancora "da vedere" per il
+gruppo. Gli episodi successivi sono nascosti finché il precedente non è stato visto.
+Così una saga esce sempre in ordine, mai a caso. Interazione coi "visti": un episodio è
+il "prossimo" se **almeno un presente** lo ha ancora da vedere; se tutti i presenti che
+lo volevano l'hanno visto, si passa da sé all'episodio dopo (chi l'ha già visto non
+blocca gli altri). La collezione si cattura da TMDB all'aggiunta (`belongs_to_collection`);
+l'**Archivio** dell'host mostra invece tutti gli episodi (serve la scorta completa).
 
 ## 9. Tema visivo
 
