@@ -172,7 +172,10 @@ nella **stessa** lista il film è unico per `tmdbId`.
 
 ## 6. Home — la Sala
 
-Layout secondo il CAD di Marco (`Stile home.dxf`, recepito il 2026-07-21):
+Layout ispirato al CAD di Marco (`Stile home.dxf`, recepito il 2026-07-21).
+**I CAD sono rappresentazioni d'idea, non geometrie da copiare** (indicazione di Marco,
+2026-07-22): dal disegno si prendono composizione, vista ed elementi; la resa finale è
+libera, nello stile velluto dell'app.
 
 - **filtri** della serata in colonna in alto a sinistra (Genere, Durata, Regista);
 - **schermo cinemascope** centrale con cornice e tende laterali: mostra il film n°1

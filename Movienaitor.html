@@ -347,6 +347,12 @@ const fmtNum = (n,d=2) => n.toLocaleString('it-IT',{minimumFractionDigits:d, max
 const fmtData = iso => new Date(iso+'T12:00:00').toLocaleDateString('it-IT',{day:'numeric', month:'long', year:'numeric'});
 const maiuscola = s => s ? s[0].toUpperCase()+s.slice(1) : s;
 
+function tinta(hex, f){ // f>0 schiarisce verso il bianco, f<0 scurisce verso il nero
+  const n = parseInt(hex.slice(1), 16);
+  const mix = c => Math.round(f >= 0 ? c + (255 - c)*f : c*(1 + f));
+  return '#' + [16, 8, 0].map(i => mix((n >> i) & 255).toString(16).padStart(2, '0')).join('');
+}
+
 function toast(msg, errore=false){
   const t = document.createElement('div');
   t.className = 'toast'+(errore?' errore':'');
@@ -846,26 +852,38 @@ function disegnaFiltri(){
   $('#filtro-regista').value = S.filtri.regista;
 }
 
-// Poltrona vista dall'alto (geometria dal CAD "Stile sedie"), resa nello stile
-// "velluto" originale: sagome piene, contorni scuri spessi; se occupata la seduta
-// prende il colore dell'utente e la persona (braccia, spalle, testa) è una
-// silhouette scura bordata del suo colore, come la testa della prima versione.
+// Poltrona di cinema vista dall'alto — l'idea viene dal CAD "Stile sedie" (seduta,
+// braccioli, schienale in basso, persona dall'alto) ma il disegno è libero, nello
+// stile velluto dell'app: cuscino sfumato con cucitura, braccioli a capsula,
+// schienale bombato. Occupata: seduta e schienale nel colore dell'utente, persona
+// (testa + spalle) in silhouette scura bordata del colore.
+let poltronaUid = 0;
 function poltronaSVG(colore, presente){
-  const seduta = presente ? colore : '#5a2830';
-  const dettaglio = '#4a2228';
-  return `<svg viewBox="0 0 90 68">
-    <g stroke="#201114" stroke-width="2.5" stroke-linejoin="round"${presente ? '' : ' opacity=".8"'}>
-      <rect x="15" y="4" width="60" height="60" rx="11" fill="${seduta}"/>
-      <rect x="21" y="10" width="48" height="38" rx="8" fill="${presente ? seduta : dettaglio}"${presente ? ' style="filter:brightness(.8)"' : ''}/>
-      <rect x="15" y="48" width="60" height="16" rx="7" fill="${dettaglio}"/>
-      <rect x="2" y="16" width="13" height="46" rx="6.5" fill="${dettaglio}"/>
-      <rect x="75" y="16" width="13" height="46" rx="6.5" fill="${dettaglio}"/>
+  const uid = ++poltronaUid;
+  const cuscino = presente ? colore : '#5a2830';
+  const schienale = presente ? tinta(colore, -0.42) : '#4a2228';
+  const braccioli = '#4a2228';
+  return `<svg viewBox="0 0 100 88">
+    <defs>
+      <radialGradient id="mvnc${uid}" cx="50%" cy="32%" r="80%">
+        <stop offset="0%" stop-color="${tinta(cuscino, 0.16)}"/>
+        <stop offset="100%" stop-color="${tinta(cuscino, -0.14)}"/>
+      </radialGradient>
+      <linearGradient id="mvns${uid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${tinta(schienale, 0.14)}"/>
+        <stop offset="100%" stop-color="${tinta(schienale, -0.2)}"/>
+      </linearGradient>
+    </defs>
+    <g stroke="#201114" stroke-width="2.5" stroke-linejoin="round"${presente ? '' : ' opacity=".85"'}>
+      <rect x="3" y="16" width="15" height="60" rx="7.5" fill="${braccioli}"/>
+      <rect x="82" y="16" width="15" height="60" rx="7.5" fill="${braccioli}"/>
+      <rect x="17" y="6" width="66" height="60" rx="14" fill="url(#mvnc${uid})"/>
+      <rect x="24" y="13" width="52" height="46" rx="9" fill="none" stroke="${tinta(cuscino, -0.28)}" stroke-width="1.6" stroke-dasharray="3 4" opacity=".9"/>
+      <rect x="13" y="58" width="74" height="24" rx="12" fill="url(#mvns${uid})"/>
     </g>
-    ${presente ? `<g fill="#1b1013" stroke="${colore}" stroke-width="2" stroke-linejoin="round">
-      <ellipse cx="30" cy="21" rx="5" ry="13.5"/>
-      <ellipse cx="60" cy="21" rx="5" ry="13.5"/>
-      <ellipse cx="45" cy="37" rx="19" ry="8.5"/>
-      <circle cx="45" cy="31" r="10.5"/>
+    ${presente ? `<g fill="#1b1013" stroke="${colore}" stroke-width="2.2" stroke-linejoin="round">
+      <ellipse cx="50" cy="56" rx="24" ry="10.5"/>
+      <circle cx="50" cy="48" r="11.5"/>
     </g>` : ''}
   </svg>`;
 }
