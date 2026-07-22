@@ -90,12 +90,17 @@ header .spazio{flex:1}
 .schermo .info h2{font-size:clamp(20px,3vw,34px); color:var(--crema); text-shadow:0 2px 12px rgba(0,0,0,.8); font-weight:400}
 .schermo .meta{color:var(--dim); font-size:13.5px; margin-top:4px; text-shadow:0 1px 6px rgba(0,0,0,.9)}
 .schermo .meta b{color:var(--oro2); font-weight:600}
+.schermo-inner{position:absolute; inset:0}
 .schermo .messaggio{position:absolute; inset:0; display:flex; flex-direction:column; gap:8px; align-items:center; justify-content:center;
-  color:var(--dim); font-family:var(--serif); font-size:20px; text-align:center; padding:20px; z-index:2}
-.tenda{position:absolute; top:-6px; bottom:-6px; width:34px; z-index:4; pointer-events:none;
-  background:repeating-linear-gradient(90deg,#6b3030 0 7px,#54262a 7px 14px); box-shadow:inset -8px 0 14px rgba(0,0,0,.5)}
-.tenda.sx{left:-4px; border-radius:0 8px 8px 0}
-.tenda.dx{right:-4px; transform:scaleX(-1); border-radius:0 8px 8px 0}
+  color:var(--dim); font-family:var(--serif); font-size:20px; text-align:center; padding:20px; z-index:6}
+/* sipario: tende chiuse di base, si aprono scorrendo quando c'è un film (.schermo.aperto) */
+.tenda{position:absolute; top:-6px; bottom:-6px; width:54%; z-index:4; pointer-events:none;
+  background:repeating-linear-gradient(90deg,#7a3838 0 12px,#5a282c 12px 24px);
+  transition:transform .9s cubic-bezier(.55,.06,.3,1)}
+.tenda.sx{left:-4px; box-shadow:inset -22px 0 34px rgba(0,0,0,.55)}
+.tenda.dx{right:-4px; box-shadow:inset 22px 0 34px rgba(0,0,0,.55)}
+.schermo.aperto .tenda.sx{transform:translateX(calc(-100% + 30px))}
+.schermo.aperto .tenda.dx{transform:translateX(calc(100% - 30px))}
 #btn-play{position:absolute; right:26px; bottom:20px; z-index:5; width:74px; height:74px; border-radius:50%;
   background:radial-gradient(circle at 35% 30%,var(--oro2),var(--oro) 65%,var(--oro-dim));
   color:#241610; font-size:30px; box-shadow:0 6px 22px rgba(201,164,92,.4); transition:transform .15s}
@@ -308,7 +313,10 @@ header .spazio{flex:1}
       </div>
 
       <div class="schermo-wrap">
-        <div class="schermo" id="schermo"></div>
+        <div class="schermo" id="schermo">
+          <div class="schermo-inner" id="schermo-inner"></div>
+          <div class="tenda sx"></div><div class="tenda dx"></div>
+        </div>
       </div>
 
       <div class="rosa" id="rosa"></div>
@@ -401,7 +409,7 @@ header .spazio{flex:1}
 <script>
 'use strict';
 /* ════════════════════════ COSTANTI ════════════════════════ */
-const APP_VERSION = '0.1.6';
+const APP_VERSION = '0.1.7';
 const CONFIG_DEFAULT = {
   tmdbKey:'', omdbKey:'',
   bonusCoralita:0.10, capCoralita:0.30, incrementoAttesa:0.10, bonusCoppia:1.15
@@ -1099,10 +1107,10 @@ function disegnaPlatea(){
 
 async function disegnaSala(){
   disegnaPlatea();
-  const schermo = $('#schermo'), rosaEl = $('#rosa');
+  const schermo = $('#schermo'), inner = $('#schermo-inner'), rosaEl = $('#rosa');
   if (!S.presenti.size){
-    schermo.innerHTML = `<div class="tenda sx"></div><div class="tenda dx"></div>
-      <div class="messaggio">La sala è vuota…<br><small style="font-size:14px; color:var(--dim2)">clicca le poltrone di chi c'è stasera</small></div>`;
+    schermo.classList.remove('aperto');
+    inner.innerHTML = `<div class="messaggio">La sala è vuota…<br><small style="font-size:14px; color:var(--dim2)">clicca le poltrone di chi c'è stasera</small></div>`;
     rosaEl.innerHTML = '';
     $('#riga-stato').innerHTML = '';
     return;
@@ -1118,15 +1126,14 @@ async function disegnaSala(){
       e.durata ? `${e.durata} troppo lunghi` : '', e.genere ? `${e.genere} di altro genere` : '',
       e.regista ? `${e.regista} di altri registi` : '', e.vincoli ? `${e.vincoli} per vincoli di compagnia` : ''
     ].filter(Boolean).join(' · ');
-    schermo.innerHTML = `<div class="tenda sx"></div><div class="tenda dx"></div>
-      <div class="messaggio">Niente in cartellone stasera<br>
+    schermo.classList.remove('aperto');
+    inner.innerHTML = `<div class="messaggio">Niente in cartellone stasera<br>
       <small style="font-size:14px; color:var(--dim2)">${motivi || 'le liste dei presenti sono vuote: passate dal Catalogo'}</small></div>`;
     rosaEl.innerHTML = '';
   } else {
     const f = scelto.film;
     const rango = ris.rosa.indexOf(scelto) + 1;
-    schermo.innerHTML = `
-      <div class="tenda sx"></div><div class="tenda dx"></div>
+    inner.innerHTML = `
       <img class="sfondo" hidden><div class="velo"></div>
       <div class="rango serif">${rango}</div>
       <button class="schermo-clic" title="Scheda film"></button>
@@ -1140,6 +1147,7 @@ async function disegnaSala(){
         </div>
       </div>
       <button id="btn-play" title="Elegge il film della serata e lo registra per tutti i presenti">▶</button>`;
+    schermo.classList.add('aperto');
     $('.schermo-clic').onclick = () => modaleScheda(scelto);
     $('#btn-play').onclick = () => modalePlay(scelto);
     const img = $('#schermo .sfondo');
