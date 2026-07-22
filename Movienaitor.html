@@ -76,8 +76,10 @@ header .spazio{flex:1}
 .filtro-azzera{color:var(--dim2); font-size:12px; text-decoration:underline}
 
 /* schermo */
-.schermo-wrap{position:relative; padding:10px 30px 0}
-.schermo{position:relative; aspect-ratio:21/8.4; border:3px double var(--oro-dim); border-radius:10px;
+.schermo-wrap{position:relative; padding:0 24px; display:flex; flex-direction:column}
+/* lo schermo riempie l'altezza della colonna centrale, pareggiando i pannelli laterali;
+   lo sfondo è object-fit:cover, quindi l'anteprima si adatta senza deformarsi */
+.schermo{position:relative; flex:1; min-height:240px; border:3px double var(--oro-dim); border-radius:10px;
   background:#120a0d; overflow:hidden; box-shadow:0 0 60px rgba(201,164,92,.10), var(--ombra)}
 .schermo .sfondo{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.85}
 .schermo .velo{position:absolute; inset:0; background:linear-gradient(180deg,rgba(18,10,13,.15) 30%,rgba(18,10,13,.88) 82%)}
@@ -224,7 +226,8 @@ header .spazio{flex:1}
 @media (max-width:1080px){
   .palco{grid-template-columns:1fr; }
   .rosa{grid-template-columns:repeat(4,1fr)}
-  .schermo-wrap{padding:0}
+  .schermo-wrap{padding:0; display:block}
+  .schermo{aspect-ratio:21/9; flex:none; min-height:0}
 }
 @media (max-width:700px){
   .rosa{grid-template-columns:1fr 1fr}
@@ -1010,21 +1013,27 @@ async function disegnaSala(){
     urlImmagine(f, 'sfondo').then(u => u || urlImmagine(f, 'locandina'))
       .then(u => { img.src = u || segnapostoSVG('', f.tmdbId); img.hidden = false; });
 
-    // griglia 2-5: sempre i ranghi 2..5 (il proiettato è evidenziato)
+    // mensola laterale: gli altri film in classifica (tutti tranne quello sul proiettore),
+    // ciascuno col suo rango reale. Così scegliendo un laterale il 1º ricompare qui ed è
+    // di nuovo selezionabile (clic sul 1º = torna alla scelta automatica).
+    const altri = ris.rosa.map((r, i) => ({ r, rango: i + 1 })).filter(o => o.r !== scelto).slice(0, 4);
+    const primoId = ris.rosa[0] ? ris.rosa[0].film.tmdbId : null;
     const celle = [];
-    for (let i = 1; i < 5; i++){
-      const r = ris.rosa[i];
-      if (!r){ celle.push(`<div class="posto vuoto">${i+1}º —</div>`); continue; }
-      celle.push(`<div class="posto${r === scelto ? ' proiettato' : ''}" data-id="${r.film.tmdbId}" title="${esc(r.film.titolo)} — clic per proiettarlo">
+    for (let k = 0; k < 4; k++){
+      const o = altri[k];
+      if (!o){ celle.push(`<div class="posto vuoto">—</div>`); continue; }
+      const primo = o.r.film.tmdbId === primoId;
+      celle.push(`<div class="posto" data-id="${o.r.film.tmdbId}" title="${esc(o.r.film.titolo)} — clic per ${primo ? 'rimetterlo sul proiettore' : 'proiettarlo'}">
         <img hidden><div class="segnaposto"></div>
-        <div class="r-velo"></div><div class="r-rango serif">${i+1}</div>
-        <div class="r-titolo">${esc(r.film.titolo)}</div>
+        <div class="r-velo"></div><div class="r-rango serif">${o.rango}${primo ? ' <span style="font-size:12px;color:var(--oro)">↩</span>' : ''}</div>
+        <div class="r-titolo">${esc(o.r.film.titolo)}</div>
       </div>`);
     }
     rosaEl.innerHTML = celle.join('');
     $$('#rosa .posto[data-id]').forEach(el => {
-      el.onclick = () => { S.proiettato = parseInt(el.dataset.id, 10); disegnaSala(); };
-      const r = ris.rosa.find(x => x.film.tmdbId === parseInt(el.dataset.id, 10));
+      const id = parseInt(el.dataset.id, 10);
+      el.onclick = () => { S.proiettato = (id === primoId) ? null : id; disegnaSala(); };
+      const r = ris.rosa.find(x => x.film.tmdbId === id);
       const img2 = el.querySelector('img'), seg = el.querySelector('.segnaposto');
       seg.style.background = `url("${segnapostoSVG(r.film.titolo, r.film.tmdbId)}") center/cover`;
       urlImmagine(r.film, 'locandina').then(u => { if (u){ img2.src = u; img2.hidden = false; seg.remove(); } });

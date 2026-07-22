@@ -197,7 +197,7 @@ libera, nello stile velluto dell'app.
 | H2 | Vincoli serata | **durata max** (slider 60'–240' + "∞"), **regista** (testo, opzionale, con suggerimenti presi dalle liste), **genere** (scelta multipla, opzionale) |
 | H3 | Top 5 | classifica calcolata come da §8; il 1° va sul proiettore, 2°–5° come locandine cliccabili |
 | H4 | Scheda film | click su una locandina: trama, voto, durata, generi, regista, e *quante* persone lo propongono (mai chi vieta chi) |
-| H5 | Cambio proiezione | click su una locandina 2°–5° la porta sul proiettore (si può scegliere anche il non-primo) |
+| H5 | Cambio proiezione | la mensola mostra gli **altri 4** film in classifica (tutti tranne quello sul proiettore), col rango reale: un clic ne porta un altro sul proiettore; il 1° resta sempre nella mensola (con ↩), così ci si può tornare |
 | H6 | **Play** | conferma il film sul proiettore: scrive la voce nello storico coi presenti, la voce si spegne ("vista") per tutti i partecipanti, i timer di equità dei proponenti si azzerano; piccola animazione "si spengono le luci" |
 | H7 | Ricarica | rilegge tutti i JSON (Drive può impiegare qualche secondo a sincronizzare); mostra data/ora dell'ultimo aggiornamento letto |
 
