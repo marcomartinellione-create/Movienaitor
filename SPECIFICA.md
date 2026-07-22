@@ -331,9 +331,10 @@ l'**Archivio** dell'host mostra invece tutti gli episodi (serve la scorta comple
   - fondo sala `#1c1114`, velluto `#3a1f24`, rosso sipario `#8a3d3d`,
     oro `#c9a45c`, oro chiaro `#e0c07d`, testo crema `#f2e7d5`.
 - Poltrona vuota = sagoma scura; occupata = si "accende" col colore e il nome dell'utente.
-- Proiettore/schermo con cornice dorata, che riempie l'altezza della colonna centrale
-  (pareggia i pannelli laterali, simmetrici); 2°–5° su una "mensola" di locandine in
-  proporzione 2:3.
+- Proiettore/schermo con cornice dorata, altezza definita (`--proi-h`, `adattaSala()`).
+  A destra i film 2°–5° in **griglia 2×2** di locandine (2:3) alta il **90% del proiettore**;
+  a sinistra il pannello "STASERA" **a specchio** (stessa impronta: larghezza + altezza),
+  entrambe le colonne centrate verticalmente. Larghezze ricavate dalle locandine.
 - **Sipario** (2026-07-22): due tende di velluto coprono lo schermo quando non c'è un film
   in proiezione (sala vuota o niente in cartellone) e scorrono aperte quando compare un
   film (classe `.schermo.aperto`).

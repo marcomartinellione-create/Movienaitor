@@ -12,6 +12,8 @@
   --crema:#f2e7d5; --dim:#b8a68e; --dim2:#7d6f5c; --verde:#7d9b76;
   --ombra:0 10px 30px rgba(0,0,0,.45);
   --serif:Georgia,'Times New Roman',serif;
+  /* layout Sala: altezza proiettore e strisce laterali (calcolate da adattaSala) */
+  --proi-h:420px; --strip-h:378px; --strip-w:64px; --strip-gap:8px;
 }
 *{box-sizing:border-box; margin:0}
 html,body{height:100%}
@@ -64,7 +66,11 @@ header .spazio{flex:1}
 .icona:hover{background:var(--velluto2); color:var(--oro2)}
 
 /* ---------- sala ---------- */
-.palco{display:grid; grid-template-columns:235px 1fr 235px; gap:18px; align-items:stretch}
+.palco{display:grid; grid-template-columns:var(--strip-w) 1fr var(--strip-w); gap:18px; align-items:stretch}
+/* pannello STASERA: stessa impronta (larghezza+altezza) della griglia film a destra */
+#pannello-stasera{width:var(--strip-w); height:var(--strip-h); align-self:center; overflow-y:auto}
+/* chip generi in un menù (riuso in altri punti) */
+.gen-chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px}
 .pannello{background:linear-gradient(180deg,var(--velluto),var(--velluto2)); border:1px solid #4a2c33;
   border-radius:14px; padding:16px; box-shadow:var(--ombra)}
 .pannello h3{color:var(--oro); font-size:15px; letter-spacing:.1em; margin-bottom:12px; font-weight:400}
@@ -79,10 +85,10 @@ header .spazio{flex:1}
 .filtro-azzera{color:var(--dim2); font-size:12px; text-decoration:underline}
 
 /* schermo */
-.schermo-wrap{position:relative; padding:0 24px; display:flex; flex-direction:column}
-/* lo schermo riempie l'altezza della colonna centrale, pareggiando i pannelli laterali;
-   lo sfondo è object-fit:cover, quindi l'anteprima si adatta senza deformarsi */
-.schermo{position:relative; flex:1; min-height:240px; border:3px double var(--oro-dim); border-radius:10px;
+.schermo-wrap{position:relative; padding:0 20px; display:flex; flex-direction:column; justify-content:center}
+/* lo schermo ha un'altezza definita (--proi-h): da lì derivano le strisce laterali (90%);
+   lo sfondo è object-fit:cover, l'anteprima si adatta senza deformarsi */
+.schermo{position:relative; height:var(--proi-h); width:100%; border:3px double var(--oro-dim); border-radius:10px;
   background:#120a0d; overflow:hidden; box-shadow:0 0 60px rgba(201,164,92,.10), var(--ombra)}
 .schermo .sfondo{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.85}
 .schermo .velo{position:absolute; inset:0; background:linear-gradient(180deg,rgba(18,10,13,.15) 30%,rgba(18,10,13,.88) 82%)}
@@ -111,10 +117,10 @@ header .spazio{flex:1}
 #btn-play:disabled{filter:grayscale(.7) brightness(.6); cursor:default; transform:none}
 .schermo-clic{position:absolute; inset:0; z-index:2; cursor:pointer}
 
-/* rosa 2-5: locandine con proporzioni corrette (2:3) */
-.rosa{display:grid; grid-template-columns:1fr 1fr; gap:12px; align-content:start}
-.rosa .posto{position:relative; border:1px solid #4a2c33; border-radius:10px; overflow:hidden; background:var(--bg2);
-  cursor:pointer; aspect-ratio:2/3; transition:transform .12s}
+/* rosa 2-5: griglia 2×2 di locandine (2:3), alta il 90% del proiettore */
+.rosa{display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:var(--strip-gap); height:var(--strip-h); align-self:center}
+.rosa .posto{position:relative; min-height:0; border:1px solid #4a2c33; border-radius:8px; overflow:hidden; background:var(--bg2);
+  cursor:pointer; transition:transform .12s}
 .rosa .posto:hover{transform:translateY(-2px); border-color:var(--oro-dim)}
 .rosa .posto img,.rosa .posto .segnaposto{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
 .rosa .posto .r-velo{position:absolute; inset:0; background:linear-gradient(180deg,transparent 40%,rgba(18,10,13,.9))}
@@ -254,10 +260,12 @@ header .spazio{flex:1}
 @keyframes sale{from{transform:translateY(8px); opacity:0}}
 
 @media (max-width:1080px){
-  .palco{grid-template-columns:1fr; }
-  .rosa{grid-template-columns:repeat(4,1fr)}
+  .palco{grid-template-columns:1fr}
+  #pannello-stasera{width:auto; height:auto; overflow:visible}
+  .rosa{grid-template-rows:auto; height:auto; align-self:auto}
+  .rosa .posto{aspect-ratio:2/3}
   .schermo-wrap{padding:0; display:block}
-  .schermo{aspect-ratio:21/9; flex:none; min-height:0}
+  .schermo{aspect-ratio:21/9; height:auto}
 }
 @media (max-width:700px){
   .rosa{grid-template-columns:1fr 1fr}
@@ -296,7 +304,7 @@ header .spazio{flex:1}
   <!-- ───── SALA ───── -->
   <main id="vista-sala">
     <div class="palco">
-      <div class="pannello">
+      <div class="pannello" id="pannello-stasera">
         <h3>STASERA</h3>
         <div class="filtro">
           <label>Genere</label>
@@ -412,7 +420,7 @@ header .spazio{flex:1}
 <script>
 'use strict';
 /* ════════════════════════ COSTANTI ════════════════════════ */
-const APP_VERSION = '0.1.4';
+const APP_VERSION = '0.1.5';
 const CONFIG_DEFAULT = {
   tmdbKey:'', omdbKey:'',
   bonusCoralita:0.10, capCoralita:0.30, incrementoAttesa:0.10, bonusCoppia:1.15
@@ -432,6 +440,7 @@ const slugify = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().rep
 const oggiISO = () => new Date().toISOString().slice(0,10);
 const giorniDa = iso => Math.max(0, (Date.now() - new Date(iso+'T12:00:00').getTime()) / 864e5);
 const fmtMin = m => m ? `${Math.floor(m/60)}h ${String(m%60).padStart(2,'0')}'` : 'durata n.d.';
+const fmtMinBreve = m => m ? `≤${Math.floor(m/60)}h${String(m%60).padStart(2,'0')}` : '∞';
 const fmtNum = (n,d=2) => n.toLocaleString('it-IT',{minimumFractionDigits:d, maximumFractionDigits:d});
 const fmtData = iso => new Date(iso+'T12:00:00').toLocaleDateString('it-IT',{day:'numeric', month:'long', year:'numeric'});
 const maiuscola = s => s ? s[0].toUpperCase()+s.slice(1) : s;
@@ -977,6 +986,7 @@ async function avviaApp(){
   $('#io-nome').textContent = nomeDi(S.me);
   $('#io-colore').style.background = coloreDi(S.me);
   applicaHost();
+  adattaSala();
   disegnaTutto();
 }
 
@@ -1046,6 +1056,22 @@ function disegnaFiltri(){
   $('#filtro-regista').value = S.filtri.regista;
 }
 
+// dimensioni della Sala: il proiettore ha altezza --proi-h; le due colonne laterali
+// (STASERA e la griglia film 2×2) sono a specchio, alte il 90% del proiettore, e la
+// larghezza si adatta alle locandine 2:3 della griglia.
+function adattaSala(){
+  const H = Math.round(Math.max(380, Math.min(window.innerHeight - 300, 720)));
+  const gap = 12;
+  const rowH = (0.9 * H - gap) / 2;        // 2 righe
+  const posterW = Math.round(rowH * 2 / 3);
+  const gridW = posterW * 2 + gap;         // 2 colonne
+  const r = document.documentElement.style;
+  r.setProperty('--proi-h', H + 'px');
+  r.setProperty('--strip-h', Math.round(0.9 * H) + 'px');
+  r.setProperty('--strip-w', gridW + 'px');
+  r.setProperty('--strip-gap', gap + 'px');
+}
+
 // Poltrona di cinema vista dall'alto — l'idea viene dal CAD "Stile sedie" (seduta,
 // braccioli, schienale in basso, persona dall'alto) ma il disegno è libero, nello
 // stile velluto dell'app: cuscino sfumato con cucitura, braccioli a capsula,
@@ -1109,6 +1135,7 @@ function disegnaPlatea(){
 }
 
 async function disegnaSala(){
+  adattaSala();
   disegnaPlatea();
   const schermo = $('#schermo'), inner = $('#schermo-inner'), rosaEl = $('#rosa');
   if (!S.presenti.size){
@@ -1664,6 +1691,8 @@ function agganciaGlobali(){
     disegnaFiltri(); disegnaSala();
   };
   $('#filtro-azzera').onclick = () => { S.filtri = {durata:null, genere:[], regista:''}; disegnaFiltri(); disegnaSala(); };
+  let ridimTimer = null;
+  window.addEventListener('resize', () => { clearTimeout(ridimTimer); ridimTimer = setTimeout(() => { adattaSala(); }, 120); });
   window.addEventListener('focus', () => {
     if (!$('#app').hidden && !S.demo && S.ultimaLettura && Date.now() - S.ultimaLettura.getTime() > 15000) ricarica(true);
   });
