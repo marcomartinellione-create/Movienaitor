@@ -1,33 +1,30 @@
 /* Adatta il progetto Android generato da `cap add android`:
-   - targetSdk 29 + requestLegacyExternalStorage → lettura/scrittura diretta della
-     cartella locale sincronizzata (memoria condivisa), senza SAF.
-   - permessi di storage nel manifest.
+   inietta il plugin nativo SAF (selettore cartelle di sistema) e lo registra.
    Eseguito in CI dopo `cap add android`, dalla cartella app-mobile/. */
 const fs = require('fs');
 
-function patch(file, fn){
-  if (!fs.existsSync(file)){ console.error('MANCA', file); process.exit(1); }
-  const before = fs.readFileSync(file, 'utf8');
-  const after = fn(before);
-  fs.writeFileSync(file, after);
-  console.log('patched', file);
+const PKG_DIR = 'android/app/src/main/java/com/movienaitor/app';
+
+function must(file){ if (!fs.existsSync(file)){ console.error('MANCA', file); process.exit(1); } }
+
+// 1) dipendenza androidx.documentfile (per navigare la cartella SAF)
+{
+  const g = 'android/app/build.gradle';
+  must(g);
+  let s = fs.readFileSync(g, 'utf8');
+  if (!s.includes('androidx.documentfile')){
+    s = s.replace(/dependencies\s*\{/, 'dependencies {\n    implementation "androidx.documentfile:documentfile:1.0.1"');
+    fs.writeFileSync(g, s);
+    console.log('patched', g);
+  }
 }
 
-// 1) variables.gradle → targetSdk 29
-patch('android/variables.gradle', s =>
-  s.replace(/targetSdkVersion\s*=\s*\d+/, 'targetSdkVersion = 29')
-);
-
-// 2) AndroidManifest.xml → permessi + legacy storage
-patch('android/app/src/main/AndroidManifest.xml', s => {
-  if (!s.includes('READ_EXTERNAL_STORAGE')){
-    const perms =
-      '    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n' +
-      '    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />\n';
-    s = s.replace('<application', perms + '    <application');
+// 2) copia i sorgenti nativi (plugin + MainActivity che lo registra)
+{
+  fs.mkdirSync(PKG_DIR, { recursive: true });
+  for (const f of ['MvnSafPlugin.java', 'MainActivity.java']){
+    must('native/' + f);
+    fs.copyFileSync('native/' + f, PKG_DIR + '/' + f);
+    console.log('copiato', f, '→', PKG_DIR);
   }
-  if (!s.includes('requestLegacyExternalStorage')){
-    s = s.replace('<application', '<application android:requestLegacyExternalStorage="true"');
-  }
-  return s;
-});
+}

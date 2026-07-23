@@ -101,10 +101,8 @@
       <div class="centro">
         <img src="icon.svg" style="width:88px;height:88px;border-radius:18px">
         <div><h1>MOVIE<span class="c">NAITOR</span></h1><p class="sub">Trova e aggiungi film, dal telefono.</p></div>
-        <p style="color:var(--dim); font-size:14px; max-width:320px">Indica la cartella del gruppo, quella che tieni sincronizzata con Google&nbsp;Drive sul telefono.</p>
-        <input class="campo" id="cartella-path" placeholder="Movienaitor" autocapitalize="off" autocomplete="off" spellcheck="false">
-        <div style="font-size:12px;color:var(--dim);max-width:320px">Percorso dentro la memoria interna. Es. <b>Movienaitor</b> oppure <b>Download/Movienaitor</b>.</div>
-        <button class="primario grande" id="btn-collega">Collega</button>
+        <p style="color:var(--dim); font-size:14px; max-width:320px">Scegli la cartella del gruppo — quella che tieni sincronizzata con Google&nbsp;Drive: naviga tra i file del telefono e selezionala.</p>
+        <button class="primario grande" id="btn-scegli">📁 Scegli cartella</button>
         <div id="cartella-nota" style="font-size:12.5px; color:var(--dim); max-width:320px"></div>
       </div>
     </section>
@@ -138,7 +136,7 @@
 
 <script>
 /* ══════════════════ STATO ══════════════════ */
-const S = { base:null, config:{}, profili:[], me:null };
+const S = { treeUri:null, config:{}, profili:[], me:null };
 
 const $ = s => document.querySelector(s);
 const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -154,65 +152,31 @@ $('#backdrop').addEventListener('click', e=>{ if(e.target.id==='backdrop') chiud
 const fmtMin = m => m ? Math.floor(m/60)+'h'+String(m%60).padStart(2,'0') : '—';
 const stelle = n => '★★★★★☆☆☆☆☆'.slice(5-(n||0), 10-(n||0));
 
-/* ══════════════════ FILE SYSTEM LOCALE (Capacitor) ══════════════════ */
-const FSplug = () => (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) || null;
-const DIR = 'EXTERNAL_STORAGE';   // radice della memoria condivisa (/storage/emulated/0)
-const inApp = () => !!FSplug();
+/* ══════════════════ CARTELLA DI SISTEMA (SAF, plugin nativo) ══════════════════ */
+const saf = () => (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.MvnSaf) || null;
+const inApp = () => !!saf();
 
-async function assicuraPermessi(){
-  const fs = FSplug(); if (!fs) return;
-  try {
-    const st = await fs.checkPermissions();
-    if (st && st.publicStorage === 'granted') return;
-    await fs.requestPermissions();
-  } catch(e){ /* su alcune versioni requestPermissions non esiste: si prova comunque a leggere */ }
-}
-async function fsList(path){
-  const r = await FSplug().readdir({ path, directory: DIR });
-  return (r.files || []).map(f => typeof f === 'string' ? { name:f, type:'' } : { name:f.name, type:f.type||'' });
-}
-async function fsLeggi(path){
-  const r = await FSplug().readFile({ path, directory: DIR, encoding: 'utf8' });
-  return r.data;
-}
-async function fsScrivi(path, str){
-  await FSplug().writeFile({ path, directory: DIR, data: str, encoding: 'utf8', recursive: true });
-}
+async function pickFolder(){ const r = await saf().pickFolder(); return (r && r.uri) ? r.uri : null; }
+async function fsLeggi(uri){ return (await saf().read({ uri })).data; }
+async function fsScrivi(uri, str){ await saf().write({ uri, data: str }); }
 
 /* ══════════════════ CARICAMENTO CARTELLA + PROFILI ══════════════════ */
-async function caricaCartella(base){
-  S.base = base.replace(/^\/+|\/+$/g,'');
-  await assicuraPermessi();
-  let figli;
-  try { figli = await fsList(S.base); }
-  catch(e){ throw new Error('Cartella non trovata o non leggibile: «'+S.base+'». Controlla il nome e i permessi. ('+e.message+')'); }
-
-  const cfgFile = figli.find(f => f.name === 'config.json');
-  const profiliDir = figli.find(f => f.name === 'profili' && (f.type === 'directory' || f.type === ''));
+async function caricaCartella(treeUri){
+  const res = await saf().loadFolder({ uri: treeUri });   // { config, profili:[{name,uri,data}] }
+  S.treeUri = treeUri;
 
   S.config = {};
-  if (cfgFile){ try { S.config = JSON.parse(await fsLeggi(S.base+'/config.json')); } catch(e){} }
-
-  let files = [];
-  try { files = await fsList(S.base + '/profili'); } catch(e){ files = []; }
-  if (!files.length && !profiliDir){
-    // profili forse direttamente nella cartella
-    files = figli.filter(f => f.name.endsWith('.json') && f.name !== 'config.json' && f.name !== 'storico.json' && f.name !== 'archivio.json');
-    S.profiliBase = S.base;
-  } else {
-    S.profiliBase = S.base + '/profili';
-  }
+  if (res.config){ try { S.config = JSON.parse(res.config); } catch(e){} }
 
   S.profili = [];
-  for (const f of files){
-    if (!f.name.endsWith('.json')) continue;
+  for (const f of (res.profili || [])){
     try {
-      const p = JSON.parse(await fsLeggi(S.profiliBase + '/' + f.name));
-      if (p && p.slug && Array.isArray(p.lista)){ p._file = S.profiliBase + '/' + f.name; S.profili.push(p); }
+      const p = JSON.parse(f.data);
+      if (p && p.slug && Array.isArray(p.lista)){ p._uri = f.uri; S.profili.push(p); }
     } catch(e){}
   }
   S.profili.sort((a,b)=> (a.creato||'').localeCompare(b.creato||'') || a.slug.localeCompare(b.slug));
-  LS.set('base', S.base);
+  LS.set('tree', treeUri);
   disegnaProfili();
   schermo('sc-chi');
 }
@@ -341,11 +305,11 @@ async function modaleAggiungi(id){
 
 /* ══════════════════ SCRITTURA SICURA (rileggo prima di scrivere) ══════════════════ */
 async function mutaLista(fn){
-  const fresh = JSON.parse(await fsLeggi(S.me._file));
+  const fresh = JSON.parse(await fsLeggi(S.me._uri));
   fresh.lista = fresh.lista || [];
   fn(fresh);
-  await fsScrivi(S.me._file, JSON.stringify(fresh));
-  fresh._file = S.me._file;
+  await fsScrivi(S.me._uri, JSON.stringify(fresh));
+  fresh._uri = S.me._uri;
   S.me = fresh;
   const i = S.profili.findIndex(p => p.slug === fresh.slug);
   if (i >= 0) S.profili[i] = fresh;
@@ -393,27 +357,35 @@ function confermaTogli(id){
 }
 
 /* ══════════════════ EVENTI ══════════════════ */
-$('#btn-collega').onclick = async () => {
-  const base = $('#cartella-path').value.trim() || $('#cartella-path').placeholder;
-  const btn = $('#btn-collega'); btn.disabled=true; const t=btn.textContent; btn.innerHTML='<span class="spin"></span> collego…';
+async function scegliECarica(){
+  if (!inApp()){ $('#cartella-nota').innerHTML='Questa è la versione app: aprila come APK installato (nel browser il selettore di sistema non è disponibile).'; return; }
+  const btn = $('#btn-scegli'); btn.disabled=true; const t=btn.textContent; btn.innerHTML='<span class="spin"></span> …';
   $('#cartella-nota').textContent='';
   try {
-    if (!inApp()){ $('#cartella-nota').innerHTML='Questa è la versione app: aprila come APK installato (nel browser il filesystem non è accessibile).'; return; }
-    await caricaCartella(base);
-  } catch(e){ $('#cartella-nota').textContent = e.message; }
+    const uri = await pickFolder();
+    if (!uri){ return; }             // annullato
+    btn.innerHTML='<span class="spin"></span> apro la cartella…';
+    await caricaCartella(uri);
+  } catch(e){ $('#cartella-nota').textContent = 'Non riuscito: ' + (e.message||e); }
   finally { btn.disabled=false; btn.textContent=t; }
-};
-$('#btn-cambia-cartella').onclick = () => { $('#hdr').style.display='none'; schermo('sc-cartella'); };
+}
+$('#btn-scegli').onclick = scegliECarica;
+$('#btn-cambia-cartella').onclick = () => { $('#hdr').style.display='none'; schermo('sc-cartella'); scegliECarica(); };
 $('#btn-cambia-utente').onclick = () => { disegnaProfili(); schermo('sc-chi'); $('#hdr').style.display='none'; };
 $('#btn-cerca').onclick = eseguiRicerca;
 $('#q').addEventListener('keydown', e => { if (e.key === 'Enter') eseguiRicerca(); });
 
 /* ══════════════════ AVVIO ══════════════════ */
-(function init(){
-  const salvata = LS.get('base');
-  if (salvata) $('#cartella-path').value = salvata;
+(async function init(){
   if (!inApp()){
-    $('#cartella-nota').innerHTML = 'Anteprima nel browser: il collegamento alla cartella funziona solo nell\'APK installato.';
+    $('#cartella-nota').innerHTML = 'Anteprima nel browser: il selettore cartelle funziona solo nell\'APK installato.';
+    return;
+  }
+  const saved = LS.get('tree');
+  if (saved){
+    $('#cartella-nota').innerHTML = '<span class="spin"></span> riapro l\'ultima cartella…';
+    try { await caricaCartella(saved); }
+    catch(e){ $('#cartella-nota').innerHTML = 'Tocca <b>Scegli cartella</b> per riaprirla (permesso scaduto o cartella spostata).'; }
   }
 })();
 </script>
