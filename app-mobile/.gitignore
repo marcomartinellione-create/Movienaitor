@@ -3,3 +3,5 @@ node_modules/
 android/
 .gradle/
 *.apk
+# PNG icona/splash generati in CI da make-icon.js (le sorgenti sono gli .svg)
+assets/*.png

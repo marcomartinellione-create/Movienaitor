@@ -4,7 +4,9 @@
   "private": true,
   "description": "APK Movienaitor: aggiungi film da telefono, cartella Drive sincronizzata in locale.",
   "devDependencies": {
-    "@capacitor/cli": "^6.1.2"
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^6.1.2",
+    "sharp": "^0.33.5"
   },
   "dependencies": {
     "@capacitor/android": "^6.1.2",

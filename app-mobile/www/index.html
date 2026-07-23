@@ -64,6 +64,16 @@
   .sezione{font-size:12px; letter-spacing:.14em; color:var(--dim); text-transform:uppercase; margin:18px 2px 8px}
   .vuoto{color:var(--dim); text-align:center; padding:24px; font-size:14px}
   .stelle{color:var(--oro); letter-spacing:2px; font-size:13px}
+  .film.cliccabile{cursor:pointer}
+  .film .chevron{color:var(--dim); font-size:20px; padding:0 4px}
+
+  .compagnia{display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 2px}
+  .pchip{font-size:12.5px; padding:7px 11px; border-radius:999px; border:1px solid var(--linea); background:var(--bg2); color:var(--dim)}
+  .pchip.con{border-color:var(--ok); color:#d3e8cc; background:#20301c}
+  .pchip.non{border-color:var(--rosso2); color:#f2cecc; background:#331919}
+  .etich{font-size:12px; letter-spacing:.12em; color:var(--dim); margin-top:12px}
+  .pw-in{width:100%; background:var(--bg2); border:1px solid var(--linea); color:var(--testo); padding:12px; border-radius:10px; font:inherit; margin-top:8px}
+  .pw-in:focus{outline:0; border-color:var(--oro)}
 
   .backdrop{position:fixed; inset:0; background:#000a; display:none; align-items:flex-end; justify-content:center; z-index:20}
   .backdrop.on{display:flex}
@@ -113,6 +123,7 @@
         <div class="bollo">🎬</div>
         <div><h1 style="font-size:18px">CHI SEI?</h1><p class="sub">Scegli il tuo profilo</p></div>
         <div class="lista-profili" id="lista-profili"></div>
+        <button class="ghost grande" id="btn-indietro" style="display:none">← Torna alla mia lista</button>
         <button class="linkbtn" id="btn-cambia-cartella">cambia cartella</button>
       </div>
     </section>
@@ -121,7 +132,6 @@
     <section class="schermo" id="sc-app">
       <div class="cerca">
         <input id="q" type="search" enterkeyhint="search" placeholder="Cerca un film da aggiungere…" autocomplete="off">
-        <button class="oro" id="btn-cerca">Cerca</button>
       </div>
       <div id="risultati"></div>
       <div class="sezione">La mia lista <span id="conta-lista"></span></div>
@@ -152,6 +162,39 @@ $('#backdrop').addEventListener('click', e=>{ if(e.target.id==='backdrop') chiud
 const fmtMin = m => m ? Math.floor(m/60)+'h'+String(m%60).padStart(2,'0') : '—';
 const stelle = n => '★★★★★☆☆☆☆☆'.slice(5-(n||0), 10-(n||0));
 
+/* password profilo (come su PC: evita di entrare per sbaglio nel profilo altrui) */
+function promptPassword(nome, onOk){
+  apriModale(`<h3>Password di ${esc(nome)}</h3>
+    <p class="meta">Questo profilo ha una password: serve solo a non entrare per sbaglio nel profilo di un altro.</p>
+    <input type="password" class="pw-in" id="pw-in" autocomplete="off" spellcheck="false" inputmode="text">
+    <div class="m-az">
+      <button class="ghost" id="pw-annulla">Annulla</button>
+      <button class="primario" id="pw-ok">🎟 Entra</button>
+    </div>`);
+  const vai = () => { const val = $('#pw-in').value; chiudiModale(); onOk(val); };
+  $('#pw-annulla').onclick = chiudiModale;
+  $('#pw-ok').onclick = vai;
+  $('#pw-in').onkeydown = e => { if (e.key === 'Enter') vai(); };
+  setTimeout(() => $('#pw-in').focus(), 40);
+}
+
+/* white/black list: chip a tre stati  neutro → ✓ con → ✗ non → neutro (identico al PC) */
+function chipsCompagnia(voce){
+  const altri = S.profili.filter(p => p.slug !== (S.me && S.me.slug));
+  if (!altri.length) return '<span style="color:var(--dim); font-size:12px">nessun altro profilo</span>';
+  return altri.map(p => {
+    const stato = (voce.conChi||[]).includes(p.slug) ? 'con' : (voce.nonCon||[]).includes(p.slug) ? 'non' : '';
+    const segno = stato === 'con' ? '✓ ' : stato === 'non' ? '✗ ' : '';
+    return `<button class="pchip ${stato}" data-slug="${esc(p.slug)}">${segno}${esc(p.nome)}</button>`;
+  }).join('');
+}
+function cicloCompagnia(voce, slug){
+  voce.conChi = voce.conChi || []; voce.nonCon = voce.nonCon || [];
+  if (voce.conChi.includes(slug)){ voce.conChi = voce.conChi.filter(x=>x!==slug); voce.nonCon.push(slug); }
+  else if (voce.nonCon.includes(slug)){ voce.nonCon = voce.nonCon.filter(x=>x!==slug); }
+  else voce.conChi.push(slug);
+}
+
 /* ══════════════════ CARTELLA DI SISTEMA (SAF, plugin nativo) ══════════════════ */
 const saf = () => (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.MvnSaf) || null;
 const inApp = () => !!saf();
@@ -178,7 +221,11 @@ async function caricaCartella(treeUri){
   S.profili.sort((a,b)=> (a.creato||'').localeCompare(b.creato||'') || a.slug.localeCompare(b.slug));
   LS.set('tree', treeUri);
   disegnaProfili();
+  $('#btn-indietro').style.display = 'none';
   schermo('sc-chi');
+  // ricorda l'utente selezionato: se c'è, entra da solo (chiede la password se serve)
+  const ricordato = LS.get('me');
+  if (ricordato && S.profili.some(p => p.slug === ricordato)) scegliProfilo(ricordato);
 }
 
 function coloreDi(p, i){ return p.colore || ['#c9a45c','#9b7da8','#6f8fae','#7d9b76','#b0805a','#a85454'][i%6]; }
@@ -192,10 +239,17 @@ function disegnaProfili(){
   box.innerHTML = S.profili.map((p,i)=>`
     <button class="prof ghost" data-slug="${esc(p.slug)}">
       <span class="pallino" style="background:${esc(coloreDi(p,i))}"></span>
-      <span style="flex:1">${esc(p.nome)}</span>
+      <span style="flex:1">${p.password ? '🔒 ' : ''}${esc(p.nome)}</span>
       <span style="color:var(--dim); font-size:12px">${(p.lista||[]).length} film</span>
     </button>`).join('');
-  box.querySelectorAll('.prof').forEach(b => b.onclick = () => entra(b.dataset.slug));
+  box.querySelectorAll('.prof').forEach(b => b.onclick = () => scegliProfilo(b.dataset.slug));
+}
+
+function scegliProfilo(slug){
+  const p = S.profili.find(x => x.slug === slug);
+  if (!p) return;
+  if (p.password) promptPassword(p.nome, val => { if (val === p.password) entra(slug); else toast('Password errata', true); });
+  else entra(slug);
 }
 
 function entra(slug){
@@ -244,12 +298,22 @@ async function dettagliFilm(id){
 }
 
 /* ══════════════════ RICERCA + RISULTATI ══════════════════ */
+let cercaSeq = 0, cercaTimer = null;
+function programmaRicerca(){
+  clearTimeout(cercaTimer);
+  const q = $('#q').value.trim();
+  if (q.length < 2){ ++cercaSeq; $('#risultati').innerHTML = ''; return; }
+  cercaTimer = setTimeout(eseguiRicerca, 320);
+}
 async function eseguiRicerca(){
-  const q = $('#q').value.trim(); if (!q) return;
+  const q = $('#q').value.trim();
   const box = $('#risultati');
+  if (q.length < 2){ box.innerHTML = ''; return; }
+  const mio = ++cercaSeq;
   box.innerHTML = '<div class="vuoto"><span class="spin"></span> cerco…</div>';
   try {
     const res = await cercaFilm(q);
+    if (mio !== cercaSeq) return;   // arrivata una ricerca più recente: scarto questa
     if (!res.length){ box.innerHTML = '<div class="vuoto">Nessun risultato.</div>'; return; }
     const idsInLista = new Set((S.me.lista||[]).map(v=>v.tmdbId));
     box.innerHTML = res.map(f=>{
@@ -266,6 +330,7 @@ async function eseguiRicerca(){
     }).join('');
     box.querySelectorAll('[data-add]').forEach(b => b.onclick = () => modaleAggiungi(parseInt(b.dataset.add,10)));
   } catch(e){
+    if (mio !== cercaSeq) return;
     box.innerHTML = `<div class="vuoto">Ricerca non riuscita: ${esc(e.message==='nokey'?'manca la chiave TMDB in config.json':e.message)}</div>`;
   }
 }
@@ -278,23 +343,27 @@ async function modaleAggiungi(id){
   catch(e){ return apriModale(`<h3>Ahi</h3><p class="meta">Scheda non recuperata: ${esc(e.message)}</p><div class="m-az"><button class="ghost" onclick="chiudiModale()">Chiudi</button></div>`); }
 
   let desiderio = 3;
+  const comp = { conChi:[], nonCon:[] };
   apriModale(`
     <h3>${esc(d.titolo)}</h3>
     <div class="meta">${esc(d.anno||'')} · ${fmtMin(d.durata)}${d.regista?' · '+esc(d.regista):''}<br>
       ${esc((d.generi||[]).join(', '))}${d.voto?` · ★ ${d.voto} ${d.votoFonte==='imdb'?'IMDb':'TMDB'}`:''}</div>
     ${d.trama?`<div class="trama">${esc(d.trama)}</div>`:''}
-    <div style="font-size:12px;letter-spacing:.12em;color:var(--dim);margin-top:6px">QUANTO VUOI VEDERLO</div>
+    <div class="etich">QUANTO VUOI VEDERLO</div>
     <div class="picker" id="stelle">${[1,2,3,4,5].map(n=>`<span class="st${n<=desiderio?' on':''}" data-v="${n}">★</span>`).join('')}</div>
+    <div class="etich">CON CHI / NON CON <span style="color:var(--dim);letter-spacing:0">— tocca: ✓ con · ✗ non</span></div>
+    <div class="compagnia" id="chips">${chipsCompagnia(comp)}</div>
     <div class="m-az">
       <button class="ghost" id="m-annulla">Annulla</button>
       <button class="primario" id="m-ok">🎬 Aggiungi</button>
     </div>`);
   const dip = () => $('#stelle').querySelectorAll('.st').forEach(s => s.classList.toggle('on', +s.dataset.v <= desiderio));
   $('#stelle').onclick = e => { const s = e.target.closest('.st'); if(!s) return; desiderio = +s.dataset.v; dip(); };
+  $('#chips').onclick = e => { const c = e.target.closest('.pchip'); if(!c) return; cicloCompagnia(comp, c.dataset.slug); $('#chips').innerHTML = chipsCompagnia(comp); };
   $('#m-annulla').onclick = chiudiModale;
   $('#m-ok').onclick = async () => {
     $('#m-ok').disabled = true; $('#m-ok').innerHTML = '<span class="spin"></span>';
-    const voce = { ...d, desiderio, conChi:[], nonCon:[], aggiunto: new Date().toISOString() };
+    const voce = { ...d, desiderio, conChi:comp.conChi, nonCon:comp.nonCon, aggiunto: new Date().toISOString() };
     try {
       await mutaLista(p => { if (!(p.lista||[]).some(v=>v.tmdbId===voce.tmdbId)) p.lista.push(voce); });
       chiudiModale(); disegnaMiaLista(); eseguiRicerca();
@@ -323,36 +392,60 @@ function disegnaMiaLista(){
   if (!lista.length){ box.innerHTML = '<div class="vuoto">Ancora nessun film. Cerca qui sopra e aggiungi il primo 🎬</div>'; return; }
   box.innerHTML = lista.map(v=>{
     const pst = v.posterUrl || '';
-    return `<div class="film">
+    const comp = [ ...(v.conChi||[]).map(s=>'✓'+nomeDi(s)), ...(v.nonCon||[]).map(s=>'✗'+nomeDi(s)) ].join(' · ');
+    return `<div class="film cliccabile" data-edit="${v.tmdbId}">
       ${pst ? `<img class="pst" src="${esc(pst)}" loading="lazy" alt="">` : '<div class="pst"></div>'}
       <div class="info">
         <div class="tit">${esc(v.titolo)}</div>
         <div class="meta">${esc(v.anno||'')}${v.durata?' · '+fmtMin(v.durata):''}</div>
-        <div class="stelle">${stelle(v.desiderio)}</div>
+        <div class="stelle">${stelle(v.desiderio)}${comp?` <span style="color:var(--dim)">· ${esc(comp)}</span>`:''}</div>
       </div>
-      <div class="az"><button class="tondo ghost" data-del="${v.tmdbId}" title="togli">🗑</button></div>
+      <div class="chevron">›</div>
     </div>`;
   }).join('');
-  box.querySelectorAll('[data-del]').forEach(b => b.onclick = () => confermaTogli(parseInt(b.dataset.del,10)));
+  box.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => modaleModifica(parseInt(b.dataset.edit,10)));
 }
 
-function confermaTogli(id){
-  const v = (S.me.lista||[]).find(x=>x.tmdbId===id); if(!v) return;
+const nomeDi = slug => { const p = S.profili.find(x=>x.slug===slug); return p ? p.nome : slug; };
+
+/* menù di modifica di un film già in lista: priorità (desiderio) + white/black list + rimuovi */
+function modaleModifica(id){
+  const orig = (S.me.lista||[]).find(x=>x.tmdbId===id); if(!orig) return;
+  let desiderio = orig.desiderio || 3;
+  const comp = { conChi:[...(orig.conChi||[])], nonCon:[...(orig.nonCon||[])] };
   apriModale(`
-    <h3>Togliere dalla lista?</h3>
-    <p class="meta">«${esc(v.titolo)}» sparirà dalla tua lista.</p>
+    <h3>${esc(orig.titolo)}</h3>
+    <div class="meta">${esc(orig.anno||'')}${orig.durata?' · '+fmtMin(orig.durata):''}${orig.regista?' · '+esc(orig.regista):''}</div>
+    <div class="etich">QUANTO VUOI VEDERLO</div>
+    <div class="picker" id="stelle">${[1,2,3,4,5].map(n=>`<span class="st${n<=desiderio?' on':''}" data-v="${n}">★</span>`).join('')}</div>
+    <div class="etich">CON CHI / NON CON <span style="color:var(--dim);letter-spacing:0">— tocca: ✓ con · ✗ non</span></div>
+    <div class="compagnia" id="chips">${chipsCompagnia(comp)}</div>
     <div class="m-az">
-      <button class="ghost" id="m-no">Annulla</button>
-      <button class="primario" id="m-si">Rimuovi</button>
+      <button class="ghost" id="m-togli" style="color:var(--rosso2);border-color:var(--rosso2)">🗑 Rimuovi</button>
+      <button class="primario" id="m-salva">Salva</button>
     </div>`);
-  $('#m-no').onclick = chiudiModale;
-  $('#m-si').onclick = async () => {
-    $('#m-si').disabled=true; $('#m-si').innerHTML='<span class="spin"></span>';
+  $('#stelle').onclick = e => { const s = e.target.closest('.st'); if(!s) return; desiderio = +s.dataset.v; $('#stelle').querySelectorAll('.st').forEach(x=>x.classList.toggle('on', +x.dataset.v<=desiderio)); };
+  $('#chips').onclick = e => { const c = e.target.closest('.pchip'); if(!c) return; cicloCompagnia(comp, c.dataset.slug); $('#chips').innerHTML = chipsCompagnia(comp); };
+  $('#m-salva').onclick = async () => {
+    $('#m-salva').disabled=true; $('#m-salva').innerHTML='<span class="spin"></span>';
     try {
-      await mutaLista(p => { p.lista = (p.lista||[]).filter(x=>x.tmdbId!==id); });
-      chiudiModale(); disegnaMiaLista(); eseguiRicerca();
-      toast(`«${v.titolo}» tolto`);
-    } catch(e){ $('#m-si').disabled=false; $('#m-si').textContent='Rimuovi'; toast('Non riuscito: '+e.message, true); }
+      await mutaLista(p => { const vv = (p.lista||[]).find(x=>x.tmdbId===id); if(vv){ vv.desiderio=desiderio; vv.conChi=comp.conChi; vv.nonCon=comp.nonCon; } });
+      chiudiModale(); disegnaMiaLista();
+      toast('Modifiche salvate ✓');
+    } catch(e){ $('#m-salva').disabled=false; $('#m-salva').textContent='Salva'; toast('Non riuscito: '+e.message, true); }
+  };
+  $('#m-togli').onclick = () => {
+    apriModale(`<h3>Togliere dalla lista?</h3><p class="meta">«${esc(orig.titolo)}» sparirà dalla tua lista.</p>
+      <div class="m-az"><button class="ghost" id="m-no">Annulla</button><button class="primario" id="m-si">Rimuovi</button></div>`);
+    $('#m-no').onclick = () => modaleModifica(id);
+    $('#m-si').onclick = async () => {
+      $('#m-si').disabled=true; $('#m-si').innerHTML='<span class="spin"></span>';
+      try {
+        await mutaLista(p => { p.lista = (p.lista||[]).filter(x=>x.tmdbId!==id); });
+        chiudiModale(); disegnaMiaLista(); eseguiRicerca();
+        toast(`«${orig.titolo}» tolto`);
+      } catch(e){ $('#m-si').disabled=false; $('#m-si').textContent='Rimuovi'; toast('Non riuscito: '+e.message, true); }
+    };
   };
 }
 
@@ -371,9 +464,17 @@ async function scegliECarica(){
 }
 $('#btn-scegli').onclick = scegliECarica;
 $('#btn-cambia-cartella').onclick = () => { $('#hdr').style.display='none'; schermo('sc-cartella'); scegliECarica(); };
-$('#btn-cambia-utente').onclick = () => { disegnaProfili(); schermo('sc-chi'); $('#hdr').style.display='none'; };
-$('#btn-cerca').onclick = eseguiRicerca;
-$('#q').addEventListener('keydown', e => { if (e.key === 'Enter') eseguiRicerca(); });
+// clic sull'utente: vai alla scelta profilo ma con "Indietro" per tornare senza cambiare
+$('#btn-cambia-utente').onclick = () => {
+  disegnaProfili();
+  $('#btn-indietro').style.display = S.me ? '' : 'none';
+  $('#hdr').style.display = 'none';
+  schermo('sc-chi');
+};
+$('#btn-indietro').onclick = () => { if (!S.me) return; $('#hdr').style.display='flex'; schermo('sc-app'); };
+// ricerca in tempo reale (come su PC): niente pulsante
+$('#q').addEventListener('input', programmaRicerca);
+$('#q').addEventListener('keydown', e => { if (e.key === 'Enter'){ clearTimeout(cercaTimer); eseguiRicerca(); } });
 
 /* ══════════════════ AVVIO ══════════════════ */
 (async function init(){

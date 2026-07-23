@@ -36,8 +36,14 @@ jobs:
       - name: Aggiungi piattaforma Android
         run: npx cap add android
 
-      - name: Adatta il progetto (storage legacy + permessi)
+      - name: Inietta il plugin nativo (SAF)
         run: node scripts/patch-android.js
+
+      - name: Genera le sorgenti icona/splash
+        run: node scripts/make-icon.js
+
+      - name: Applica icone e splash al progetto Android
+        run: npx @capacitor/assets generate --android
 
       - name: Sync (copia web + plugin nel progetto Android)
         run: npx cap sync android
