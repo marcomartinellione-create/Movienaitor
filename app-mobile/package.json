@@ -1,0 +1,14 @@
+{
+  "name": "movienaitor-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "APK Movienaitor: aggiungi film da telefono, cartella Drive sincronizzata in locale.",
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/filesystem": "^6.0.1"
+  }
+}

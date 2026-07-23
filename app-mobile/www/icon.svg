@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#140a0c"/>
+  <g transform="translate(256 256) rotate(-8)">
+    <!-- corpo ciak -->
+    <rect x="-150" y="-20" width="300" height="150" rx="12" fill="#7a1f1f"/>
+    <!-- asse superiore (battente) -->
+    <g transform="rotate(-16)">
+      <rect x="-150" y="-70" width="300" height="52" rx="10" fill="#1c1113" stroke="#c9a45c" stroke-width="4"/>
+      <g fill="#c9a45c">
+        <polygon points="-140,-18 -118,-70 -86,-70 -108,-18"/>
+        <polygon points="-92,-18 -70,-70 -38,-70 -60,-18"/>
+        <polygon points="-44,-18 -22,-70 10,-70 -12,-18"/>
+        <polygon points="4,-18 26,-70 58,-70 36,-18"/>
+        <polygon points="52,-18 74,-70 106,-70 84,-18"/>
+        <polygon points="100,-18 122,-70 150,-70 132,-18"/>
+      </g>
+    </g>
+    <circle cx="0" cy="55" r="34" fill="#c9a45c"/>
+    <polygon points="-14,36 -14,74 22,55" fill="#7a1f1f"/>
+  </g>
+</svg>

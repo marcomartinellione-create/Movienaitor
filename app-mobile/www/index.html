@@ -1,0 +1,419 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#140a0c">
+<title>Movienaitor</title>
+<link rel="icon" href="icon.svg">
+
+<style>
+  :root{
+    --bg:#140a0c; --bg2:#1c1113; --card:#241619; --linea:#3a2226;
+    --oro:#c9a45c; --oro2:#e6c583; --rosso:#7a1f1f; --rosso2:#c0504d;
+    --testo:#f3e9e0; --dim:#b39a92; --ok:#7d9b76;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0}
+  body{
+    background:radial-gradient(120% 80% at 50% -10%, #26141a 0%, var(--bg) 60%);
+    color:var(--testo); font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    min-height:100dvh; padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  .wrap{max-width:520px; margin:0 auto; padding:16px}
+  h1{font-size:20px; letter-spacing:.06em; margin:0; color:var(--oro2)}
+  h1 .c{color:var(--rosso2)}
+  .sub{color:var(--dim); font-size:13px; margin:2px 0 0}
+
+  header{display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid var(--linea); position:sticky; top:0; background:linear-gradient(#140a0cf2,#140a0cd0); backdrop-filter:blur(6px); z-index:5}
+  header img{width:34px; height:34px; border-radius:8px}
+  header .chi{margin-left:auto; font-size:13px; color:var(--dim); text-align:right}
+  header .chi b{color:var(--oro2); display:block}
+  header .cambia{margin-left:8px; font-size:20px; background:none; padding:6px}
+
+  .schermo{display:none}
+  .schermo.on{display:block}
+
+  .centro{min-height:70dvh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:14px; padding:20px}
+  .bollo{font-size:52px}
+
+  button{font:inherit; cursor:pointer; border:0; border-radius:12px; padding:14px 18px; color:var(--testo); background:var(--card); transition:.15s}
+  button:active{transform:scale(.97)}
+  .primario{background:linear-gradient(180deg,var(--rosso2),var(--rosso)); color:#fff; font-weight:600; box-shadow:0 6px 18px #0006}
+  .oro{background:linear-gradient(180deg,var(--oro2),var(--oro)); color:#231208; font-weight:700}
+  .ghost{background:transparent; border:1px solid var(--linea); color:var(--dim)}
+  .grande{width:100%; max-width:340px; padding:16px}
+  .linkbtn{background:none; padding:8px; color:var(--dim); text-decoration:underline; font-size:13px}
+
+  .campo{width:100%; max-width:340px; background:var(--bg2); border:1px solid var(--linea); color:var(--testo); border-radius:12px; padding:14px; font:inherit; text-align:center}
+  .campo:focus{outline:0; border-color:var(--oro)}
+
+  .lista-profili{display:flex; flex-direction:column; gap:10px; width:100%; max-width:360px}
+  .prof{display:flex; align-items:center; gap:12px; text-align:left; width:100%}
+  .pallino{width:26px; height:26px; border-radius:50%; flex:0 0 auto; box-shadow:inset 0 0 0 2px #0004}
+
+  .cerca{display:flex; gap:8px; margin:4px 0 14px}
+  .cerca input{flex:1; background:var(--bg2); border:1px solid var(--linea); color:var(--testo); border-radius:12px; padding:14px; font:inherit}
+  .cerca input:focus{outline:0; border-color:var(--oro)}
+
+  .film{display:flex; gap:12px; align-items:center; background:var(--card); border:1px solid var(--linea); border-radius:14px; padding:10px; margin-bottom:10px}
+  .film .pst{width:52px; height:78px; border-radius:8px; object-fit:cover; background:var(--bg2); flex:0 0 auto}
+  .film .info{flex:1; min-width:0}
+  .film .tit{font-weight:600; line-height:1.2}
+  .film .meta{color:var(--dim); font-size:12.5px; margin-top:2px}
+  .film .az{flex:0 0 auto}
+  .tondo{width:44px; height:44px; border-radius:50%; padding:0; font-size:22px; display:grid; place-items:center}
+
+  .sezione{font-size:12px; letter-spacing:.14em; color:var(--dim); text-transform:uppercase; margin:18px 2px 8px}
+  .vuoto{color:var(--dim); text-align:center; padding:24px; font-size:14px}
+  .stelle{color:var(--oro); letter-spacing:2px; font-size:13px}
+
+  .backdrop{position:fixed; inset:0; background:#000a; display:none; align-items:flex-end; justify-content:center; z-index:20}
+  .backdrop.on{display:flex}
+  .modale{background:var(--bg2); border-top:2px solid var(--oro); border-radius:18px 18px 0 0; width:100%; max-width:520px; padding:18px 18px calc(18px + env(safe-area-inset-bottom)); animation:su .2s}
+  @keyframes su{from{transform:translateY(30px)}}
+  .modale h3{margin:0 0 4px}
+  .modale .meta{color:var(--dim); font-size:13px}
+  .trama{color:var(--dim); font-size:13.5px; margin:12px 0; max-height:120px; overflow:auto}
+  .picker{display:flex; gap:6px; margin:12px 0}
+  .picker .st{font-size:30px; color:var(--linea); cursor:pointer; line-height:1}
+  .picker .st.on{color:var(--oro2)}
+  .m-az{display:flex; gap:10px; margin-top:8px}
+  .m-az button{flex:1}
+
+  .toast{position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom)); transform:translateX(-50%); background:#000d; color:#fff; padding:12px 18px; border-radius:12px; font-size:14px; z-index:40; opacity:0; transition:.25s; max-width:90%; text-align:center; border:1px solid var(--linea)}
+  .toast.on{opacity:1}
+  .toast.err{border-color:var(--rosso2)}
+
+  .spin{width:22px; height:22px; border:3px solid var(--linea); border-top-color:var(--oro); border-radius:50%; animation:g .8s linear infinite; display:inline-block; vertical-align:-4px}
+  @keyframes g{to{transform:rotate(360deg)}}
+</style>
+
+<div id="app">
+  <header id="hdr" style="display:none">
+    <img src="icon.svg" alt="">
+    <div><h1>MOVIE<span class="c">NAITOR</span></h1><div class="sub" id="hdr-sub">la tua lista</div></div>
+    <div class="chi" id="hdr-chi"></div>
+    <button class="cambia" id="btn-cambia-utente" title="cambia profilo">👤</button>
+  </header>
+
+  <div class="wrap">
+
+    <!-- 1) CARTELLA -->
+    <section class="schermo on" id="sc-cartella">
+      <div class="centro">
+        <img src="icon.svg" style="width:88px;height:88px;border-radius:18px">
+        <div><h1>MOVIE<span class="c">NAITOR</span></h1><p class="sub">Trova e aggiungi film, dal telefono.</p></div>
+        <p style="color:var(--dim); font-size:14px; max-width:320px">Indica la cartella del gruppo, quella che tieni sincronizzata con Google&nbsp;Drive sul telefono.</p>
+        <input class="campo" id="cartella-path" placeholder="Movienaitor" autocapitalize="off" autocomplete="off" spellcheck="false">
+        <div style="font-size:12px;color:var(--dim);max-width:320px">Percorso dentro la memoria interna. Es. <b>Movienaitor</b> oppure <b>Download/Movienaitor</b>.</div>
+        <button class="primario grande" id="btn-collega">Collega</button>
+        <div id="cartella-nota" style="font-size:12.5px; color:var(--dim); max-width:320px"></div>
+      </div>
+    </section>
+
+    <!-- 2) CHI SEI -->
+    <section class="schermo" id="sc-chi">
+      <div class="centro">
+        <div class="bollo">🎬</div>
+        <div><h1 style="font-size:18px">CHI SEI?</h1><p class="sub">Scegli il tuo profilo</p></div>
+        <div class="lista-profili" id="lista-profili"></div>
+        <button class="linkbtn" id="btn-cambia-cartella">cambia cartella</button>
+      </div>
+    </section>
+
+    <!-- 3) APP -->
+    <section class="schermo" id="sc-app">
+      <div class="cerca">
+        <input id="q" type="search" enterkeyhint="search" placeholder="Cerca un film da aggiungere…" autocomplete="off">
+        <button class="oro" id="btn-cerca">Cerca</button>
+      </div>
+      <div id="risultati"></div>
+      <div class="sezione">La mia lista <span id="conta-lista"></span></div>
+      <div id="mia-lista"></div>
+    </section>
+
+  </div>
+</div>
+
+<div class="backdrop" id="backdrop"><div class="modale" id="modale"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════ STATO ══════════════════ */
+const S = { base:null, config:{}, profili:[], me:null };
+
+const $ = s => document.querySelector(s);
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LS = { get:k=>{try{return localStorage.getItem('mvna_'+k)}catch(e){return null}}, set:(k,v)=>{try{localStorage.setItem('mvna_'+k,v)}catch(e){}} };
+
+function schermo(id){ document.querySelectorAll('.schermo').forEach(s=>s.classList.remove('on')); $('#'+id).classList.add('on'); }
+let toastT;
+function toast(msg, err){ const t=$('#toast'); t.textContent=msg; t.className='toast on'+(err?' err':''); clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast'+(err?' err':''),2800); }
+function apriModale(html){ $('#modale').innerHTML=html; $('#backdrop').classList.add('on'); }
+function chiudiModale(){ $('#backdrop').classList.remove('on'); }
+$('#backdrop').addEventListener('click', e=>{ if(e.target.id==='backdrop') chiudiModale(); });
+
+const fmtMin = m => m ? Math.floor(m/60)+'h'+String(m%60).padStart(2,'0') : '—';
+const stelle = n => '★★★★★☆☆☆☆☆'.slice(5-(n||0), 10-(n||0));
+
+/* ══════════════════ FILE SYSTEM LOCALE (Capacitor) ══════════════════ */
+const FSplug = () => (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) || null;
+const DIR = 'EXTERNAL_STORAGE';   // radice della memoria condivisa (/storage/emulated/0)
+const inApp = () => !!FSplug();
+
+async function assicuraPermessi(){
+  const fs = FSplug(); if (!fs) return;
+  try {
+    const st = await fs.checkPermissions();
+    if (st && st.publicStorage === 'granted') return;
+    await fs.requestPermissions();
+  } catch(e){ /* su alcune versioni requestPermissions non esiste: si prova comunque a leggere */ }
+}
+async function fsList(path){
+  const r = await FSplug().readdir({ path, directory: DIR });
+  return (r.files || []).map(f => typeof f === 'string' ? { name:f, type:'' } : { name:f.name, type:f.type||'' });
+}
+async function fsLeggi(path){
+  const r = await FSplug().readFile({ path, directory: DIR, encoding: 'utf8' });
+  return r.data;
+}
+async function fsScrivi(path, str){
+  await FSplug().writeFile({ path, directory: DIR, data: str, encoding: 'utf8', recursive: true });
+}
+
+/* ══════════════════ CARICAMENTO CARTELLA + PROFILI ══════════════════ */
+async function caricaCartella(base){
+  S.base = base.replace(/^\/+|\/+$/g,'');
+  await assicuraPermessi();
+  let figli;
+  try { figli = await fsList(S.base); }
+  catch(e){ throw new Error('Cartella non trovata o non leggibile: «'+S.base+'». Controlla il nome e i permessi. ('+e.message+')'); }
+
+  const cfgFile = figli.find(f => f.name === 'config.json');
+  const profiliDir = figli.find(f => f.name === 'profili' && (f.type === 'directory' || f.type === ''));
+
+  S.config = {};
+  if (cfgFile){ try { S.config = JSON.parse(await fsLeggi(S.base+'/config.json')); } catch(e){} }
+
+  let files = [];
+  try { files = await fsList(S.base + '/profili'); } catch(e){ files = []; }
+  if (!files.length && !profiliDir){
+    // profili forse direttamente nella cartella
+    files = figli.filter(f => f.name.endsWith('.json') && f.name !== 'config.json' && f.name !== 'storico.json' && f.name !== 'archivio.json');
+    S.profiliBase = S.base;
+  } else {
+    S.profiliBase = S.base + '/profili';
+  }
+
+  S.profili = [];
+  for (const f of files){
+    if (!f.name.endsWith('.json')) continue;
+    try {
+      const p = JSON.parse(await fsLeggi(S.profiliBase + '/' + f.name));
+      if (p && p.slug && Array.isArray(p.lista)){ p._file = S.profiliBase + '/' + f.name; S.profili.push(p); }
+    } catch(e){}
+  }
+  S.profili.sort((a,b)=> (a.creato||'').localeCompare(b.creato||'') || a.slug.localeCompare(b.slug));
+  LS.set('base', S.base);
+  disegnaProfili();
+  schermo('sc-chi');
+}
+
+function coloreDi(p, i){ return p.colore || ['#c9a45c','#9b7da8','#6f8fae','#7d9b76','#b0805a','#a85454'][i%6]; }
+
+function disegnaProfili(){
+  const box = $('#lista-profili');
+  if (!S.profili.length){
+    box.innerHTML = '<div class="vuoto">Nessun profilo in questa cartella.<br>Verifica di aver indicato la cartella giusta, o crea il tuo profilo dal PC.</div>';
+    return;
+  }
+  box.innerHTML = S.profili.map((p,i)=>`
+    <button class="prof ghost" data-slug="${esc(p.slug)}">
+      <span class="pallino" style="background:${esc(coloreDi(p,i))}"></span>
+      <span style="flex:1">${esc(p.nome)}</span>
+      <span style="color:var(--dim); font-size:12px">${(p.lista||[]).length} film</span>
+    </button>`).join('');
+  box.querySelectorAll('.prof').forEach(b => b.onclick = () => entra(b.dataset.slug));
+}
+
+function entra(slug){
+  S.me = S.profili.find(p => p.slug === slug);
+  if (!S.me) return;
+  LS.set('me', slug);
+  if (!S.config.tmdbKey) toast('Manca la chiave TMDB in config.json (si imposta dal PC).', true);
+  $('#hdr').style.display = 'flex';
+  $('#hdr-chi').innerHTML = 'sei<b>'+esc(S.me.nome)+'</b>';
+  $('#q').value = ''; $('#risultati').innerHTML = '';
+  disegnaMiaLista();
+  schermo('sc-app');
+}
+
+/* ══════════════════ TMDB (identico al PC) ══════════════════ */
+async function cercaFilm(q){
+  const k = S.config.tmdbKey; if (!k) throw new Error('nokey');
+  const r = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${k}&language=it-IT&include_adult=false&query=${encodeURIComponent(q)}`);
+  if (!r.ok) throw new Error('tmdb '+r.status);
+  return ((await r.json()).results || []).slice(0, 10);
+}
+async function dettagliFilm(id){
+  const k = S.config.tmdbKey;
+  const r = await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${k}&language=it-IT&append_to_response=credits,external_ids`);
+  if (!r.ok) throw new Error('tmdb '+r.status);
+  const j = await r.json();
+  const regista = ((j.credits||{}).crew||[]).filter(c=>c.job==='Director').map(c=>c.name).join(', ');
+  let voto = j.vote_average ? Math.round(j.vote_average*10)/10 : null, votoFonte = 'tmdb';
+  const imdbId = (j.external_ids||{}).imdb_id || j.imdb_id;
+  if (S.config.omdbKey && imdbId){
+    try { const o = await (await fetch(`https://www.omdbapi.com/?apikey=${S.config.omdbKey}&i=${imdbId}`)).json();
+      const iv = parseFloat(o.imdbRating); if (iv){ voto = iv; votoFonte = 'imdb'; } } catch(e){}
+  }
+  return {
+    tmdbId:j.id, titolo:j.title || j.original_title, anno:(j.release_date||'').slice(0,4),
+    uscita:j.release_date || null,
+    collezione:j.belongs_to_collection ? j.belongs_to_collection.id : null,
+    collezioneNome:j.belongs_to_collection ? j.belongs_to_collection.name : null,
+    durata:j.runtime || null, regista, generi:(j.genres||[]).map(x=>x.name),
+    voto, votoFonte, trama:j.overview || '',
+    posterUrl:j.poster_path ? 'https://image.tmdb.org/t/p/w500'+j.poster_path : null,
+    sfondoUrl:j.backdrop_path ? 'https://image.tmdb.org/t/p/w780'+j.backdrop_path : null,
+    locandina:j.poster_path ? `posters/${j.id}.jpg` : null,
+    sfondo:j.backdrop_path ? `posters/${j.id}_b.jpg` : null
+  };
+}
+
+/* ══════════════════ RICERCA + RISULTATI ══════════════════ */
+async function eseguiRicerca(){
+  const q = $('#q').value.trim(); if (!q) return;
+  const box = $('#risultati');
+  box.innerHTML = '<div class="vuoto"><span class="spin"></span> cerco…</div>';
+  try {
+    const res = await cercaFilm(q);
+    if (!res.length){ box.innerHTML = '<div class="vuoto">Nessun risultato.</div>'; return; }
+    const idsInLista = new Set((S.me.lista||[]).map(v=>v.tmdbId));
+    box.innerHTML = res.map(f=>{
+      const pst = f.poster_path ? 'https://image.tmdb.org/t/p/w185'+f.poster_path : '';
+      const anno = (f.release_date||'').slice(0,4);
+      const gia = idsInLista.has(f.id);
+      return `<div class="film">
+        ${pst ? `<img class="pst" src="${pst}" loading="lazy" alt="">` : '<div class="pst"></div>'}
+        <div class="info"><div class="tit">${esc(f.title)}</div><div class="meta">${esc(anno)}</div></div>
+        <div class="az">${gia
+          ? '<button class="tondo ghost" disabled title="già nella lista">✓</button>'
+          : `<button class="tondo oro" data-add="${f.id}">＋</button>`}</div>
+      </div>`;
+    }).join('');
+    box.querySelectorAll('[data-add]').forEach(b => b.onclick = () => modaleAggiungi(parseInt(b.dataset.add,10)));
+  } catch(e){
+    box.innerHTML = `<div class="vuoto">Ricerca non riuscita: ${esc(e.message==='nokey'?'manca la chiave TMDB in config.json':e.message)}</div>`;
+  }
+}
+
+/* ══════════════════ AGGIUNGI ══════════════════ */
+async function modaleAggiungi(id){
+  apriModale('<h3>Un attimo…</h3><p class="meta"><span class="spin"></span> recupero la scheda</p>');
+  let d;
+  try { d = await dettagliFilm(id); }
+  catch(e){ return apriModale(`<h3>Ahi</h3><p class="meta">Scheda non recuperata: ${esc(e.message)}</p><div class="m-az"><button class="ghost" onclick="chiudiModale()">Chiudi</button></div>`); }
+
+  let desiderio = 3;
+  apriModale(`
+    <h3>${esc(d.titolo)}</h3>
+    <div class="meta">${esc(d.anno||'')} · ${fmtMin(d.durata)}${d.regista?' · '+esc(d.regista):''}<br>
+      ${esc((d.generi||[]).join(', '))}${d.voto?` · ★ ${d.voto} ${d.votoFonte==='imdb'?'IMDb':'TMDB'}`:''}</div>
+    ${d.trama?`<div class="trama">${esc(d.trama)}</div>`:''}
+    <div style="font-size:12px;letter-spacing:.12em;color:var(--dim);margin-top:6px">QUANTO VUOI VEDERLO</div>
+    <div class="picker" id="stelle">${[1,2,3,4,5].map(n=>`<span class="st${n<=desiderio?' on':''}" data-v="${n}">★</span>`).join('')}</div>
+    <div class="m-az">
+      <button class="ghost" id="m-annulla">Annulla</button>
+      <button class="primario" id="m-ok">🎬 Aggiungi</button>
+    </div>`);
+  const dip = () => $('#stelle').querySelectorAll('.st').forEach(s => s.classList.toggle('on', +s.dataset.v <= desiderio));
+  $('#stelle').onclick = e => { const s = e.target.closest('.st'); if(!s) return; desiderio = +s.dataset.v; dip(); };
+  $('#m-annulla').onclick = chiudiModale;
+  $('#m-ok').onclick = async () => {
+    $('#m-ok').disabled = true; $('#m-ok').innerHTML = '<span class="spin"></span>';
+    const voce = { ...d, desiderio, conChi:[], nonCon:[], aggiunto: new Date().toISOString() };
+    try {
+      await mutaLista(p => { if (!(p.lista||[]).some(v=>v.tmdbId===voce.tmdbId)) p.lista.push(voce); });
+      chiudiModale(); disegnaMiaLista(); eseguiRicerca();
+      toast(`«${voce.titolo}» aggiunto 🍿`);
+    } catch(e){ $('#m-ok').disabled=false; $('#m-ok').textContent='🎬 Aggiungi'; toast('Salvataggio non riuscito: '+e.message, true); }
+  };
+}
+
+/* ══════════════════ SCRITTURA SICURA (rileggo prima di scrivere) ══════════════════ */
+async function mutaLista(fn){
+  const fresh = JSON.parse(await fsLeggi(S.me._file));
+  fresh.lista = fresh.lista || [];
+  fn(fresh);
+  await fsScrivi(S.me._file, JSON.stringify(fresh));
+  fresh._file = S.me._file;
+  S.me = fresh;
+  const i = S.profili.findIndex(p => p.slug === fresh.slug);
+  if (i >= 0) S.profili[i] = fresh;
+}
+
+/* ══════════════════ LA MIA LISTA ══════════════════ */
+function disegnaMiaLista(){
+  const lista = (S.me.lista||[]).slice().sort((a,b)=> (b.desiderio||0)-(a.desiderio||0) || (b.aggiunto||'').localeCompare(a.aggiunto||''));
+  $('#conta-lista').textContent = lista.length ? '· '+lista.length : '';
+  const box = $('#mia-lista');
+  if (!lista.length){ box.innerHTML = '<div class="vuoto">Ancora nessun film. Cerca qui sopra e aggiungi il primo 🎬</div>'; return; }
+  box.innerHTML = lista.map(v=>{
+    const pst = v.posterUrl || '';
+    return `<div class="film">
+      ${pst ? `<img class="pst" src="${esc(pst)}" loading="lazy" alt="">` : '<div class="pst"></div>'}
+      <div class="info">
+        <div class="tit">${esc(v.titolo)}</div>
+        <div class="meta">${esc(v.anno||'')}${v.durata?' · '+fmtMin(v.durata):''}</div>
+        <div class="stelle">${stelle(v.desiderio)}</div>
+      </div>
+      <div class="az"><button class="tondo ghost" data-del="${v.tmdbId}" title="togli">🗑</button></div>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('[data-del]').forEach(b => b.onclick = () => confermaTogli(parseInt(b.dataset.del,10)));
+}
+
+function confermaTogli(id){
+  const v = (S.me.lista||[]).find(x=>x.tmdbId===id); if(!v) return;
+  apriModale(`
+    <h3>Togliere dalla lista?</h3>
+    <p class="meta">«${esc(v.titolo)}» sparirà dalla tua lista.</p>
+    <div class="m-az">
+      <button class="ghost" id="m-no">Annulla</button>
+      <button class="primario" id="m-si">Rimuovi</button>
+    </div>`);
+  $('#m-no').onclick = chiudiModale;
+  $('#m-si').onclick = async () => {
+    $('#m-si').disabled=true; $('#m-si').innerHTML='<span class="spin"></span>';
+    try {
+      await mutaLista(p => { p.lista = (p.lista||[]).filter(x=>x.tmdbId!==id); });
+      chiudiModale(); disegnaMiaLista(); eseguiRicerca();
+      toast(`«${v.titolo}» tolto`);
+    } catch(e){ $('#m-si').disabled=false; $('#m-si').textContent='Rimuovi'; toast('Non riuscito: '+e.message, true); }
+  };
+}
+
+/* ══════════════════ EVENTI ══════════════════ */
+$('#btn-collega').onclick = async () => {
+  const base = $('#cartella-path').value.trim() || $('#cartella-path').placeholder;
+  const btn = $('#btn-collega'); btn.disabled=true; const t=btn.textContent; btn.innerHTML='<span class="spin"></span> collego…';
+  $('#cartella-nota').textContent='';
+  try {
+    if (!inApp()){ $('#cartella-nota').innerHTML='Questa è la versione app: aprila come APK installato (nel browser il filesystem non è accessibile).'; return; }
+    await caricaCartella(base);
+  } catch(e){ $('#cartella-nota').textContent = e.message; }
+  finally { btn.disabled=false; btn.textContent=t; }
+};
+$('#btn-cambia-cartella').onclick = () => { $('#hdr').style.display='none'; schermo('sc-cartella'); };
+$('#btn-cambia-utente').onclick = () => { disegnaProfili(); schermo('sc-chi'); $('#hdr').style.display='none'; };
+$('#btn-cerca').onclick = eseguiRicerca;
+$('#q').addEventListener('keydown', e => { if (e.key === 'Enter') eseguiRicerca(); });
+
+/* ══════════════════ AVVIO ══════════════════ */
+(function init(){
+  const salvata = LS.get('base');
+  if (salvata) $('#cartella-path').value = salvata;
+  if (!inApp()){
+    $('#cartella-nota').innerHTML = 'Anteprima nel browser: il collegamento alla cartella funziona solo nell\'APK installato.';
+  }
+})();
+</script>

@@ -1,0 +1,8 @@
+{
+  "appId": "com.movienaitor.app",
+  "appName": "Movienaitor",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true
+  }
+}

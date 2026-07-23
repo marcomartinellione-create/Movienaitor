@@ -1,0 +1,5 @@
+# generati / non versionati
+node_modules/
+android/
+.gradle/
+*.apk
