@@ -46,6 +46,12 @@ Passo "Sync (web + plugin nel progetto Android)"
 npx cap sync android
 Assicura $LASTEXITCODE "cap sync fallito"
 
+Passo "Firma stabile (keystore di debug fisso)"
+$androidCfg = Join-Path $env:USERPROFILE '.android'
+if (-not (Test-Path $androidCfg)) { New-Item -ItemType Directory -Path $androidCfg | Out-Null }
+Copy-Item 'keystore\debug.keystore' (Join-Path $androidCfg 'debug.keystore') -Force
+Write-Host "keystore copiato in $androidCfg\debug.keystore"
+
 Passo "Build APK di debug (Gradle)"
 Push-Location android
 .\gradlew.bat --no-daemon assembleDebug

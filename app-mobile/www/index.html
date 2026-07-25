@@ -539,10 +539,13 @@ function apriFiltri(){
 /* ══════════════════ IMPOSTAZIONI PROFILO — Bonus Genere ══════════════════ */
 function apriImpostazioni(){
   const p = S.me; if (!p) return;
-  const modi = [['pos','＋ Positivo'],['neu','Neutro'],['neg','－ Negativo']];
+  const modi = [['pos','＋ Positivo','#7d9b76'],['neu','Neutro','#c9a45c'],['neg','－ Negativo','#c0504d']];
   const render = () => {
     const modo = S.me.bonusGenere || 'neu', pref = S.me.generiPreferiti || [];
-    $('#i-modo').innerHTML = modi.map(([k,l])=>`<button class="pchip ${k===modo?'con':''}" data-modo="${k}">${l}</button>`).join('');
+    $('#i-modo').innerHTML = modi.map(([k,l,col])=>{
+      const on = k===modo;
+      return `<button data-modo="${k}" style="padding:8px 13px;border-radius:999px;cursor:pointer;font-size:12.5px;border:1.5px solid ${col};font-weight:${on?'700':'400'};background:${on?col:'transparent'};color:${on?'#181012':'var(--dim)'}">${on?'✓ ':''}${l}</button>`;
+    }).join('');
     $('#i-gen').innerHTML = chipsGeneri(pref,'gen');
   };
   apriModale(`

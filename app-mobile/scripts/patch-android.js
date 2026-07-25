@@ -28,3 +28,17 @@ function must(file){ if (!fs.existsSync(file)){ console.error('MANCA', file); pr
     console.log('copiato', f, '→', PKG_DIR);
   }
 }
+
+// 3) versionCode crescente (necessario per aggiornare l'app installata) + versionName
+{
+  const g = 'android/app/build.gradle';
+  must(g);
+  let s = fs.readFileSync(g, 'utf8');
+  const vc = Math.floor(Date.now() / 60000);           // minuti dall'epoch: sempre crescente
+  let vn = '0.2.1';
+  try { vn = require('../package.json').version || vn; } catch (e) {}
+  s = s.replace(/versionCode\s+\d+/, 'versionCode ' + vc);
+  s = s.replace(/versionName\s+"[^"]*"/, 'versionName "' + vn + '"');
+  fs.writeFileSync(g, s);
+  console.log('versionCode', vc, 'versionName', vn);
+}

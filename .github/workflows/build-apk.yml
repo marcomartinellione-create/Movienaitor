@@ -48,11 +48,19 @@ jobs:
       - name: Sync (copia web + plugin nel progetto Android)
         run: npx cap sync android
 
+      - name: Firma stabile (keystore di debug fisso → aggiornamenti funzionanti)
+        run: |
+          mkdir -p ~/.android
+          cp keystore/debug.keystore ~/.android/debug.keystore
+
       - name: Build APK di debug
         run: |
           cd android
           chmod +x gradlew
           ./gradlew --no-daemon assembleDebug
+
+      - name: Impronta della firma (dev'essere identica a ogni build)
+        run: keytool -printcert -jarfile android/app/build/outputs/apk/debug/app-debug.apk | grep -iE "SHA(1|256):" || true
 
       - name: Pubblica l'APK come artifact
         uses: actions/upload-artifact@v4

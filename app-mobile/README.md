@@ -57,6 +57,15 @@ app-mobile/
 ```
 Workflow di build: `.github/workflows/build-apk.yml` (nella radice del repo).
 
+## Aggiornamenti dell'APK (firma stabile)
+Perché installando un APK nuovo sopra a uno già presente Android non dia "app non
+installata", tutte le build firmano con **lo stesso** keystore di debug, versionato in
+`app-mobile/keystore/debug.keystore` (chiave di debug standard, password `android` — non
+è un segreto, vale solo per il sideload personale). CI e `build-apk.ps1` lo copiano in
+`~/.android/debug.keystore` prima di compilare. Il `versionCode` è i minuti dall'epoch
+(sempre crescente), così ogni build è "più recente" della precedente. Il keystore si
+rigenera solo col workflow `make-keystore` (una tantum) — NON serve rifarlo.
+
 ## Note tecniche
 - **Storage**: usa il **Storage Access Framework** (`ACTION_OPEN_DOCUMENT_TREE`). L'utente
   sceglie la cartella col selettore di sistema; l'app prende un permesso persistente e
