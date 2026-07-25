@@ -1696,9 +1696,13 @@ function disegnaImpostazioni(){
 function disegnaBonusGenere(){
   const p = mioProfilo(); if (!p || !$('#imp-bonusgen-modo')) return;
   const modo = p.bonusGenere || 'neu';
-  const modi = [['pos','＋ Positivo'],['neu','Neutro'],['neg','－ Negativo']];
-  $('#imp-bonusgen-modo').innerHTML = modi.map(([k,l]) =>
-    `<button class="bottone piccolo ${k===modo?'':'secondario'}" data-modo="${k}">${l}</button>`).join('');
+  const modi = [['pos','＋ Positivo','#7d9b76'],['neu','Neutro','#c9a45c'],['neg','－ Negativo','#c0504d']];
+  $('#imp-bonusgen-modo').innerHTML = modi.map(([k,l,col]) => {
+    const on = k === modo;
+    return `<button data-modo="${k}" style="padding:8px 14px;border-radius:9px;cursor:pointer;font-size:13px;
+      border:1.5px solid ${col};font-weight:${on?'700':'400'};
+      background:${on?col:'transparent'};color:${on?'#181012':'var(--dim)'}">${on?'✓ ':''}${l}</button>`;
+  }).join('');
   const pref = p.generiPreferiti || [];
   $('#imp-generi-pref').innerHTML = GENERI_TMDB.map(g =>
     `<button class="pchip ${pref.includes(g)?'con':''}" data-gen="${esc(g)}">${pref.includes(g)?'✓ ':''}${esc(g)}</button>`).join('');
