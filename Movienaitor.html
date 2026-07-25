@@ -371,7 +371,7 @@ header .spazio{flex:1}
         <h3>FORMULA DELLA CLASSIFICA<span class="aiuto-q" tabindex="0">?<span class="tip">Regola come la Sala ordina la Top 5: parte dal desiderio dei presenti, aggiunge un bonus se in più lo vogliono, una spinta per chi non "vince" un film da tanto tempo, e un bonus coppia. Più alto un valore, più pesa quel fattore.</span></span></h3>
         <div class="imp-costanti" id="imp-costanti"></div>
         <div class="aiuto" style="color:var(--dim2); font-size:12px; margin:10px 0 12px">
-          Punteggio = Desiderio × Coralità × Attesa × Coppia. Dettagli nella SPECIFICA.
+          Punteggio = Desiderio × Coralità × Soddisfazione × Coppia. Il Bonus Genere è solo spareggio. Dettagli nella SPECIFICA.
         </div>
         <button class="bottone piccolo" id="imp-salva-costanti">Salva costanti</button>
       </div>
@@ -388,6 +388,11 @@ header .spazio{flex:1}
             <input type="text" id="imp-pw" placeholder="vuota = nessuna" autocomplete="off" spellcheck="false" style="flex:1">
             <button class="bottone piccolo secondario" id="imp-salva-pw">Salva</button>
           </div>
+        </div>
+        <div class="campo"><label>Bonus Genere<span class="aiuto-q" tabindex="0">?<span class="tip">A parità di priorità (film con punteggio molto vicino), sposta la scelta verso i tuoi generi preferiti (Positivo) o verso film di altri generi (Negativo). NON cambia la priorità principale: è solo uno spareggio.</span></span></label>
+          <div id="imp-bonusgen-modo" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px"></div>
+          <label style="color:var(--dim); font-size:12px">Generi preferiti (scelti a mano)</label>
+          <div id="imp-generi-pref" class="compagnia" style="margin-top:6px"></div>
         </div>
         <div class="campo"><label class="gate-host" style="justify-content:flex-start; margin:0; max-width:none; color:var(--dim)"><input type="checkbox" id="imp-host"> <span>Modalità host</span></label></div>
         <div class="campo"><label>Cartella collegata</label><div class="aiuto" id="imp-cartella">—</div></div>
@@ -412,13 +417,16 @@ header .spazio{flex:1}
 const APP_VERSION = '0.1.7';
 const CONFIG_DEFAULT = {
   tmdbKey:'', omdbKey:'',
-  bonusCoralita:0.10, capCoralita:0.30, incrementoAttesa:0.10, bonusCoppia:1.15
+  bonusCoralita:0.10, capCoralita:0.30, passoSoddisfazione:0.15, bonusCoppia:1.15,
+  sogliaSpareggio:0.02   // entro il 2% del punteggio massimo = "stessa priorità"
 };
 const ETICHETTE_COSTANTI = {
   bonusCoralita:'Bonus coralità', capCoralita:'Tetto coralità',
-  incrementoAttesa:'Attesa: +x per visione', bonusCoppia:'Bonus coppia'
+  passoSoddisfazione:'Soddisfazione: passo', bonusCoppia:'Bonus coppia'
 };
 const PALETTE_UTENTI = ['#c9a45c','#a85454','#7d9b76','#6f8fae','#9b7da8','#b0805a','#8fa3a0','#b39a6b'];
+// Generi TMDB (it-IT): usati per la scelta manuale dei "generi preferiti" del profilo
+const GENERI_TMDB = ['Azione','Avventura','Animazione','Commedia','Crime','Documentario','Dramma','Famiglia','Fantasy','Storia','Horror','Musica','Mistero','Romance','Fantascienza','Film TV','Thriller','Guerra','Western'];
 const FILA_DAVANTI = 9, FILA_DIETRO = 10; // platea come nel CAD
 
 /* ════════════════════════ UTILITÀ ════════════════════════ */
@@ -749,13 +757,30 @@ function entryAttiva(voce, slug){
   return !S.storico.some(v => v.tmdbId === voce.tmdbId && v.partecipanti.includes(slug)
     && (v.ts || v.data + 'T23:59:59') >= aggiunto);
 }
-// Attesa = quante VISIONI sono passate da quando un film della persona è stato scelto
-// (proponente di una serata col Play). Ogni visione "persa" vale +incrementoAttesa.
-// Se non ha mai vinto, contano tutte le visioni registrate.
-function visioniDaUltimaScelta(slug){
-  let idxUltimoWin = -1;
-  for (let i = 0; i < S.storico.length; i++) if ((S.storico[i].proponenti || []).includes(slug)) idxUltimoWin = i;
-  return S.storico.length - 1 - idxUltimoWin;
+// Indice di Soddisfazione (sostituisce la vecchia "attesa"): moltiplicatore 0,5 ↔ 1,5,
+// neutro 1,0. Si ricalcola replaying lo storico (nessuno stato salvato). Per ogni serata
+// in cui la persona era PRESENTE: se un suo film ha vinto → azzera l'insoddisfazione
+// (se >1 torna a 1) e poi scende di un passo verso 0,5 (più soddisfatta); se non ha vinto
+// niente → sale di un passo verso 1,5 (più insoddisfatta). Le serate da assente non contano.
+function indiceSoddisfazione(slug){
+  const passo = S.config.passoSoddisfazione ?? 0.15;
+  let idx = 1.0;
+  for (const v of S.storico){
+    if (!(v.partecipanti || []).includes(slug)) continue;      // assente: nessun cambiamento
+    if ((v.proponenti || []).includes(slug)){
+      if (idx > 1) idx = 1;                                     // azzera l'insoddisfazione
+      idx = Math.max(0.5, idx - passo);                        // poi verso la soddisfazione
+    } else {
+      idx = Math.min(1.5, idx + passo);                        // insoddisfazione che cresce
+    }
+  }
+  return idx;
+}
+// Affinità di un film ai "generi preferiti" scelti a mano dal profilo (n° di generi in comune).
+function affinitaGeneri(prof, film){
+  const pref = prof.generiPreferiti || [];
+  if (!pref.length) return 0;
+  return (film.generi || []).filter(g => pref.includes(g)).length;
 }
 // ordine di uscita per le saghe (release_date se disponibile, altrimenti l'anno)
 const ordineSaga = f => f.uscita || (f.anno ? f.anno + '-00-00' : '9999');
@@ -804,18 +829,34 @@ function classifica(){
     const n = c.prop.length;
     const D = c.prop.reduce((s,p) => s + p.desiderio, 0) / n / 5;
     const B = Math.min(1 + cfg.bonusCoralita*(n-1), 1 + cfg.capCoralita);
-    let A = 0; // visioni di attesa: il massimo tra i proponenti presenti
-    for (const p of c.prop) A = Math.max(A, visioniDaUltimaScelta(p.slug));
-    const W = 1 + cfg.incrementoAttesa*A;
+    let W = 0.5; // soddisfazione: il massimo (il più insoddisfatto) tra i proponenti presenti
+    for (const p of c.prop) W = Math.max(W, indiceSoddisfazione(p.slug));
     let M = 1;
     for (const p of c.prop){
       if (!p.conChi.length) continue;
       const attesi = new Set([p.slug, ...p.conChi]);
       if (attesi.size === setP.size && [...setP].every(x => attesi.has(x))){ M = cfg.bonusCoppia; break; }
     }
-    rosa.push({film, prop:c.prop, S:D*B*W*M, D, B, W, A, M});
+    // Bonus Genere: SOLO spareggio, non entra nel punteggio. Somma sui proponenti presenti
+    // del verso (Positivo +, Negativo −) per la loro affinità di generi al film.
+    let G = 0;
+    for (const p of c.prop){
+      const pr = profiloDi(p.slug); if (!pr) continue;
+      const modo = pr.bonusGenere || 'neu'; if (modo === 'neu') continue;
+      G += (modo === 'pos' ? 1 : -1) * affinitaGeneri(pr, film);
+    }
+    rosa.push({film, prop:c.prop, S:D*B*W*M, D, B, W, G, M});
   }
-  rosa.sort((a,b) => b.S - a.S || (b.film.voto || 0) - (a.film.voto || 0) || String(a.film.titolo).localeCompare(b.film.titolo));
+  // Ordinamento: priorità principale a "bande" (film entro sogliaSpareggio del punteggio
+  // massimo contano come stessa priorità), poi spareggio Bonus Genere, poi voto, poi titolo.
+  const top = rosa.reduce((m,r) => Math.max(m, r.S), 0);
+  const banda = (cfg.sogliaSpareggio ?? 0.02) * top;
+  const bandaDi = s => banda > 0 ? Math.round(s / banda) : 0;
+  rosa.sort((a,b) =>
+    bandaDi(b.S) - bandaDi(a.S) ||
+    (b.G || 0) - (a.G || 0) ||
+    (b.film.voto || 0) - (a.film.voto || 0) ||
+    String(a.film.titolo).localeCompare(b.film.titolo));
   return {rosa:rosa.slice(0,5), totale:rosa.length, esclusi};
 }
 
@@ -1142,7 +1183,7 @@ async function disegnaSala(){
         <div class="meta">${esc(f.anno || '')} · ${fmtMin(f.durata)} · ${esc((f.generi || []).join(', ') || '—')}
           ${f.voto ? ` · <b>★ ${fmtNum(f.voto,1)}</b> ${f.votoFonte === 'imdb' ? 'IMDb' : 'TMDB'}` : ''}<br>
           🎟 ${scelto.prop.length} ${scelto.prop.length === 1 ? 'proponente' : 'proponenti'} ·
-          <span title="Desiderio ${fmtNum(scelto.D)} × Coralità ${fmtNum(scelto.B)} × Attesa ${fmtNum(scelto.W)} × Coppia ${fmtNum(scelto.M)}">🏆 ${fmtNum(scelto.S)}</span>
+          <span title="Desiderio ${fmtNum(scelto.D)} × Coralità ${fmtNum(scelto.B)} × Soddisfazione ${fmtNum(scelto.W)} × Coppia ${fmtNum(scelto.M)}${scelto.G ? ' · spareggio genere '+(scelto.G>0?'+':'')+scelto.G : ''}">🏆 ${fmtNum(scelto.S)}</span>
           ${scelto.M > 1 ? ' · 💛 serata su misura' : ''}
         </div>
       </div>
@@ -1508,7 +1549,7 @@ function modaleScheda(r){
         <div class="m-meta">${esc(f.anno || '')} · ${fmtMin(f.durata)}${f.regista ? ' · '+esc(f.regista) : ''}<br>
           ${esc((f.generi || []).join(', ') || '—')}${f.voto ? ` · ★ ${fmtNum(f.voto,1)} ${f.votoFonte === 'imdb' ? 'IMDb' : 'TMDB'}` : ''}</div>
         ${r.prop ? `<div class="m-meta">🎟 Lo propongono <b style="color:var(--oro2)">${r.prop.length}</b> ${r.prop.length === 1 ? 'persona' : 'persone'} in sala</div>
-        <div class="m-meta" style="color:var(--dim2)">Punteggio ${fmtNum(r.S)} = desiderio ${fmtNum(r.D)} × coralità ${fmtNum(r.B)} × attesa ${fmtNum(r.W)} × coppia ${fmtNum(r.M)}</div>` : ''}
+        <div class="m-meta" style="color:var(--dim2)">Punteggio ${fmtNum(r.S)} = desiderio ${fmtNum(r.D)} × coralità ${fmtNum(r.B)} × soddisfazione ${fmtNum(r.W)} × coppia ${fmtNum(r.M)}${r.G ? ' · spareggio genere '+(r.G>0?'+':'')+r.G : ''}</div>` : ''}
       </div>
     </div>
     ${f.trama ? `<div class="trama">${esc(f.trama)}</div>` : ''}
@@ -1569,6 +1610,27 @@ function disegnaImpostazioni(){
       $('#io-colore').style.background = c;
       disegnaSala();
     });
+  };
+  disegnaBonusGenere();
+}
+function disegnaBonusGenere(){
+  const p = mioProfilo(); if (!p || !$('#imp-bonusgen-modo')) return;
+  const modo = p.bonusGenere || 'neu';
+  const modi = [['pos','＋ Positivo'],['neu','Neutro'],['neg','－ Negativo']];
+  $('#imp-bonusgen-modo').innerHTML = modi.map(([k,l]) =>
+    `<button class="bottone piccolo ${k===modo?'':'secondario'}" data-modo="${k}">${l}</button>`).join('');
+  const pref = p.generiPreferiti || [];
+  $('#imp-generi-pref').innerHTML = GENERI_TMDB.map(g =>
+    `<button class="pchip ${pref.includes(g)?'con':''}" data-gen="${esc(g)}">${pref.includes(g)?'✓ ':''}${esc(g)}</button>`).join('');
+  $('#imp-bonusgen-modo').onclick = async e => {
+    const b = e.target.closest('[data-modo]'); if (!b) return;
+    p.bonusGenere = b.dataset.modo; await salvaMioProfilo(); disegnaBonusGenere(); disegnaSala();
+  };
+  $('#imp-generi-pref').onclick = async e => {
+    const b = e.target.closest('[data-gen]'); if (!b) return;
+    const g = b.dataset.gen, cur = p.generiPreferiti || [];
+    p.generiPreferiti = cur.includes(g) ? cur.filter(x=>x!==g) : [...cur, g];
+    await salvaMioProfilo(); disegnaBonusGenere(); disegnaSala();
   };
 }
 function agganciaImpostazioni(){

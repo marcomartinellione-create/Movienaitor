@@ -272,38 +272,46 @@ Per ogni film candidato `f` sopravvissuto ai filtri:
   la coralità è premiata a parte, in modo limitato:
 - **Coralità** `B(f)` = `1 + 0,10 × (|Prop(f)| − 1)`, massimo 1,30.
   (+10% per ogni proponente oltre il primo, fino a +30%.)
-- **Equità (attesa)** — misurata in **numero di visioni** (non più in giorni), scelta di
-  Marco 2026-07-22:
-  - per ogni persona `p`: `A(p)` = quante serate (Play) sono passate da quando un film
-    **della sua lista** è stato scelto (cioè `p` era tra i `proponenti`). Se non ha mai
-    "vinto", contano tutte le serate registrate. Le serate che non la riguardano contano
-    lo stesso come attesa.
-  - `A(f) = max A(p) per p ∈ Prop(f)` — basta un proponente "a digiuno" per far salire
-    il film.
-  - `W(f) = 1 + 0,10 × A(f)` (ogni serata "persa" vale +0,10; nessun tetto).
+- **Indice di Soddisfazione** `W(f)` — sostituisce la vecchia "attesa" (scelta di Marco
+  2026-07-25). Moltiplicatore per persona nell'intervallo **0,5 … 1,5**, neutro **1,0**.
+  Si **ricalcola dallo storico** (nessuno stato salvato, come tutto il resto). Per ogni
+  serata (Play) in cui la persona `p` era **presente** (in `partecipanti`):
+  - se un suo film ha vinto (`p` in `proponenti`): l'insoddisfazione accumulata si azzera
+    (se l'indice era > 1 torna a 1), poi scende di un **passo** verso 0,5 (più soddisfatta);
+  - se non ha vinto niente: l'indice sale di un **passo** verso 1,5 (più insoddisfatta).
+  - Le serate da **assente non contano** (nessuna variazione).
+  - `W(f) = max W(p) per p ∈ Prop(f)` — basta un proponente insoddisfatto per far salire il film.
+  - Incremento/decremento **graduali** (nessun salto): `passoSoddisfazione` (default 0,15).
 - **Bonus coppia** `M(f)` = 1,15 se presenti = {proponente} ∪ sua `conChi` (non vuota);
   altrimenti 1,00.
+- **Bonus Genere** (2026-07-25) — **solo criterio di spareggio**, NON entra nel punteggio.
+  Impostazione di profilo a tre stati (Positivo / Neutro / Negativo) + elenco di **generi
+  preferiti scelti a mano**. A parità di priorità (vedi ordinamento), sposta la scelta verso
+  i propri generi (Positivo) o verso film di altri generi (Negativo).
+  `G(f) = Σ (per p ∈ Prop(f)) segno(p) × affinità(p, f)`, dove `segno` = +1/−1/0 secondo lo
+  stato, e `affinità` = quanti generi del film sono tra i preferiti di `p`.
 
 ### 8.2 Punteggio
 
 ```
-S(f) = D(f) × B(f) × W(f) × M(f)          → scala ~0,2 … 2,2
+S(f) = D(f) × B(f) × W(f) × M(f)          → scala ~0,1 … 3,4  (W ∈ [0,5; 1,5])
 ```
 
-Ordinamento: `S` decrescente; a pari merito vince il voto IMDb più alto, poi il titolo.
-Il modello moltiplicativo si legge come "desiderio di base + spinte percentuali", e
-nessuna spinta da sola può ribaltare un desiderio basso (tetti: +30%, +50%, +15%).
+Ordinamento: la **priorità principale** è `S` a **bande** — due film il cui `S` cade entro
+`sogliaSpareggio` (default 2%) del punteggio massimo sono considerati **stessa priorità**.
+A parità di banda: spareggio **Bonus Genere** `G` (decrescente), poi voto IMDb, poi titolo.
+Il Bonus Genere non modifica mai `S`.
 
 ### 8.3 Esempio numerico
 
 Presenti: marco, elena, simone.
 
-| Film | Proponenti (desiderio) | D | B | Attesa | W | M | **S** |
+| Film | Proponenti (desiderio) | D | B | Soddisfazione | W | M | **S** |
 |---|---|---|---|---|---|---|---|
-| Dune | marco (5), elena (4) | 0,90 | 1,10 | elena: 3 serate senza un suo film → +0,30 | 1,30 | 1,00 | **1,29** |
-| Amélie | simone (5) | 1,00 | 1,00 | simone: ha appena vinto → 0 | 1,00 | 1,00 | **1,00** |
+| Dune | marco (5), elena (4) | 0,90 | 1,10 | elena insoddisfatta (3 serate senza un suo film, passo 0,15) | 1,45 | 1,00 | **1,44** |
+| Amélie | simone (5) | 1,00 | 1,00 | simone ha appena vinto → 0,85 | 0,85 | 1,00 | **0,85** |
 
-Vince Dune: desiderio corale e soprattutto elena che "aspetta" da 3 serate.
+Vince Dune: desiderio corale e soprattutto elena, insoddisfatta da qualche serata.
 
 ### 8.4 Costanti (in `config.json`, tarabili senza toccare l'app)
 
@@ -311,8 +319,11 @@ Vince Dune: desiderio corale e soprattutto elena che "aspetta" da 3 serate.
 |---|---|---|
 | `bonusCoralita` | 0,10 | spinta per proponente extra |
 | `capCoralita` | 0,30 | tetto coralità |
-| `incrementoAttesa` | 0,10 | spinta per ogni serata in cui un film della persona non è stato scelto |
+| `passoSoddisfazione` | 0,15 | passo graduale dell'Indice di Soddisfazione (0,5–1,5) |
 | `bonusCoppia` | 1,15 | moltiplicatore white list al completo |
+| `sogliaSpareggio` | 0,02 | ampiezza banda "stessa priorità" per lo spareggio Bonus Genere (2% del max) |
+
+Nota: nel **profilo** compaiono anche `bonusGenere` ('pos'/'neu'/'neg') e `generiPreferiti` (elenco).
 
 ### 8.5 Saghe (2026-07-22)
 
