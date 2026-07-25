@@ -285,11 +285,11 @@ Per ogni film candidato `f` sopravvissuto ai filtri:
 - **Bonus coppia** `M(f)` = 1,15 se presenti = {proponente} ∪ sua `conChi` (non vuota);
   altrimenti 1,00.
 - **Bonus Genere** (2026-07-25) — **solo criterio di spareggio**, NON entra nel punteggio.
-  Impostazione di profilo a tre stati (Positivo / Neutro / Negativo) + elenco di **generi
-  preferiti scelti a mano**. A parità di priorità (vedi ordinamento), sposta la scelta verso
-  i propri generi (Positivo) o verso film di altri generi (Negativo).
-  `G(f) = Σ (per p ∈ Prop(f)) segno(p) × affinità(p, f)`, dove `segno` = +1/−1/0 secondo lo
-  stato, e `affinità` = quanti generi del film sono tra i preferiti di `p`.
+  Ogni persona marca i generi che preferisce come **positivi** o **negativi**,
+  indipendentemente (non un unico modo): può avere generi che ama e generi che evita
+  insieme. `bonusGeneri(p, f) = (n° generi di f tra i positivi di p) − (n° tra i negativi)`.
+  `G(f) = Σ (per p ∈ Prop(f)) bonusGeneri(p, f)`. A parità di priorità (vedi ordinamento),
+  spinge su i film coi generi amati e giù quelli coi generi evitati.
 
 ### 8.2 Punteggio
 
@@ -323,7 +323,7 @@ Vince Dune: desiderio corale e soprattutto elena, insoddisfatta da qualche serat
 | `bonusCoppia` | 1,15 | moltiplicatore white list al completo |
 | `sogliaSpareggio` | 0,02 | ampiezza banda "stessa priorità" per lo spareggio Bonus Genere (2% del max) |
 
-Nota: nel **profilo** compaiono anche `bonusGenere` ('pos'/'neu'/'neg') e `generiPreferiti` (elenco).
+Nota: nel **profilo** compaiono anche `generiPositivi[]` e `generiNegativi[]` (generi amati/evitati; sostituiscono i vecchi `bonusGenere`+`generiPreferiti`, migrati in automatico).
 
 ### 8.5 Saghe (2026-07-22)
 

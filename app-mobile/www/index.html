@@ -160,6 +160,13 @@ const S = { treeUri:null, config:{}, profili:[], me:null,
   filtri:{ q:'', ordina:'aggiunto', dir:'desc', minDes:0, genere:[], annoDa:null, annoA:null } };
 const GENERI_TMDB = ['Azione','Avventura','Animazione','Commedia','Crime','Documentario','Dramma','Famiglia','Fantasy','Storia','Horror','Musica','Mistero','Romance','Fantascienza','Film TV','Thriller','Guerra','Western'];
 const filtriAttivi = () => { const f = S.filtri; return !!(f.q || f.minDes || f.genere.length || f.annoDa || f.annoA || f.ordina!=='aggiunto' || f.dir!=='desc'); };
+// Migrazione dal vecchio modello Bonus Genere (bonusGenere+generiPreferiti) al nuovo (pos/neg per genere)
+function migraGeneri(p){
+  if (!p.generiPositivi && !p.generiNegativi && Array.isArray(p.generiPreferiti) && p.generiPreferiti.length){
+    if (p.bonusGenere === 'neg') p.generiNegativi = p.generiPreferiti.slice();
+    else if (p.bonusGenere !== 'neu') p.generiPositivi = p.generiPreferiti.slice();
+  }
+}
 
 const $ = s => document.querySelector(s);
 const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -228,7 +235,7 @@ async function caricaCartella(treeUri){
   for (const f of (res.profili || [])){
     try {
       const p = JSON.parse(f.data);
-      if (p && p.slug && Array.isArray(p.lista)){ p._uri = f.uri; S.profili.push(p); }
+      if (p && p.slug && Array.isArray(p.lista)){ migraGeneri(p); p._uri = f.uri; S.profili.push(p); }
     } catch(e){}
   }
   S.profili.sort((a,b)=> (a.creato||'').localeCompare(b.creato||'') || a.slug.localeCompare(b.slug));
@@ -543,33 +550,32 @@ async function apriImpostazioni(){
   try { const fresh = JSON.parse(await fsLeggi(S.me._uri)); fresh._uri = S.me._uri; S.me = fresh;
         const i = S.profili.findIndex(x=>x.slug===fresh.slug); if(i>=0) S.profili[i]=fresh; } catch(e){}
   const p = S.me;
-  const modi = [['pos','＋ Positivo','#7d9b76'],['neu','Neutro','#c9a45c'],['neg','－ Negativo','#c0504d']];
-  const colDi = { pos:'#7d9b76', neu:'#c9a45c', neg:'#c0504d' }, segDi = { pos:'✓ ', neu:'✓ ', neg:'✗ ' };
   const render = () => {
-    const modo = S.me.bonusGenere || 'neu', pref = S.me.generiPreferiti || [];
-    $('#i-modo').innerHTML = modi.map(([k,l,col])=>{
-      const on = k===modo;
-      return `<button data-modo="${k}" style="padding:8px 13px;border-radius:999px;cursor:pointer;font-size:12.5px;border:1.5px solid ${col};font-weight:${on?'700':'400'};background:${on?col:'transparent'};color:${on?'#181012':'var(--dim)'}">${on?'✓ ':''}${l}</button>`;
-    }).join('');
-    const gc = colDi[modo], gs = segDi[modo];
-    $('#i-gen').innerHTML = GENERI_TMDB.map(g=>{ const on = pref.includes(g);
-      return `<button class="pchip" data-gen="${esc(g)}"${on?` style="background:${gc};border-color:${gc};color:#181012;font-weight:600"`:''}>${on?gs:''}${esc(g)}</button>`;
+    const pos = S.me.generiPositivi || [], neg = S.me.generiNegativi || [];
+    $('#i-gen').innerHTML = GENERI_TMDB.map(g=>{
+      const st = pos.includes(g) ? 'pos' : neg.includes(g) ? 'neg' : '';
+      const col = st==='pos'?'#7d9b76':st==='neg'?'#c0504d':'';
+      const seg = st==='pos'?'✓ ':st==='neg'?'✗ ':'';
+      return `<button class="pchip" data-gen="${esc(g)}"${st?` style="background:${col};border-color:${col};color:#181012;font-weight:600"`:''}>${seg}${esc(g)}</button>`;
     }).join('');
   };
   apriModale(`
     <h3>Impostazioni — ${esc(p.nome)}</h3>
-    <div class="etich">BONUS GENERE <span style="color:var(--dim);letter-spacing:0">— a parità di priorità sposta la scelta verso i tuoi generi (Positivo) o verso altri (Negativo). Non cambia la priorità.</span></div>
-    <div class="compagnia" id="i-modo"></div>
-    <div class="etich">GENERI PREFERITI (scelti a mano)</div>
+    <div class="etich">BONUS GENERE <span style="color:var(--dim);letter-spacing:0">— a parità di priorità sposta la scelta verso i generi che ti piacciono e via da quelli che eviti. Solo spareggio, non cambia la priorità.</span></div>
+    <div class="etich" style="margin-top:6px">Tocca per ciclare: <b style="color:#9bbf90">verde ✓ mi piace</b> · <b style="color:#e08a86">rosso ✗ evita</b></div>
     <div class="compagnia" id="i-gen"></div>
     <div class="m-az"><button class="primario" id="i-chiudi">Fatto</button></div>`);
   render();
-  $('#i-modo').onclick = async e => { const b = e.target.closest('[data-modo]'); if(!b) return;
-    try { await mutaProfilo(pr => { pr.bonusGenere = b.dataset.modo; }); render(); }
-    catch(err){ toast('Salvataggio non riuscito: '+err.message, true); } };
   $('#i-gen').onclick = async e => { const b = e.target.closest('[data-gen]'); if(!b) return; const g = b.dataset.gen;
-    try { await mutaProfilo(pr => { const cur = pr.generiPreferiti||[]; pr.generiPreferiti = cur.includes(g)?cur.filter(x=>x!==g):[...cur,g]; }); render(); }
-    catch(err){ toast('Salvataggio non riuscito: '+err.message, true); } };
+    try {
+      await mutaProfilo(pr => {
+        pr.generiPositivi = pr.generiPositivi || []; pr.generiNegativi = pr.generiNegativi || [];
+        if (pr.generiPositivi.includes(g)){ pr.generiPositivi = pr.generiPositivi.filter(x=>x!==g); pr.generiNegativi.push(g); }
+        else if (pr.generiNegativi.includes(g)){ pr.generiNegativi = pr.generiNegativi.filter(x=>x!==g); }
+        else pr.generiPositivi.push(g);
+      });
+      render();
+    } catch(err){ toast('Salvataggio non riuscito: '+err.message, true); } };
   $('#i-chiudi').onclick = chiudiModale;
 }
 

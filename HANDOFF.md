@@ -71,7 +71,7 @@ profili/<slug>.json       un file per persona
 il proprio `profili/<slug>.json`; `storico.json` e `archivio.json` li scrive solo il PC
 "host" (chi preme Play / prepara). Così Drive non crea copie in conflitto.
 
-**Profilo** `{nome, slug, creato, colore, password?, bonusGenere?('pos'|'neu'|'neg'), generiPreferiti?[], lista:[voce]}`.
+**Profilo** `{nome, slug, creato, colore, password?, generiPositivi?[], generiNegativi?[], lista:[voce]}`.
 **Voce film** `{tmdbId, titolo, anno, uscita, durata, regista, generi, voto, votoFonte,
 collezione?, collezioneNome?, locandina, desiderio(1–5), conChi[], nonCon[], aggiunto}`.
 Stato "da vedere/visto" e i valori derivati NON si salvano: si ricalcolano dallo storico.

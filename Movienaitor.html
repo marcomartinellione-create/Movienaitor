@@ -419,9 +419,8 @@ header .spazio{flex:1}
             <button class="bottone piccolo secondario" id="imp-salva-pw">Salva</button>
           </div>
         </div>
-        <div class="campo"><label>Bonus Genere<span class="aiuto-q" tabindex="0">?<span class="tip">A parità di priorità (film con punteggio molto vicino), sposta la scelta verso i tuoi generi preferiti (Positivo) o verso film di altri generi (Negativo). NON cambia la priorità principale: è solo uno spareggio.</span></span></label>
-          <div id="imp-bonusgen-modo" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px"></div>
-          <label style="color:var(--dim); font-size:12px">Generi preferiti (scelti a mano)</label>
+        <div class="campo"><label>Bonus Genere<span class="aiuto-q" tabindex="0">?<span class="tip">A parità di priorità (film con punteggio molto vicino), sposta la scelta verso i generi che ti piacciono e via da quelli che eviti. NON cambia la priorità principale: è solo uno spareggio. Clic su un genere: neutro → 💚 mi piace → ❤️‍🩹 evita → neutro.</span></span></label>
+          <label style="color:var(--dim); font-size:12px">Clic per ciclare: <b style="color:#9bbf90">verde ✓ = mi piace</b> · <b style="color:#e08a86">rosso ✗ = evita</b></label>
           <div id="imp-generi-pref" class="compagnia" style="margin-top:6px"></div>
         </div>
         <div class="campo"><label class="gate-host" style="justify-content:flex-start; margin:0; max-width:none; color:var(--dim)"><input type="checkbox" id="imp-host"> <span>Modalità host</span></label></div>
@@ -444,7 +443,7 @@ header .spazio{flex:1}
 <script>
 'use strict';
 /* ════════════════════════ COSTANTI ════════════════════════ */
-const APP_VERSION = '0.2.2';
+const APP_VERSION = '0.2.3';
 const CONFIG_DEFAULT = {
   tmdbKey:'', omdbKey:'',
   bonusCoralita:0.10, capCoralita:0.30, passoSoddisfazione:0.15, bonusCoppia:1.15,
@@ -808,11 +807,30 @@ function indiceSoddisfazione(slug){
   }
   return idx;
 }
-// Affinità di un film ai "generi preferiti" scelti a mano dal profilo (n° di generi in comune).
-function affinitaGeneri(prof, film){
-  const pref = prof.generiPreferiti || [];
-  if (!pref.length) return 0;
-  return (film.generi || []).filter(g => pref.includes(g)).length;
+// Bonus Genere del profilo su un film: ogni genere del film vale +1 se marcato "positivo",
+// −1 se "negativo", 0 se neutro. Positivi e negativi convivono (non è un unico modo).
+function bonusGeneri(prof, film){
+  const pos = prof.generiPositivi || [], neg = prof.generiNegativi || [];
+  let g = 0;
+  for (const gen of (film.generi || [])){
+    if (pos.includes(gen)) g += 1;
+    else if (neg.includes(gen)) g -= 1;
+  }
+  return g;
+}
+// Ciclo a tre stati di un genere: neutro → positivo (✓) → negativo (✗) → neutro.
+function cicloGenere(p, gen){
+  p.generiPositivi = p.generiPositivi || []; p.generiNegativi = p.generiNegativi || [];
+  if (p.generiPositivi.includes(gen)){ p.generiPositivi = p.generiPositivi.filter(x=>x!==gen); p.generiNegativi.push(gen); }
+  else if (p.generiNegativi.includes(gen)){ p.generiNegativi = p.generiNegativi.filter(x=>x!==gen); }
+  else p.generiPositivi.push(gen);
+}
+// Migrazione dal vecchio modello (bonusGenere + generiPreferiti) al nuovo (pos/neg per genere).
+function migraGeneri(p){
+  if (!p.generiPositivi && !p.generiNegativi && Array.isArray(p.generiPreferiti) && p.generiPreferiti.length){
+    if (p.bonusGenere === 'neg') p.generiNegativi = p.generiPreferiti.slice();
+    else if (p.bonusGenere !== 'neu') p.generiPositivi = p.generiPreferiti.slice();
+  }
 }
 // ordine di uscita per le saghe (release_date se disponibile, altrimenti l'anno)
 const ordineSaga = f => f.uscita || (f.anno ? f.anno + '-00-00' : '9999');
@@ -870,12 +888,11 @@ function classifica(){
       if (attesi.size === setP.size && [...setP].every(x => attesi.has(x))){ M = cfg.bonusCoppia; break; }
     }
     // Bonus Genere: SOLO spareggio, non entra nel punteggio. Somma sui proponenti presenti
-    // del verso (Positivo +, Negativo −) per la loro affinità di generi al film.
+    // del bonus di ciascuno (generi positivi +1, negativi −1) sui generi del film.
     let G = 0;
     for (const p of c.prop){
       const pr = profiloDi(p.slug); if (!pr) continue;
-      const modo = pr.bonusGenere || 'neu'; if (modo === 'neu') continue;
-      G += (modo === 'pos' ? 1 : -1) * affinitaGeneri(pr, film);
+      G += bonusGeneri(pr, film);
     }
     rosa.push({film, prop:c.prop, S:D*B*W*M, D, B, W, G, M});
   }
@@ -901,7 +918,7 @@ async function caricaTutto(){
   const profili = [];
   for (const n of nomi){
     const p = await FS.readJSON(['profili', n]);
-    if (p && p.slug && Array.isArray(p.lista)) profili.push(p);
+    if (p && p.slug && Array.isArray(p.lista)){ migraGeneri(p); profili.push(p); }
     else if (p !== null) console.warn('profilo illeggibile ignorato:', n);
   }
   profili.sort((a,b) => (a.creato || '').localeCompare(b.creato || '') || a.slug.localeCompare(b.slug));
@@ -1694,30 +1711,17 @@ function disegnaImpostazioni(){
   disegnaBonusGenere();
 }
 function disegnaBonusGenere(){
-  const p = mioProfilo(); if (!p || !$('#imp-bonusgen-modo')) return;
-  const modo = p.bonusGenere || 'neu';
-  const modi = [['pos','＋ Positivo','#7d9b76'],['neu','Neutro','#c9a45c'],['neg','－ Negativo','#c0504d']];
-  $('#imp-bonusgen-modo').innerHTML = modi.map(([k,l,col]) => {
-    const on = k === modo;
-    return `<button data-modo="${k}" style="padding:8px 14px;border-radius:9px;cursor:pointer;font-size:13px;
-      border:1.5px solid ${col};font-weight:${on?'700':'400'};
-      background:${on?col:'transparent'};color:${on?'#181012':'var(--dim)'}">${on?'✓ ':''}${l}</button>`;
-  }).join('');
-  const pref = p.generiPreferiti || [];
-  const gcol = {pos:'#7d9b76', neu:'#c9a45c', neg:'#c0504d'}[modo];
-  const gseg = {pos:'✓ ', neu:'✓ ', neg:'✗ '}[modo];
+  const p = mioProfilo(); if (!p || !$('#imp-generi-pref')) return;
+  const pos = p.generiPositivi || [], neg = p.generiNegativi || [];
   $('#imp-generi-pref').innerHTML = GENERI_TMDB.map(g => {
-    const on = pref.includes(g);
-    return `<button class="pchip" data-gen="${esc(g)}"${on?` style="background:${gcol};border-color:${gcol};color:#181012;font-weight:600"`:''}>${on?gseg:''}${esc(g)}</button>`;
+    const st = pos.includes(g) ? 'pos' : neg.includes(g) ? 'neg' : '';
+    const col = st === 'pos' ? '#7d9b76' : st === 'neg' ? '#c0504d' : '';
+    const seg = st === 'pos' ? '✓ ' : st === 'neg' ? '✗ ' : '';
+    return `<button class="pchip" data-gen="${esc(g)}"${st?` style="background:${col};border-color:${col};color:#181012;font-weight:600"`:''}>${seg}${esc(g)}</button>`;
   }).join('');
-  $('#imp-bonusgen-modo').onclick = async e => {
-    const b = e.target.closest('[data-modo]'); if (!b) return;
-    p.bonusGenere = b.dataset.modo; await salvaMioProfilo(); disegnaBonusGenere(); disegnaSala();
-  };
   $('#imp-generi-pref').onclick = async e => {
     const b = e.target.closest('[data-gen]'); if (!b) return;
-    const g = b.dataset.gen, cur = p.generiPreferiti || [];
-    p.generiPreferiti = cur.includes(g) ? cur.filter(x=>x!==g) : [...cur, g];
+    cicloGenere(p, b.dataset.gen);
     await salvaMioProfilo(); disegnaBonusGenere(); disegnaSala();
   };
 }
