@@ -1704,8 +1704,12 @@ function disegnaBonusGenere(){
       background:${on?col:'transparent'};color:${on?'#181012':'var(--dim)'}">${on?'✓ ':''}${l}</button>`;
   }).join('');
   const pref = p.generiPreferiti || [];
-  $('#imp-generi-pref').innerHTML = GENERI_TMDB.map(g =>
-    `<button class="pchip ${pref.includes(g)?'con':''}" data-gen="${esc(g)}">${pref.includes(g)?'✓ ':''}${esc(g)}</button>`).join('');
+  const gcol = {pos:'#7d9b76', neu:'#c9a45c', neg:'#c0504d'}[modo];
+  const gseg = {pos:'✓ ', neu:'✓ ', neg:'✗ '}[modo];
+  $('#imp-generi-pref').innerHTML = GENERI_TMDB.map(g => {
+    const on = pref.includes(g);
+    return `<button class="pchip" data-gen="${esc(g)}"${on?` style="background:${gcol};border-color:${gcol};color:#181012;font-weight:600"`:''}>${on?gseg:''}${esc(g)}</button>`;
+  }).join('');
   $('#imp-bonusgen-modo').onclick = async e => {
     const b = e.target.closest('[data-modo]'); if (!b) return;
     p.bonusGenere = b.dataset.modo; await salvaMioProfilo(); disegnaBonusGenere(); disegnaSala();
@@ -1780,6 +1784,8 @@ function agganciaGlobali(){
     $$('.tab').forEach(x => x.classList.toggle('attivo', x === b));
     for (const v of ['sala','catalogo','archivio','impostazioni']) $('#vista-'+v).hidden = v !== b.dataset.vista;
     if (b.dataset.vista === 'archivio') disegnaArchivio();
+    // apre Impostazioni → rilegge dalla cartella, così vede i cambi fatti da un altro dispositivo
+    if (b.dataset.vista === 'impostazioni' && !S.demo) ricarica(true);
   });
   $('#btn-ricarica').onclick = () => ricarica();
   // aiuti "?": hover di default, ma anche click/tap (utile su touch) con chiusura degli altri
