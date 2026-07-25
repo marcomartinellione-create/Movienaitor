@@ -175,7 +175,12 @@ header .spazio{flex:1}
 .gp-fill{display:block; height:100%; background:linear-gradient(90deg,var(--oro-dim),var(--oro2)); border-radius:6px; transition:width .4s}
 .gp-val{width:40px; flex:none; color:var(--oro2); font-size:12.5px}
 /* archivio: lista compatta a icone piccole con flag "pronto" */
-.arch-filtro{display:flex; gap:8px; margin-bottom:14px}
+.cat-filtri{display:flex; gap:10px 14px; align-items:center; flex-wrap:wrap; margin:0 0 16px; padding:10px 12px; border:1px solid var(--velluto3); border-radius:12px; background:var(--velluto2)}
+.cat-filtri label{display:flex; align-items:center; gap:6px; color:var(--dim); font-size:13px}
+.cat-filtri input, .cat-filtri select{background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); border-radius:8px; padding:6px 9px; font:inherit; font-size:13px}
+.cat-filtri #cat-q{flex:1; min-width:160px}
+.cat-conta{color:var(--dim2); font-size:12px; margin-left:auto}
+.arch-filtro{display:flex; gap:8px; margin-bottom:14px; align-items:center}
 .arch-filtro button{padding:6px 14px; border-radius:8px; border:1px solid var(--velluto3); color:var(--dim); background:none; cursor:pointer; font-size:13px}
 .arch-filtro button.on{border-color:var(--oro-dim); color:var(--oro2); background:var(--velluto2)}
 .arch-lista{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:8px}
@@ -335,6 +340,24 @@ header .spazio{flex:1}
     </div>
     <div id="generi-catalogo"></div>
     <div class="sezione-titolo">LA MIA LISTA — DA VEDERE<span class="aiuto-q" tabindex="0">?<span class="tip">I film che vuoi vedere. Le stelle (1–5) dicono quanto ti va di vederlo; i nomi ✓/✗ scelgono con chi vederlo o con chi no. Sono i dati che la Sala usa per comporre la Top 5 della serata.</span></span></div>
+    <div class="cat-filtri" id="cat-filtri">
+      <input type="search" id="cat-q" placeholder="🔎 filtra per titolo…" autocomplete="off">
+      <label>Ordina
+        <select id="cat-ordina">
+          <option value="aggiunto">Data aggiunta</option>
+          <option value="titolo">Titolo (A–Z)</option>
+          <option value="anno">Anno</option>
+          <option value="desiderio">Desiderio</option>
+          <option value="voto">Voto IMDb</option>
+        </select>
+      </label>
+      <button class="bottone piccolo secondario" id="cat-dir" title="Crescente / decrescente">↓ decr.</button>
+      <label>Desiderio ≥ <select id="cat-mindes"><option value="0">·</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+      <label>Voto ≥ <input type="number" id="cat-minvoto" min="0" max="10" step="0.5" placeholder="0" style="width:64px"></label>
+      <label>Anno <input type="number" id="cat-annoda" placeholder="da" style="width:70px"> – <input type="number" id="cat-annoa" placeholder="a" style="width:70px"></label>
+      <button class="testo-link" id="cat-azzera">azzera</button>
+      <span class="cat-conta" id="cat-conta"></span>
+    </div>
     <div class="griglia" id="lista-da-vedere"></div>
     <div class="sezione-titolo">GIÀ VISTI IN SALA<span class="aiuto-q" tabindex="0">?<span class="tip">I film già guardati nelle serate confermate col Play. Restano qui come storico; puoi rimetterne uno in lista se lo vuoi rivedere.</span></span></div>
     <div class="griglia" id="lista-visti"></div>
@@ -346,6 +369,13 @@ header .spazio{flex:1}
     <div class="arch-filtro" id="arch-filtro">
       <button data-f="tutti" class="on">Tutti</button>
       <button data-f="daPreparare">Da preparare</button>
+      <span style="margin-left:auto"></span>
+      <label style="display:flex;align-items:center;gap:6px;color:var(--dim);font-size:13px">Ordina
+        <select id="arch-ordina">
+          <option value="alfabetico">Alfabetico</option>
+          <option value="prossima">Priorità di prossima apparizione</option>
+        </select>
+      </label>
     </div>
     <div class="arch-lista" id="lista-archivio"></div>
   </main>
@@ -616,6 +646,8 @@ const S = {
   rosa:[],               // ultima classifica calcolata
   archivioPronti:new Set(), // tmdbId segnati "pronto alla visione" dall'host
   archivioFiltro:'tutti',   // 'tutti' | 'daPreparare'
+  archivioOrdine:'alfabetico', // 'alfabetico' | 'prossima'
+  catFiltri:{q:'', ordina:'aggiunto', dir:'desc', minDes:0, minVoto:0, annoDa:null, annoA:null},
   ultimaLettura:null,
   urlCache:new Map()     // percorso → objectURL
 };
@@ -1029,6 +1061,22 @@ function disegnaTutto(){
 
 // Archivio (solo host): tutti i film ancora "da vedere" da qualcuno, dedup, senza
 // preferenze né liste — la scorta che l'host può procurarsi in anticipo.
+// Priorità di prossima apparizione (per l'Archivio): stima quanto un film è "vicino" a
+// essere proposto, con la stessa formula della Sala ma ipotizzando tutti i suoi proponenti
+// presenti (Desiderio × Coralità × Soddisfazione; niente bonus coppia, che dipende dai presenti).
+function punteggioProssima(film){
+  const prop = [];
+  for (const p of S.profili) for (const voce of (p.lista || []))
+    if (voce.tmdbId === film.tmdbId && entryAttiva(voce, p.slug)){ prop.push({slug:p.slug, desiderio:voce.desiderio || 3}); break; }
+  if (!prop.length) return 0;
+  const n = prop.length;
+  const D = prop.reduce((s,p) => s + p.desiderio, 0) / n / 5;
+  const B = Math.min(1 + S.config.bonusCoralita*(n-1), 1 + S.config.capCoralita);
+  let W = 0.5;
+  for (const p of prop) W = Math.max(W, indiceSoddisfazione(p.slug));
+  return D * B * W;
+}
+
 function disegnaArchivio(){
   if (!S.host) return;
   $$('#arch-filtro button').forEach(b => b.classList.toggle('on', b.dataset.f === S.archivioFiltro));
@@ -1037,7 +1085,11 @@ function disegnaArchivio(){
     if (v.tmdbId && entryAttiva(v, p.slug) && !mappa.has(v.tmdbId)) mappa.set(v.tmdbId, v);
   let film = [...mappa.values()];
   if (S.archivioFiltro === 'daPreparare') film = film.filter(v => !S.archivioPronti.has(v.tmdbId));
-  film.sort((a, b) => String(a.titolo).localeCompare(String(b.titolo)));
+  const selOrd = $('#arch-ordina'); if (selOrd) selOrd.value = S.archivioOrdine;
+  if (S.archivioOrdine === 'prossima')
+    film.sort((a, b) => punteggioProssima(b) - punteggioProssima(a) || String(a.titolo).localeCompare(String(b.titolo)));
+  else
+    film.sort((a, b) => String(a.titolo).localeCompare(String(b.titolo)));
   $('#lista-archivio').innerHTML = film.map(v => {
     const pronto = S.archivioPronti.has(v.tmdbId);
     return `<div class="arch-riga${pronto ? ' pronto' : ''}" data-arch="${v.tmdbId}">
@@ -1268,14 +1320,42 @@ function disegnaGeneriCatalogo(){
     }).join('')}</div>`;
 }
 
+// Applica i filtri e l'ordinamento del catalogo alla lista "da vedere".
+function filtraCatalogo(lista){
+  const f = S.catFiltri;
+  let out = lista.filter(v => {
+    if (f.q && !String(v.titolo || '').toLowerCase().includes(f.q.toLowerCase())) return false;
+    if (f.minDes && (v.desiderio || 3) < f.minDes) return false;
+    if (f.minVoto && (v.voto || 0) < f.minVoto) return false;
+    const anno = parseInt(v.anno, 10) || 0;
+    if (f.annoDa && anno && anno < f.annoDa) return false;
+    if (f.annoA && anno && anno > f.annoA) return false;
+    return true;
+  });
+  const cmp = {
+    titolo: (a,b) => String(a.titolo||'').localeCompare(String(b.titolo||'')),
+    anno:   (a,b) => (parseInt(a.anno,10)||0) - (parseInt(b.anno,10)||0),
+    desiderio: (a,b) => (a.desiderio||3) - (b.desiderio||3),
+    voto:   (a,b) => (a.voto||0) - (b.voto||0),
+    aggiunto: (a,b) => String(a.aggiunto||'').localeCompare(String(b.aggiunto||''))
+  }[f.ordina] || ((a,b)=>0);
+  out.sort((a,b) => cmp(a,b) || String(a.titolo||'').localeCompare(String(b.titolo||'')));
+  if (f.dir === 'desc') out.reverse();
+  return out;
+}
+
 function disegnaCatalogo(){
   const mio = mioProfilo();
-  const daVedere = (mio ? mio.lista : []).filter(v => entryAttiva(v, S.me));
+  const daVedereTot = (mio ? mio.lista : []).filter(v => entryAttiva(v, S.me));
+  const daVedere = filtraCatalogo(daVedereTot);
   const spente = (mio ? mio.lista : []).filter(v => !entryAttiva(v, S.me));
   disegnaGeneriCatalogo();
+  const conta = $('#cat-conta');
+  if (conta) conta.textContent = daVedere.length === daVedereTot.length
+    ? `${daVedereTot.length} film` : `${daVedere.length} di ${daVedereTot.length}`;
 
   $('#lista-da-vedere').innerHTML = daVedere.map(v => cardFilm(v)).join('') ||
-    `<div class="vuoto-msg" style="grid-column:1/-1">La tua lista è vuota: cerca un film qui sopra 🍿</div>`;
+    `<div class="vuoto-msg" style="grid-column:1/-1">${daVedereTot.length ? 'Nessun film corrisponde ai filtri.' : 'La tua lista è vuota: cerca un film qui sopra 🍿'}</div>`;
   daVedere.forEach(v => agganciaCard(v));
 
   // visti: dallo storico (tutte le visioni a cui ho partecipato) + voci spente
@@ -1715,6 +1795,25 @@ function agganciaGlobali(){
     const b = e.target.closest('button[data-f]'); if (!b) return;
     S.archivioFiltro = b.dataset.f;
     disegnaArchivio();
+  };
+  $('#arch-ordina').onchange = e => { S.archivioOrdine = e.target.value; disegnaArchivio(); };
+  // ── filtri Catalogo (tempo reale) ──
+  $('#cat-q').oninput = e => { S.catFiltri.q = e.target.value; disegnaCatalogo(); };
+  $('#cat-ordina').onchange = e => { S.catFiltri.ordina = e.target.value; disegnaCatalogo(); };
+  $('#cat-dir').onclick = () => {
+    S.catFiltri.dir = S.catFiltri.dir === 'desc' ? 'asc' : 'desc';
+    $('#cat-dir').textContent = S.catFiltri.dir === 'desc' ? '↓ decr.' : '↑ cresc.';
+    disegnaCatalogo();
+  };
+  $('#cat-mindes').onchange = e => { S.catFiltri.minDes = parseInt(e.target.value,10) || 0; disegnaCatalogo(); };
+  $('#cat-minvoto').oninput = e => { S.catFiltri.minVoto = parseFloat(e.target.value) || 0; disegnaCatalogo(); };
+  $('#cat-annoda').oninput = e => { S.catFiltri.annoDa = parseInt(e.target.value,10) || null; disegnaCatalogo(); };
+  $('#cat-annoa').oninput = e => { S.catFiltri.annoA = parseInt(e.target.value,10) || null; disegnaCatalogo(); };
+  $('#cat-azzera').onclick = () => {
+    S.catFiltri = {q:'', ordina:'aggiunto', dir:'desc', minDes:0, minVoto:0, annoDa:null, annoA:null};
+    $('#cat-q').value=''; $('#cat-ordina').value='aggiunto'; $('#cat-dir').textContent='↓ decr.';
+    $('#cat-mindes').value='0'; $('#cat-minvoto').value=''; $('#cat-annoda').value=''; $('#cat-annoa').value='';
+    disegnaCatalogo();
   };
   $('#filtro-generi').onclick = e => {
     const c = e.target.closest('.gchip'); if (!c) return;
