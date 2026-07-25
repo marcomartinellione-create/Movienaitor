@@ -48,11 +48,6 @@ jobs:
       - name: Sync (copia web + plugin nel progetto Android)
         run: npx cap sync android
 
-      - name: Firma stabile (keystore di debug fisso → aggiornamenti funzionanti)
-        run: |
-          mkdir -p ~/.android
-          cp keystore/debug.keystore ~/.android/debug.keystore
-
       - name: Build APK di debug
         run: |
           cd android

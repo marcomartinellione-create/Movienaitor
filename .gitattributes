@@ -1,0 +1,2 @@
+# Il keystore è binario: git non deve mai convertirlo (LF/CRLF) o corromperlo.
+*.keystore binary

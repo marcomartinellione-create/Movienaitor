@@ -29,13 +29,38 @@ function must(file){ if (!fs.existsSync(file)){ console.error('MANCA', file); pr
   }
 }
 
-// 3) versionCode crescente (necessario per aggiornare l'app installata) + versionName
+// 3) firma di debug STABILE: copia il keystore fisso nel progetto e configura
+//    esplicitamente signingConfigs.debug (così non dipende da dove il runner cerca
+//    il keystore di default → la firma è identica a ogni build, gli update funzionano).
+{
+  must('keystore/debug.keystore');
+  fs.copyFileSync('keystore/debug.keystore', 'android/app/mvn-debug.keystore');
+  const g = 'android/app/build.gradle';
+  must(g);
+  let s = fs.readFileSync(g, 'utf8');
+  if (!s.includes('mvn-debug.keystore')){
+    const blocco = `android {
+    signingConfigs {
+        debug {
+            storeFile file('mvn-debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }`;
+    s = s.replace(/android\s*\{/, blocco);
+    fs.writeFileSync(g, s);
+    console.log('signingConfig debug → mvn-debug.keystore');
+  }
+}
+
+// 4) versionCode crescente (necessario per aggiornare l'app installata) + versionName
 {
   const g = 'android/app/build.gradle';
   must(g);
   let s = fs.readFileSync(g, 'utf8');
   const vc = Math.floor(Date.now() / 60000);           // minuti dall'epoch: sempre crescente
-  let vn = '0.2.1';
+  let vn = '0.2.2';
   try { vn = require('../package.json').version || vn; } catch (e) {}
   s = s.replace(/versionCode\s+\d+/, 'versionCode ' + vc);
   s = s.replace(/versionName\s+"[^"]*"/, 'versionName "' + vn + '"');
