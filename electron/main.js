@@ -127,6 +127,11 @@ function registraIPC(){
     } catch (err) { resolve(false); }
   }));
   ipcMain.handle('mvn:releases', () => shell.openExternal(REPO_RELEASES));
+  ipcMain.handle('mvn:apriPercorso', async (e, p) => {
+    if (!p) return false;
+    const err = await shell.openPath(p);   // stringa vuota = aperto con successo
+    return !err;
+  });
   ipcMain.handle('mvn:versione', () => app.getVersion());
 }
 
@@ -138,12 +143,25 @@ function createWindow(){
     icon: path.join(__dirname, 'build', 'icon.ico'),
     webPreferences: {
       contextIsolation: true, nodeIntegration: false, sandbox: true,
+      spellcheck: true,
       preload: path.join(__dirname, 'preload.js')
     }
   };
   if (typeof s.x === 'number' && typeof s.y === 'number') { opts.x = s.x; opts.y = s.y; }
   const win = new BrowserWindow(opts);
   win.removeMenu();
+  // Correttore ortografico italiano (sottolinea le parole fuori dizionario)
+  try { win.webContents.session.setSpellCheckerLanguages(['it']); } catch (e) { /* dizionario IT non disponibile */ }
+  // Tasto destro su una parola errata → suggerimenti
+  win.webContents.on('context-menu', (e, params) => {
+    if (!params.misspelledWord) return;
+    const { Menu, MenuItem } = require('electron');
+    const menu = new Menu();
+    for (const s of (params.dictionarySuggestions || [])) menu.append(new MenuItem({ label: s, click: () => win.webContents.replaceMisspelling(s) }));
+    if ((params.dictionarySuggestions || []).length) menu.append(new MenuItem({ type: 'separator' }));
+    menu.append(new MenuItem({ label: 'Aggiungi al dizionario', click: () => win.webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord) }));
+    menu.popup();
+  });
   // ripropone com'era l'ultima volta: schermo intero o finestra (o massimizzata)
   if (s.fullscreen) win.setFullScreen(true);
   else if (s.maximized) win.maximize();

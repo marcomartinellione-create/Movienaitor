@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('mvnFS', {
   hostRicordato:     ()        => ipcRenderer.invoke('mvn:getHost'),
   ricordaHost:       (on)      => ipcRenderer.invoke('mvn:setHost', on),
   apriReleases:      ()        => ipcRenderer.invoke('mvn:releases'),
+  apriPercorso:      (p)       => ipcRenderer.invoke('mvn:apriPercorso', p),
   versione:          ()        => ipcRenderer.invoke('mvn:versione')
 });
 

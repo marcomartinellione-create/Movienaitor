@@ -226,7 +226,8 @@ header .spazio{flex:1}
 .re-riga label{display:flex; align-items:center; gap:7px; color:var(--dim); font-size:13px}
 .re-riga input{background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); border-radius:8px; padding:7px 9px; font:inherit; font-size:13px}
 .re-riga input[type=text]{flex:1}
-.re-tag{color:var(--oro2)}
+.re-tag{display:inline-block; background:var(--velluto2); border:1px solid var(--velluto3); color:var(--oro2); border-radius:6px; padding:1px 7px; font-size:11.5px; margin:1px}
+.arch-dove{margin-top:4px; font-size:12px; color:var(--dim); display:flex; flex-wrap:wrap; align-items:center; gap:4px}
 .re-sez{border:1px solid var(--velluto3); border-radius:10px; padding:12px 14px; margin-bottom:14px; background:var(--bg2)}
 .re-sez-cap{display:flex; gap:8px; align-items:center; margin-bottom:8px}
 .re-sez-tit{flex:1; background:none; border:0; border-bottom:1px solid var(--velluto3); color:var(--oro2); font:inherit; font-size:16px; font-weight:600; padding:4px 2px}
@@ -242,6 +243,20 @@ header .spazio{flex:1}
 .editor-grande .re-sez-tit{font-size:17px}
 .editor-grande .re-sez-ro{margin-bottom:22px}
 .editor-grande .re-testo{font-size:15.5px; line-height:1.7}
+/* testo ricco + barra + dove vederlo */
+.re-sez-txt[contenteditable]{cursor:text; overflow:visible}
+.re-sez-txt[contenteditable]:focus{outline:0}
+.re-sez-txt[contenteditable]:empty:before{content:attr(data-ph); color:var(--dim2)}
+.re-sez-txt ul, .re-sez-txt ol{margin:6px 0 6px 24px} .re-sez-txt ul{list-style:disc} .re-sez-txt ol{list-style:decimal}
+.re-testo ul, .re-testo ol{margin:6px 0 6px 24px}
+.re-toolbar{display:flex; gap:4px; align-items:center; flex-wrap:wrap; margin:2px 0 12px; padding:6px; border:1px solid var(--velluto3); border-radius:10px; background:var(--velluto2); position:sticky; top:-4px; z-index:2}
+.re-toolbar button{background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); border-radius:7px; cursor:pointer; padding:5px 10px; font-size:14px; min-width:34px}
+.re-toolbar button:hover{border-color:var(--oro-dim)}
+.re-col{display:inline-flex; align-items:center; gap:3px; background:var(--bg2); border:1px solid var(--velluto3); border-radius:7px; padding:2px 7px; cursor:pointer; color:var(--crema); font-size:14px}
+.re-col input[type=color]{width:22px; height:22px; border:0; background:none; padding:0; cursor:pointer}
+.re-dove-chips{display:flex; flex-wrap:wrap; gap:6px; margin:6px 0}
+.re-dove-file{display:flex; gap:8px; margin:8px 0 4px; flex-wrap:wrap}
+.re-dove-file input{flex:1; min-width:180px; background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); border-radius:8px; padding:7px 10px; font:inherit; font-size:13px}
 .re-sez-ro{margin-bottom:14px}
 .re-sez-ro h4{margin:0 0 4px; color:var(--oro2); font-size:15px}
 .re-testo{color:var(--crema); font-size:14px; line-height:1.55}
@@ -765,6 +780,7 @@ const S = {
   proiettato:null,       // tmdbId scelto manualmente
   rosa:[],               // ultima classifica calcolata
   archivioPronti:new Set(), // tmdbId segnati "pronto alla visione" dall'host
+  archivioDove:{},          // tmdbId → {streaming,fisico,percorso} (dove trovarlo)
   archivioFiltro:'tutti',   // 'tutti' | 'daPreparare'
   archivioOrdine:'alfabetico', // 'alfabetico' | 'prossima'
   catFiltri:{q:'', ordina:'aggiunto', dir:'desc', minDes:0, minVoto:0, annoDa:null, annoA:null},
@@ -1054,6 +1070,7 @@ async function caricaTutto(){
   S.storico.sort((a,b) => a.data.localeCompare(b.data));
   const arch = await FS.readJSON(['archivio.json']);
   S.archivioPronti = new Set((arch && Array.isArray(arch.pronti)) ? arch.pronti : []);
+  S.archivioDove = (arch && arch.dove && typeof arch.dove === 'object') ? arch.dove : {};
   await caricaRecensioni();
   S.presenti = new Set([...S.presenti].filter(s => profiloDi(s)));
   if (S.me && profiloDi(S.me)) S.presenti.add(S.me);
@@ -1069,6 +1086,40 @@ async function salvaMioProfilo(){
 /* ════════════════════════ RECENSIONI ════════════════════════ */
 // Sezioni di default per una nuova recensione (modificabili/aggiungibili/rimovibili).
 const SEZIONI_DEFAULT = ['Introduzione', 'Che ne penso', 'Momento preferito', 'Messaggio', 'A chi lo consiglio'];
+// "Dove vederlo": piattaforme streaming + supporti fisici
+const DOVE_STREAMING = ['Netflix','Prime Video','Disney+','NOW','Sky','RaiPlay','Mediaset Infinity','Apple TV+','YouTube','Crunchyroll','Paramount+','Mubi'];
+const DOVE_FISICO = ['DVD','Blu-ray','4K UHD'];
+// Testo sezione: può essere HTML (nuovo) o testo semplice (vecchie/convertite). Per la vista.
+function testoHTML(t){
+  t = t || '';
+  return /<[a-z][\s\S]*>/i.test(t) ? t : esc(t).replace(/\n/g, '<br>');
+}
+// HTML della recensione → Markdown per Obsidian (grassetto/liste/rientri; niente colore).
+function htmlToMarkdown(html){
+  if (!html) return '';
+  if (!/<[a-z][\s\S]*>/i.test(html)) return html;       // già testo semplice
+  const div = document.createElement('div'); div.innerHTML = html;
+  const walk = (node, indent) => {
+    let out = '';
+    for (const n of node.childNodes){
+      if (n.nodeType === 3){ out += n.nodeValue; continue; }
+      if (n.nodeType !== 1){ continue; }
+      const tag = n.tagName.toLowerCase();
+      if (tag === 'br'){ out += '\n'; }
+      else if (tag === 'b' || tag === 'strong'){ out += '**' + walk(n, indent).trim() + '**'; }
+      else if (tag === 'i' || tag === 'em'){ out += '*' + walk(n, indent).trim() + '*'; }
+      else if (tag === 'u'){ out += walk(n, indent); }        // sottolineato non esiste in MD: solo testo
+      else if (tag === 'ul'){ if (out && !out.endsWith('\n')) out += '\n'; for (const li of n.children) out += indent + '- ' + walk(li, indent+'  ').trim() + '\n'; }
+      else if (tag === 'ol'){ if (out && !out.endsWith('\n')) out += '\n'; let k=1; for (const li of n.children) out += indent + (k++) + '. ' + walk(li, indent+'   ').trim() + '\n'; }
+      else if (tag === 'li'){ out += walk(n, indent); }
+      else if (tag === 'div' || tag === 'p'){ out += (out && !out.endsWith('\n') ? '\n' : '') + walk(n, indent) + '\n'; }
+      else if (tag === 'blockquote'){ out += indent + '  ' + walk(n, indent+'  '); }
+      else { out += walk(n, indent); }                        // span (colore) ecc.: solo contenuto
+    }
+    return out;
+  };
+  return walk(div, '').replace(/\n{3,}/g, '\n\n').trim();
+}
 
 // Legge tutte le recensioni di tutti gli utenti da recensioni/<slug>/<tmdbId>.json
 async function caricaRecensioni(){
@@ -1106,7 +1157,7 @@ async function salvaRecensione(rec){
 }
 const miaRecensione = id => S.recensioni.find(r => r.autore === S.me && r.tmdbId === id);
 // stato "pronto alla visione" dell'archivio (scritto dall'host, file condiviso)
-async function salvaArchivio(){ await FS.writeJSON(['archivio.json'], {pronti:[...S.archivioPronti]}); }
+async function salvaArchivio(){ await FS.writeJSON(['archivio.json'], {pronti:[...S.archivioPronti], dove:S.archivioDove}); }
 
 async function registraVisione(voce){
   const attuale = await FS.readJSON(['storico.json']) || {visioni:[]};
@@ -1277,11 +1328,13 @@ function disegnaArchivio(){
     film.sort((a, b) => String(a.titolo).localeCompare(String(b.titolo)));
   $('#lista-archivio').innerHTML = film.map(v => {
     const pronto = S.archivioPronti.has(v.tmdbId);
+    const dove = pronto ? doveTesto(S.archivioDove[v.tmdbId]) : '';
     return `<div class="arch-riga${pronto ? ' pronto' : ''}" data-arch="${v.tmdbId}">
       <img class="arch-thumb" src="${segnapostoSVG(v.titolo, v.tmdbId)}" alt="">
       <div class="arch-info">
         <h5>${esc(v.titolo)}</h5>
         <div class="arch-meta">${esc(v.anno || '')} · ${fmtMin(v.durata)}${v.collezioneNome ? ' · 🎞 '+esc(v.collezioneNome) : ''}</div>
+        ${dove ? `<div class="arch-dove">${dove} <button class="testo-link arch-dove-edit" style="font-size:12px">modifica</button></div>` : ''}
       </div>
       <span class="arch-flag">${pronto ? '✓ pronto' : '⚑ segna'}</span>
     </div>`;
@@ -1293,11 +1346,34 @@ function disegnaArchivio(){
     urlImmagine(v, 'locandina').then(u => { if (u) img.src = u; });
     img.onclick = () => modaleScheda({ film: v, prop: null });
     el.querySelector('.arch-flag').onclick = async () => {
-      if (S.archivioPronti.has(id)) S.archivioPronti.delete(id); else S.archivioPronti.add(id);
-      await salvaArchivio();
-      disegnaArchivio();
+      if (S.archivioPronti.has(id)){ S.archivioPronti.delete(id); delete S.archivioDove[id]; await salvaArchivio(); disegnaArchivio(); }
+      else { S.archivioPronti.add(id); await salvaArchivio(); modaleDovePronto(id, v.titolo); }
     };
+    const be = el.querySelector('.arch-dove-edit');
+    if (be) be.onclick = () => modaleDovePronto(id, v.titolo);
   });
+}
+
+// Picker "dove vederlo" per un film segnato pronto (host)
+function modaleDovePronto(id, titolo){
+  const dv = S.archivioDove[id] = S.archivioDove[id] || {streaming:[], fisico:[], percorso:''};
+  apriModale(`
+    <h3>Dove trovare «${esc(titolo)}»</h3>
+    <p style="color:var(--dim)">Dove il film è disponibile / dove ce l'hai.</p>
+    <div class="etich">STREAMING</div>
+    <div class="re-dove-chips" id="dp-strm">${DOVE_STREAMING.map(x=>doveChip(x,'streaming',(dv.streaming||[]).includes(x))).join('')}</div>
+    <div class="etich">FISICO</div>
+    <div class="re-dove-chips" id="dp-fis">${DOVE_FISICO.map(x=>doveChip(x,'fisico',(dv.fisico||[]).includes(x))).join('')}</div>
+    <div class="re-dove-file"><input type="text" id="dp-perc" value="${esc(dv.percorso||'')}" placeholder="file o cartella sul PC…"><button class="bottone piccolo secondario" id="dp-apri">📂 Apri</button></div>
+    <div class="m-azioni"><button class="bottone piccolo" id="dp-ok">Fatto</button></div>`);
+  const clic = (sel, chiave) => { $(sel).onclick = e => { const b = e.target.closest('[data-dove]'); if(!b) return;
+    const v = b.dataset.val, arr = dv[chiave] = dv[chiave]||[]; const i = arr.indexOf(v); if(i>=0) arr.splice(i,1); else arr.push(v);
+    const on = arr.includes(v); b.classList.toggle('con', on); b.textContent = (on?'✓ ':'')+v; }; };
+  clic('#dp-strm','streaming'); clic('#dp-fis','fisico');
+  $('#dp-apri').onclick = () => { const p = $('#dp-perc').value.trim(); if(!p) return toast('Scrivi un percorso', true);
+    if (inElectron && window.mvnFS.apriPercorso) window.mvnFS.apriPercorso(p).then(ok=>{ if(!ok) toast('Percorso non trovato', true); });
+    else toast('L\'apertura funziona solo nell\'app desktop', true); };
+  $('#dp-ok').onclick = async () => { dv.percorso = $('#dp-perc').value.trim(); await salvaArchivio(); chiudiModale(); disegnaArchivio(); };
 }
 
 /* ════════════════════════ ARCHIVIO = RECENSIONI ════════════════════════ */
@@ -1380,27 +1456,37 @@ function disegnaRecensioni(){
   });
 }
 
+const doveChip = (label, kind, on) => `<button type="button" class="pchip${on?' con':''}" data-dove="${kind}" data-val="${esc(label)}">${on?'✓ ':''}${esc(label)}</button>`;
+function doveTesto(d){
+  d = d || {}; const parts = [...(d.streaming||[]), ...(d.fisico||[])];
+  let s = parts.map(x => `<span class="re-tag">${esc(x)}</span>`).join(' ');
+  if (d.percorso) s += ` <span class="re-tag" title="${esc(d.percorso)}">📂 ${esc((d.percorso.split(/[\\/]/).pop())||d.percorso)}</span>`;
+  return s ? ('📺 ' + s) : '';
+}
+
 function sezioneHTML(s, i, editabile){
-  if (!editabile) return `<div class="re-sez-ro"><h4>${esc(s.titolo||'')}</h4><div class="re-testo">${esc(s.testo||'').replace(/\n/g,'<br>')}</div></div>`;
+  if (!editabile) return `<div class="re-sez-ro"><h4>${esc(s.titolo||'')}</h4><div class="re-testo">${testoHTML(s.testo)}</div></div>`;
   return `<div class="re-sez" data-i="${i}">
     <div class="re-sez-cap"><input class="re-sez-tit" value="${esc(s.titolo||'')}" placeholder="Titolo sezione">
       <span class="re-sez-btn"><button data-az="su" data-i="${i}" title="sposta su">▲</button><button data-az="giu" data-i="${i}" title="sposta giù">▼</button><button data-az="del" data-i="${i}" title="rimuovi">✕</button></span></div>
-    <textarea class="re-sez-txt" rows="3" placeholder="Scrivi qui…">${esc(s.testo||'')}</textarea>
+    <div class="re-sez-txt" contenteditable="true" spellcheck="true" lang="it" data-ph="Scrivi qui…">${testoHTML(s.testo)}</div>
   </div>`;
 }
 
 function editorRecensione(recOrig, opts={}){
   const editabile = (recOrig.autore === S.me) || !!opts.nuova;
   const bozza = JSON.parse(JSON.stringify(recOrig));
-  bozza.meta = bozza.meta || {}; bozza.sezioni = bozza.sezioni || []; bozza.tags = bozza.tags || []; bozza.link = bozza.link || [];
+  bozza.meta = bozza.meta || {}; bozza.sezioni = bozza.sezioni || []; bozza.link = bozza.link || [];
+  bozza.doveVederlo = bozza.doveVederlo || {streaming:[], fisico:[], percorso:''};
+  delete bozza.tags;   // i tag sono stati sostituiti da "dove vederlo"
   let voto = bozza.votoPersonale || 0;
 
   function leggiCampi(){
     if (!editabile) return;
     bozza.sezioni = [...document.querySelectorAll('#re-sezioni .re-sez')].map(row => ({
-      titolo: row.querySelector('.re-sez-tit').value, testo: row.querySelector('.re-sez-txt').value
+      titolo: row.querySelector('.re-sez-tit').value, testo: row.querySelector('.re-sez-txt').innerHTML
     }));
-    const t = $('#re-tags'); if (t) bozza.tags = t.value.split(',').map(x=>x.trim()).filter(Boolean);
+    const p = $('#re-dove-perc'); if (p) bozza.doveVederlo.percorso = p.value.trim();
     const uv = $('#re-uv'); if (uv) bozza.ultimaVisione = uv.value || null;
     bozza.votoPersonale = voto;
   }
@@ -1423,10 +1509,22 @@ function editorRecensione(recOrig, opts={}){
         <button class="re-x" id="re-chiudi" title="Chiudi">✕</button>
       </div>
       ${editabile
-        ? `<div class="re-riga"><label>Ultima visione <input type="date" id="re-uv" value="${esc(bozza.ultimaVisione||'')}"></label>
-             <label style="flex:1">Tag <input type="text" id="re-tags" value="${esc((bozza.tags||[]).join(', '))}" placeholder="es. Capolavoro, Rewatch"></label></div>`
-        : `<div class="m-meta">${bozza.ultimaVisione?'👁 '+esc(bozza.ultimaVisione)+'   ':''}${(bozza.tags||[]).map(t=>'<span class=\"re-tag\">#'+esc(t)+'</span>').join(' ')}</div>`}
+        ? `<div class="re-riga"><label>Ultima visione <input type="date" id="re-uv" value="${esc(bozza.ultimaVisione||'')}"></label></div>
+           <div class="etich">DOVE VEDERLO</div>
+           <div class="re-dove-chips" id="re-dove-strm">${DOVE_STREAMING.map(x=>doveChip(x,'streaming', (bozza.doveVederlo.streaming||[]).includes(x))).join('')}</div>
+           <div class="re-dove-chips" id="re-dove-fis">${DOVE_FISICO.map(x=>doveChip(x,'fisico', (bozza.doveVederlo.fisico||[]).includes(x))).join('')}</div>
+           <div class="re-dove-file"><input type="text" id="re-dove-perc" value="${esc(bozza.doveVederlo.percorso||'')}" placeholder="file o cartella sul PC (es. D:\\Film\\...)…"><button class="bottone piccolo secondario" id="re-dove-apri" title="Apri sul PC (solo app desktop)">📂 Apri</button></div>`
+        : `<div class="m-meta">${bozza.ultimaVisione?'👁 '+esc(bozza.ultimaVisione)+'   ':''}${doveTesto(bozza.doveVederlo)}</div>`}
       ${editabile ? `<div style="margin:2px 0 10px">${bozza.tmdbId==null?'<span style="color:var(--rosso2);font-size:12px">⚠ nessun film TMDB collegato (niente locandina) · </span>':''}<button class="testo-link" id="re-collega">🔗 ${bozza.tmdbId!=null?'Cambia film collegato':'Collega a TMDB'}</button></div>` : ''}
+      ${editabile ? `<div class="re-toolbar" id="re-toolbar">
+        <button type="button" data-cmd="bold" title="Grassetto"><b>B</b></button>
+        <button type="button" data-cmd="underline" title="Sottolineato"><span style="text-decoration:underline">U</span></button>
+        <label class="re-col" title="Colore testo"><input type="color" id="re-colore" value="#e6c583"><span>A</span></label>
+        <button type="button" data-cmd="insertUnorderedList" title="Elenco puntato">•</button>
+        <button type="button" data-cmd="insertOrderedList" title="Elenco numerato">1.</button>
+        <button type="button" data-cmd="outdent" title="Rientro a sinistra (Shift+Tab)">⇤</button>
+        <button type="button" data-cmd="indent" title="Rientro a destra (Tab)">⇥</button>
+      </div>` : ''}
       <div id="re-sezioni">${bozza.sezioni.map((s,i)=>sezioneHTML(s,i,editabile)).join('')}</div>
       ${editabile?`<button class="testo-link" id="re-add-sez" style="margin:6px 0 4px">＋ aggiungi sezione</button>`:''}
       <div class="m-azioni" style="flex-wrap:wrap; gap:8px">
@@ -1452,9 +1550,37 @@ function editorRecensione(recOrig, opts={}){
     $('#re-stelle').querySelectorAll('span').forEach(el => {
       el.onclick = ev => { const r = el.getBoundingClientRect(); const half = (ev.clientX - r.left) < r.width/2; voto = (+el.dataset.s)*2 - (half?1:0); dipingi(); };
     });
-    // caselle di testo che crescono col contenuto (stile foglio)
-    const cresci = ta => { ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; };
-    $('#re-sezioni').querySelectorAll('.re-sez-txt').forEach(ta => { cresci(ta); ta.oninput = () => cresci(ta); });
+    // ── testo ricco: selezione + barra formattazione + Tab/Shift-Tab ──
+    let selSalvata = null;
+    const salvaSel = () => { const s = window.getSelection(); if (s.rangeCount && $('#re-sezioni').contains(s.anchorNode)) selSalvata = s.getRangeAt(0).cloneRange(); };
+    const ripristinaSel = () => { if (selSalvata){ const s = window.getSelection(); s.removeAllRanges(); s.addRange(selSalvata); } };
+    $('#re-sezioni').querySelectorAll('.re-sez-txt').forEach(ed => {
+      ed.addEventListener('keyup', salvaSel); ed.addEventListener('mouseup', salvaSel);
+      ed.addEventListener('keydown', e => { if (e.key === 'Tab'){ e.preventDefault(); ed.focus(); document.execCommand(e.shiftKey ? 'outdent' : 'indent'); } });
+    });
+    const toolbar = $('#re-toolbar');
+    if (toolbar){
+      toolbar.querySelectorAll('[data-cmd]').forEach(b => {
+        b.addEventListener('mousedown', e => e.preventDefault());   // non perdere la selezione
+        b.onclick = () => { ripristinaSel(); document.execCommand(b.dataset.cmd, false, null); salvaSel(); };
+      });
+      const col = $('#re-colore');
+      col.oninput = () => { ripristinaSel(); document.execCommand('foreColor', false, col.value); };
+    }
+    // ── "dove vederlo": chip streaming/fisico + percorso PC ──
+    const dv = bozza.doveVederlo;
+    const clicDove = (sel, chiave) => { const box = $(sel); if (!box) return; box.onclick = e => {
+      const b = e.target.closest('[data-dove]'); if (!b) return;
+      const v = b.dataset.val, arr = dv[chiave] = dv[chiave] || [];
+      const i = arr.indexOf(v); if (i>=0) arr.splice(i,1); else arr.push(v);
+      const on = arr.includes(v); b.classList.toggle('con', on); b.textContent = (on?'✓ ':'') + v;
+    }; };
+    clicDove('#re-dove-strm', 'streaming'); clicDove('#re-dove-fis', 'fisico');
+    if ($('#re-dove-apri')) $('#re-dove-apri').onclick = () => {
+      const p = $('#re-dove-perc').value.trim(); if (!p) return toast('Scrivi prima un percorso', true);
+      if (inElectron && window.mvnFS.apriPercorso) window.mvnFS.apriPercorso(p).then(ok => { if (!ok) toast('Percorso non trovato sul PC', true); });
+      else toast('L\'apertura del file funziona solo nell\'app desktop installata', true);
+    };
     if ($('#re-collega')) $('#re-collega').onclick = () => { leggiCampi(); modaleCercaFilm(id => collegaTMDB(bozza, id), {titolo: bozza.tmdbId!=null?'Cambia film collegato':'Collega a TMDB', sub:'Scegli il film: sovrascrive i metadati e aggiunge la locandina.', query:(bozza.meta||{}).titolo||''}); };
     $('#re-add-sez').onclick = () => { leggiCampi(); bozza.sezioni.push({titolo:'Nuova sezione', testo:''}); render(); };
     $('#re-sezioni').querySelectorAll('[data-az]').forEach(b => b.onclick = () => {
@@ -1521,7 +1647,7 @@ async function avviaEditorDaTMDB(id){
   apriModale('<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero i dati del film.</p>');
   let d; try { d = await dettagliFilm(id); } catch(e){ return apriModale(`<h3>Ahi</h3><p style="color:var(--dim)">Scheda non recuperata.</p><div class="m-azioni"><button class="bottone piccolo" onclick="chiudiModale()">Chiudi</button></div>`); }
   salvaImmagini(d).then(()=>{ S.urlCache.clear(); });
-  const rec = { tmdbId:d.tmdbId, votoPersonale:0, tags:[], ultimaVisione:oggiISO(),
+  const rec = { tmdbId:d.tmdbId, votoPersonale:0, doveVederlo:{streaming:[],fisico:[],percorso:''}, ultimaVisione:oggiISO(),
     meta:{ titolo:d.titolo, anno:d.anno, generi:d.generi, regista:d.regista, durata:d.durata, paese:d.paese||'', cast:d.cast||[], voto:d.voto, votoFonte:d.votoFonte, locandina:d.locandina, posterUrl:d.posterUrl },
     sezioni: SEZIONI_DEFAULT.map(tt => ({titolo:tt, testo:''})), link:[] };
   editorRecensione(rec, {nuova:true});
@@ -1537,11 +1663,12 @@ function markdownRecensione(rec){
     `rating: "${m.voto||''}"`, `cast: ${(m.cast||[]).join(', ')}`
   ];
   if (rec.ultimaVisione) righe.push(`last view: ${rec.ultimaVisione}`);
-  righe.push('tags:' + ((rec.tags||[]).length ? '\n' + rec.tags.map(x=>'  - '+x).join('\n') : ''));
+  const dv = rec.doveVederlo || {}; const dove = [...(dv.streaming||[]), ...(dv.fisico||[])];
+  if (dove.length) righe.push(`where: ${dove.join(', ')}`);
   if (cover) righe.push(`cover: ${cover}`);
   let md = `---\n${righe.join('\n')}\n---\n`;
   if (cover) md += `![[${cover}]]\n`;
-  for (const s of (rec.sezioni||[])){ if (!(s.titolo||s.testo)) continue; md += `## ${s.titolo||''}\n\n${s.testo||''}\n\n---\n`; }
+  for (const s of (rec.sezioni||[])){ const testo = htmlToMarkdown(s.testo); if (!(s.titolo||testo)) continue; md += `## ${s.titolo||''}\n\n${testo}\n\n---\n`; }
   if (rec.votoPersonale){
     const st = '⭐️'.repeat(Math.floor(rec.votoPersonale/2)) + ((rec.votoPersonale%2)?'½':'');
     md += `## Voto personale ${st}| ${rec.votoPersonale}\n`;
