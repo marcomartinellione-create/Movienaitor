@@ -205,6 +205,11 @@ header .spazio{flex:1}
 .rec-card h5{margin:0; font-size:13px; line-height:1.2; color:var(--crema); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .rec-card .sub{color:var(--dim2); font-size:11px; margin-top:3px}
 .rec-vuoto{grid-column:1/-1; color:var(--dim); text-align:center; padding:40px 20px; line-height:1.6}
+.rec-visti{border:1px solid var(--velluto3); border-radius:12px; background:var(--velluto2); margin-bottom:18px; padding:0 12px}
+.rec-visti summary{cursor:pointer; padding:11px 2px; color:var(--oro2); font-size:14px; letter-spacing:.03em}
+.rec-visti[open] #rec-visti{padding:2px 0 12px; display:flex; flex-wrap:wrap; gap:8px}
+.rec-nr{background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); border-radius:8px; padding:6px 11px; cursor:pointer; font-size:13px}
+.rec-nr:hover{border-color:var(--oro-dim); color:var(--oro2)}
 /* Editor recensione */
 .re-head{display:flex; gap:14px; align-items:flex-start; margin-bottom:12px}
 .re-poster{width:92px; flex:0 0 auto; aspect-ratio:2/3; border-radius:8px; overflow:hidden; position:relative; background:var(--bg2)}
@@ -454,9 +459,11 @@ header .spazio{flex:1}
         </label>
         <button class="bottone piccolo secondario" id="rec-dir" title="Crescente / decrescente">↓ decr.</button>
         <button class="bottone piccolo" id="rec-nuova">✍ Nuova recensione</button>
+        <button class="bottone piccolo secondario" id="rec-export-tutte">⬇ Esporta tutte</button>
         <span class="cat-conta" id="rec-conta"></span>
       </div>
     </div>
+    <details class="rec-visti" id="rec-visti-box" style="display:none"><summary></summary><div id="rec-visti"></div></details>
     <div class="rec-galleria" id="rec-galleria"></div>
   </main>
 
@@ -523,7 +530,7 @@ header .spazio{flex:1}
 <script>
 'use strict';
 /* ════════════════════════ COSTANTI ════════════════════════ */
-const APP_VERSION = '0.2.4';
+const APP_VERSION = '1.0.0';
 const CONFIG_DEFAULT = {
   tmdbKey:'', omdbKey:'',
   bonusCoralita:0.10, capCoralita:0.30, passoSoddisfazione:0.15, bonusCoppia:1.15,
@@ -1065,7 +1072,11 @@ async function caricaRecensioni(){
     for (const f of files){
       if (!f.endsWith('.json')) continue;
       const r = await FS.readJSON(['recensioni', slug, f]);
-      if (r && r.tmdbId){ r.autore = slug; r._file = ['recensioni', slug, f]; S.recensioni.push(r); }
+      // accetta anche le recensioni importate senza tmdbId (es. convertite da Obsidian)
+      if (r && typeof r === 'object' && (r.meta || Array.isArray(r.sezioni) || r.tmdbId != null)){
+        r.autore = slug; r._file = ['recensioni', slug, f]; r._key = r._file.join('/');
+        S.recensioni.push(r);
+      }
     }
   }
 }
@@ -1074,11 +1085,16 @@ async function salvaRecensione(rec){
   rec.autore = S.me;
   rec.modificato = new Date().toISOString();
   if (!rec.creato) rec.creato = oggiISO();
-  const percorso = ['recensioni', S.me, rec.tmdbId + '.json'];
-  const salvabile = {...rec}; delete salvabile._file; delete salvabile.autore;
+  const vecchio = rec._file;
+  // con tmdbId il nome canonico è <tmdbId>.json; senza, mantengo il file esistente (es. importate)
+  const percorso = (rec.tmdbId != null)
+    ? ['recensioni', S.me, rec.tmdbId + '.json']
+    : (rec._file || ['recensioni', S.me, 'senza-id-' + Date.now() + '.json']);
+  const salvabile = {...rec}; delete salvabile._file; delete salvabile._key; delete salvabile.autore;
   await FS.writeJSON(percorso, salvabile);
-  rec._file = percorso;
-  const i = S.recensioni.findIndex(x => x.autore === S.me && x.tmdbId === rec.tmdbId);
+  if (vecchio && vecchio.join('/') !== percorso.join('/')) await FS.cancella(vecchio); // rinomina (aggancio tmdbId)
+  rec._file = percorso; rec._key = percorso.join('/');
+  const i = S.recensioni.findIndex(x => x.autore === S.me && x._key === rec._key);
   if (i >= 0) S.recensioni[i] = rec; else S.recensioni.push(rec);
 }
 const miaRecensione = id => S.recensioni.find(r => r.autore === S.me && r.tmdbId === id);
@@ -1284,9 +1300,9 @@ function stelleLetterbox(v){
   const piene = Math.floor(v/2), mezza = (v % 2) === 1;
   return ('★'.repeat(piene) + (mezza ? '½' : '')) || '—';
 }
-async function eliminaRecensione(id){
-  await FS.cancella(['recensioni', S.me, id + '.json']);
-  S.recensioni = S.recensioni.filter(r => !(r.autore === S.me && r.tmdbId === id));
+async function eliminaRecensione(rec){
+  if (rec._file) await FS.cancella(rec._file);
+  S.recensioni = S.recensioni.filter(r => !(r.autore === S.me && r._key === rec._key));
 }
 
 function recensioniFiltrate(slug){
@@ -1305,6 +1321,14 @@ function recensioniFiltrate(slug){
   return out;
 }
 
+// Film che HO visto in Sala (storico) ma per cui non ho ancora una recensione (con tmdbId)
+function filmVistiNonRecensiti(){
+  const recIds = new Set(S.recensioni.filter(r => r.autore === S.me && r.tmdbId != null).map(r => r.tmdbId));
+  const visti = new Map();
+  for (const v of S.storico) if ((v.partecipanti||[]).includes(S.me) && v.tmdbId != null && !recIds.has(v.tmdbId)) visti.set(v.tmdbId, v.titolo);
+  return [...visti.entries()].map(([tmdbId, titolo]) => ({tmdbId, titolo}));
+}
+
 function disegnaRecensioni(){
   if (!$('#rec-galleria')) return;
   const autori = [...new Set(S.recensioni.map(r => r.autore))];
@@ -1312,7 +1336,19 @@ function disegnaRecensioni(){
   const sel = (S.recUtente && profiloDi(S.recUtente)) ? S.recUtente : S.me;
   $('#rec-utenti').innerHTML = utenti.map(s =>
     `<button class="rec-utente${s===sel?' on':''}" data-u="${esc(s)}"><span class="pallino" style="background:${coloreDi(s)}"></span>${esc(nomeDi(s))}${s===S.me?' (io)':''}</button>`).join('');
-  $('#rec-nuova').style.display = (sel === S.me) ? '' : 'none';
+  const mio = sel === S.me;
+  $('#rec-nuova').style.display = mio ? '' : 'none';
+  $('#rec-export-tutte').style.display = (recensioniFiltrate(sel).length ? '' : 'none');
+
+  // box "film visti non ancora recensiti" (solo per le mie)
+  const boxV = $('#rec-visti-box');
+  const nonRec = mio ? filmVistiNonRecensiti() : [];
+  if (nonRec.length){
+    boxV.style.display = '';
+    boxV.querySelector('summary').textContent = `🎬 Film visti non ancora recensiti (${nonRec.length})`;
+    $('#rec-visti').innerHTML = nonRec.map(f => `<button class="rec-nr" data-id="${f.tmdbId}">${esc(f.titolo)}</button>`).join('');
+    $('#rec-visti').querySelectorAll('[data-id]').forEach(b => b.onclick = () => avviaEditorDaTMDB(parseInt(b.dataset.id,10)));
+  } else boxV.style.display = 'none';
 
   const lista = recensioniFiltrate(sel);
   $('#rec-conta').textContent = lista.length ? lista.length + (lista.length===1?' recensione':' recensioni') : '';
@@ -1321,16 +1357,16 @@ function disegnaRecensioni(){
     g.innerHTML = `<div class="rec-vuoto">${sel===S.me ? 'Non hai ancora scritto recensioni.<br>Premi «✍ Nuova recensione» per iniziare.' : esc(nomeDi(sel))+' non ha ancora recensioni.'}</div>`;
     return;
   }
-  g.innerHTML = lista.map(r => {
+  g.innerHTML = lista.map((r, idx) => {
     const m = r.meta || {};
-    return `<div class="rec-card" data-id="${r.tmdbId}">
-      <div class="rec-poster"><img hidden alt=""><div class="segnaposto" style="background:url('${segnapostoSVG(m.titolo||'', r.tmdbId)}') center/cover"></div>
+    return `<div class="rec-card" data-idx="${idx}">
+      <div class="rec-poster"><img hidden alt=""><div class="segnaposto" style="background:url('${segnapostoSVG(m.titolo||'', r.tmdbId||m.titolo||idx)}') center/cover"></div>
         ${r.votoPersonale ? `<div class="rec-voto-badge">${stelleLetterbox(r.votoPersonale)}</div>` : ''}</div>
       <div class="corpo"><h5>${esc(m.titolo||'Film')}</h5><div class="sub">${esc(m.anno||'')}${m.regista?' · '+esc(m.regista):''}</div></div>
     </div>`;
   }).join('');
-  lista.forEach(r => {
-    const el = $(`.rec-card[data-id="${r.tmdbId}"]`);
+  lista.forEach((r, idx) => {
+    const el = g.querySelector(`.rec-card[data-idx="${idx}"]`);
     if (!el) return;
     urlImmagine(r.meta||{}, 'locandina').then(u => { if (u){ const img = el.querySelector('img'); img.src = u; img.hidden = false; const seg = el.querySelector('.segnaposto'); if (seg) seg.remove(); } });
     el.onclick = () => editorRecensione(r);
@@ -1383,6 +1419,7 @@ function editorRecensione(recOrig, opts={}){
         ? `<div class="re-riga"><label>Ultima visione <input type="date" id="re-uv" value="${esc(bozza.ultimaVisione||'')}"></label>
              <label style="flex:1">Tag <input type="text" id="re-tags" value="${esc((bozza.tags||[]).join(', '))}" placeholder="es. Capolavoro, Rewatch"></label></div>`
         : `<div class="m-meta">${bozza.ultimaVisione?'👁 '+esc(bozza.ultimaVisione)+'   ':''}${(bozza.tags||[]).map(t=>'<span class=\"re-tag\">#'+esc(t)+'</span>').join(' ')}</div>`}
+      ${editabile ? `<div style="margin:2px 0 10px">${bozza.tmdbId==null?'<span style="color:var(--rosso2);font-size:12px">⚠ nessun film TMDB collegato (niente locandina) · </span>':''}<button class="testo-link" id="re-collega">🔗 ${bozza.tmdbId!=null?'Cambia film collegato':'Collega a TMDB'}</button></div>` : ''}
       <div id="re-sezioni">${bozza.sezioni.map((s,i)=>sezioneHTML(s,i,editabile)).join('')}</div>
       ${editabile?`<button class="testo-link" id="re-add-sez" style="margin:6px 0 4px">＋ aggiungi sezione</button>`:''}
       <div class="m-azioni" style="flex-wrap:wrap; gap:8px">
@@ -1407,6 +1444,7 @@ function editorRecensione(recOrig, opts={}){
     $('#re-stelle').querySelectorAll('span').forEach(el => {
       el.onclick = ev => { const r = el.getBoundingClientRect(); const half = (ev.clientX - r.left) < r.width/2; voto = (+el.dataset.s)*2 - (half?1:0); dipingi(); };
     });
+    if ($('#re-collega')) $('#re-collega').onclick = () => { leggiCampi(); modaleCercaFilm(id => collegaTMDB(bozza, id), {titolo: bozza.tmdbId!=null?'Cambia film collegato':'Collega a TMDB', sub:'Scegli il film: sovrascrive i metadati e aggiunge la locandina.', query:(bozza.meta||{}).titolo||''}); };
     $('#re-add-sez').onclick = () => { leggiCampi(); bozza.sezioni.push({titolo:'Nuova sezione', testo:''}); render(); };
     $('#re-sezioni').querySelectorAll('[data-az]').forEach(b => b.onclick = () => {
       leggiCampi(); const i = +b.dataset.i, az = b.dataset.az;
@@ -1422,32 +1460,49 @@ function editorRecensione(recOrig, opts={}){
       catch(e){ toast('Salvataggio non riuscito: '+e.message, true); }
     };
     if ($('#re-del')) $('#re-del').onclick = () => confermaModale(`Eliminare la recensione di «${m.titolo}»?`, 'Elimina', async () => {
-      try { await eliminaRecensione(bozza.tmdbId); chiudiModale(); disegnaRecensioni(); toast('Recensione eliminata'); }
+      try { await eliminaRecensione(bozza); chiudiModale(); disegnaRecensioni(); toast('Recensione eliminata'); }
       catch(e){ toast('Non riuscito: '+e.message, true); }
     });
   }
   render();
 }
 
-function modaleNuovaRecensione(){
-  apriModale(`<h3>Nuova recensione</h3><p style="color:var(--dim)">Cerca il film da recensire.</p>
+function modaleCercaFilm(onScegli, opts={}){
+  apriModale(`<h3>${esc(opts.titolo||'Cerca film')}</h3><p style="color:var(--dim)">${esc(opts.sub||'Cerca il film.')}</p>
     <input type="text" id="rn-q" placeholder="Titolo del film…" autocomplete="off" style="width:100%;background:var(--bg2);border:1px solid var(--velluto3);color:var(--crema);padding:9px 12px;border-radius:8px">
     <div id="rn-ris" class="rn-ris"></div>
     <div class="m-azioni"><button class="bottone piccolo secondario" id="rn-chiudi">Annulla</button></div>`);
   $('#rn-chiudi').onclick = chiudiModale;
   let t = null;
-  $('#rn-q').oninput = () => {
+  const q0 = opts.query || '';
+  const cerca = () => {
     clearTimeout(t); const q = $('#rn-q').value.trim();
     if (q.length < 2){ $('#rn-ris').innerHTML=''; return; }
     t = setTimeout(async () => {
       try {
         const res = await cercaFilm(q);
         $('#rn-ris').innerHTML = res.map(f => `<div class="rn-item" data-id="${f.id}">${f.poster_path?`<img src="https://image.tmdb.org/t/p/w92${f.poster_path}">`:'<div class="rn-mini"></div>'}<div><div>${esc(f.title)}</div><div style="color:var(--dim2);font-size:12px">${(f.release_date||'').slice(0,4)}</div></div></div>`).join('') || '<div style="color:var(--dim);padding:8px">Nessun risultato</div>';
-        $('#rn-ris').querySelectorAll('.rn-item').forEach(el => el.onclick = () => avviaEditorDaTMDB(parseInt(el.dataset.id,10)));
+        $('#rn-ris').querySelectorAll('.rn-item').forEach(el => el.onclick = () => onScegli(parseInt(el.dataset.id,10)));
       } catch(e){ $('#rn-ris').innerHTML = `<div style="color:var(--dim);padding:8px">${e.message==='nokey'?'Manca la chiave TMDB (Impostazioni)':'Ricerca non riuscita'}</div>`; }
     }, 350);
   };
+  $('#rn-q').oninput = cerca;
+  if (q0){ $('#rn-q').value = q0; cerca(); }
   setTimeout(() => $('#rn-q').focus(), 40);
+}
+function modaleNuovaRecensione(){
+  modaleCercaFilm(id => avviaEditorDaTMDB(id), {titolo:'Nuova recensione', sub:'Cerca il film da recensire.'});
+}
+// Aggancia una recensione (magari importata senza id) a un film TMDB: sovrascrive i metadati e aggiunge la locandina.
+async function collegaTMDB(bozza, id){
+  apriModale('<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero i dati del film.</p>');
+  let d; try { d = await dettagliFilm(id); } catch(e){ return apriModale(`<h3>Ahi</h3><p style="color:var(--dim)">Scheda non recuperata.</p><div class="m-azioni"><button class="bottone piccolo" onclick="chiudiModale()">Chiudi</button></div>`); }
+  salvaImmagini(d).then(() => { S.urlCache.clear(); });
+  bozza.tmdbId = d.tmdbId;
+  bozza.meta = { titolo:d.titolo, anno:d.anno, generi:d.generi, regista:d.regista, durata:d.durata,
+    paese:d.paese||'', cast:d.cast||[], voto:d.voto, votoFonte:d.votoFonte, locandina:d.locandina, posterUrl:d.posterUrl };
+  editorRecensione(bozza, {nuova: !bozza.creato});   // riapre l'editor coi metadati sovrascritti
+  toast('Film collegato: metadati e locandina aggiornati 🎬');
 }
 async function avviaEditorDaTMDB(id){
   const mia = miaRecensione(id);
@@ -1461,10 +1516,10 @@ async function avviaEditorDaTMDB(id){
   editorRecensione(rec, {nuova:true});
 }
 
-// Export nel formato Obsidian di Marco (frontmatter + sezioni + voto /10)
-function esportaMarkdown(rec){
+// Markdown nel formato Obsidian di Marco (frontmatter + sezioni + voto /10)
+function markdownRecensione(rec){
   const m = rec.meta || {};
-  const cover = m.locandina ? m.locandina.split('/').pop() : '';
+  const cover = m.locandina ? m.locandina.split('/').pop() : (m.coverObsidian || '').split('/').pop();
   const righe = [
     `title: ${m.titolo||''}`, `year: "${m.anno||''}"`, `genre: ${(m.generi||[]).join(', ')}`,
     `director: ${m.regista||''}`, `runtime: ${m.durata?fmtMin(m.durata):''}`, `region: ${m.paese||''}`,
@@ -1480,13 +1535,59 @@ function esportaMarkdown(rec){
     const st = '⭐️'.repeat(Math.floor(rec.votoPersonale/2)) + ((rec.votoPersonale%2)?'½':'');
     md += `## Voto personale ${st}| ${rec.votoPersonale}\n`;
   }
-  const nome = (m.titolo||'recensione').replace(/[\\/:*?"<>|]/g,'').trim() || 'recensione';
+  return md;
+}
+function nomeFileRecensione(rec){ return ((rec.meta||{}).titolo||'recensione').replace(/[\\/:*?"<>|]/g,'').trim() || 'recensione'; }
+function scaricaBlob(blob, nomeFile){
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([md], {type:'text/markdown;charset=utf-8'}));
-  a.download = nome + '.md';
+  a.href = URL.createObjectURL(blob); a.download = nomeFile;
   document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function esportaMarkdown(rec){
+  scaricaBlob(new Blob([markdownRecensione(rec)], {type:'text/markdown;charset=utf-8'}), nomeFileRecensione(rec) + '.md');
   toast('Recensione esportata in Markdown ⬇');
+}
+// Esporta TUTTE le recensioni di un utente in un unico file .zip (un .md per film)
+function esportaTutteRecensioni(slug){
+  const mie = S.recensioni.filter(r => r.autore === slug);
+  if (!mie.length) return toast('Nessuna recensione da esportare', true);
+  const enc = new TextEncoder(), usati = new Set();
+  const files = mie.map(r => {
+    let base = nomeFileRecensione(r), nome = base + '.md', n = 2;
+    while (usati.has(nome)){ nome = base + ' (' + (n++) + ').md'; }
+    usati.add(nome);
+    return { name: nome, data: enc.encode(markdownRecensione(r)) };
+  });
+  scaricaBlob(creaZip(files), 'Recensioni-' + slug + '.zip');
+  toast(mie.length + ' recensioni esportate in ZIP ⬇');
+}
+// ZIP minimale "stored" (nessuna compressione) — niente librerie esterne
+function _crc32(bytes){
+  if (!_crc32.t){ _crc32.t = []; for (let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c = (c&1)?(0xEDB88320^(c>>>1)):(c>>>1); _crc32.t[n]=c>>>0; } }
+  let crc = 0xFFFFFFFF;
+  for (let i=0;i<bytes.length;i++) crc = (crc>>>8) ^ _crc32.t[(crc ^ bytes[i]) & 0xFF];
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+function creaZip(files){
+  const enc = new TextEncoder(), parti = [], centrale = [];
+  const u16 = v => [v&255,(v>>8)&255], u32 = v => [v&255,(v>>8)&255,(v>>16)&255,(v>>24)&255];
+  let off = 0;
+  for (const f of files){
+    const nome = enc.encode(f.name), data = f.data, crc = _crc32(data);
+    const loc = [].concat([0x50,0x4b,0x03,0x04], u16(20), u16(0), u16(0), u16(0), u16(0), u32(crc), u32(data.length), u32(data.length), u16(nome.length), u16(0));
+    parti.push(new Uint8Array(loc), nome, data);
+    centrale.push({nome, crc, size:data.length, off});
+    off += loc.length + nome.length + data.length;
+  }
+  const cdStart = off; let cdLen = 0;
+  for (const c of centrale){
+    const h = [].concat([0x50,0x4b,0x01,0x02], u16(20), u16(20), u16(0), u16(0), u16(0), u16(0), u32(c.crc), u32(c.size), u32(c.size), u16(c.nome.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(c.off));
+    parti.push(new Uint8Array(h), c.nome); cdLen += h.length + c.nome.length;
+  }
+  const end = [].concat([0x50,0x4b,0x05,0x06], u16(0), u16(0), u16(centrale.length), u16(centrale.length), u32(cdLen), u32(cdStart), u16(0));
+  parti.push(new Uint8Array(end));
+  return new Blob(parti, {type:'application/zip'});
 }
 
 function tuttiGeneri(){
@@ -2175,6 +2276,7 @@ function agganciaGlobali(){
   $('#rec-ordina').onchange = e => { S.recFiltri.ordina = e.target.value; disegnaRecensioni(); };
   $('#rec-dir').onclick = () => { S.recFiltri.dir = S.recFiltri.dir === 'desc' ? 'asc' : 'desc'; $('#rec-dir').textContent = S.recFiltri.dir === 'desc' ? '↓ decr.' : '↑ cresc.'; disegnaRecensioni(); };
   $('#rec-nuova').onclick = modaleNuovaRecensione;
+  $('#rec-export-tutte').onclick = () => esportaTutteRecensioni((S.recUtente && profiloDi(S.recUtente)) ? S.recUtente : S.me);
   // ── filtri Catalogo (tempo reale) ──
   $('#cat-q').oninput = e => { S.catFiltri.q = e.target.value; disegnaCatalogo(); };
   $('#cat-ordina').onchange = e => { S.catFiltri.ordina = e.target.value; disegnaCatalogo(); };
