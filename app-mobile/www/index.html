@@ -86,7 +86,7 @@
 
   .backdrop{position:fixed; inset:0; background:#000a; display:none; align-items:flex-end; justify-content:center; z-index:20}
   .backdrop.on{display:flex}
-  .modale{background:var(--bg2); border-top:2px solid var(--oro); border-radius:18px 18px 0 0; width:100%; max-width:520px; padding:18px 18px calc(18px + env(safe-area-inset-bottom)); animation:su .2s}
+  .modale{background:var(--bg2); border-top:2px solid var(--oro); border-radius:18px 18px 0 0; width:100%; max-width:520px; max-height:92vh; overflow-y:auto; padding:18px 18px calc(18px + env(safe-area-inset-bottom)); animation:su .2s}
   @keyframes su{from{transform:translateY(30px)}}
   .modale h3{margin:0 0 4px}
   .modale .meta{color:var(--dim); font-size:13px}
@@ -103,6 +103,66 @@
 
   .spin{width:22px; height:22px; border:3px solid var(--linea); border-top-color:var(--oro); border-radius:50%; animation:g .8s linear infinite; display:inline-block; vertical-align:-4px}
   @keyframes g{to{transform:rotate(360deg)}}
+
+  /* ── Recensioni (mobile) ── */
+  .segmenti{display:flex; gap:5px; margin-bottom:12px; background:var(--bg2); border:1px solid var(--linea); border-radius:11px; padding:3px}
+  .seg{flex:1; background:none; border:0; color:var(--dim); border-radius:8px; padding:8px; font-size:13px; font-weight:600}
+  .seg.on{background:var(--card); color:var(--oro2)}
+  .rec-utenti{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px}
+  .rec-utente{display:flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; border:1px solid var(--linea); background:none; color:var(--dim); font-size:12px}
+  .rec-utente.on{border-color:var(--oro); color:var(--oro2)}
+  .rec-utente .pallino2{width:11px; height:11px; border-radius:50%}
+  .rec-bar{display:flex; gap:6px; align-items:center; margin-bottom:10px; flex-wrap:wrap}
+  .rec-bar #m-rec-q{flex:1; min-width:110px; background:var(--bg2); border:1px solid var(--linea); color:var(--testo); border-radius:9px; padding:8px 10px; font:inherit; font-size:13px}
+  .rec-galleria{display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:10px}
+  .rec-card2{cursor:pointer; border-radius:10px; overflow:hidden; background:var(--card); border:1px solid var(--linea)}
+  .rec-poster2{position:relative; aspect-ratio:2/3; background:var(--bg2)}
+  .rec-poster2 img{width:100%; height:100%; object-fit:cover; display:block}
+  .rec-poster2 .seg2{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; font-size:11px; color:var(--dim); padding:4px; line-height:1.3}
+  .rec-voto-b{position:absolute; bottom:4px; left:4px; background:#000c; color:var(--oro2); padding:2px 6px; border-radius:6px; font-size:11px; letter-spacing:1px}
+  .rec-card2 .corpo{padding:6px 7px}
+  .rec-card2 h5{margin:0; font-size:12px; line-height:1.15; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .rec-card2 .sub2{color:var(--dim); font-size:10.5px; margin-top:1px}
+  .rec-vuoto{grid-column:1/-1; color:var(--dim); text-align:center; padding:30px 16px; font-size:13px; line-height:1.6}
+  .rec-visti{border:1px solid var(--linea); border-radius:11px; background:var(--bg2); margin-bottom:12px; padding:0 12px}
+  .rec-visti summary{cursor:pointer; padding:10px 2px; color:var(--oro2); font-size:13px}
+  .rec-visti[open] #m-rec-visti{padding:2px 0 12px; display:flex; flex-wrap:wrap; gap:7px}
+  .rec-nr{background:var(--card); border:1px solid var(--linea); color:var(--testo); border-radius:8px; padding:6px 10px; font-size:12.5px}
+  .re-head{display:flex; gap:11px; align-items:flex-start; margin-bottom:10px}
+  .re-poster{width:70px; flex:0 0 auto; aspect-ratio:2/3; border-radius:8px; overflow:hidden; position:relative; background:var(--bg2)}
+  .re-poster img{width:100%; height:100%; object-fit:cover}
+  .re-stelle{display:inline-flex; gap:2px; cursor:pointer; font-size:27px; line-height:1}
+  .re-stelle span{color:var(--linea)}
+  .re-stelle span.piena{color:var(--oro2)}
+  .re-stelle span.mezza{background:linear-gradient(90deg,var(--oro2) 50%, var(--linea) 50%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent}
+  .re-voto-num{color:var(--dim); font-size:12.5px}
+  .re-riga2{display:flex; gap:10px; flex-wrap:wrap; margin:6px 0}
+  .re-riga2 label{display:flex; align-items:center; gap:6px; color:var(--dim); font-size:12.5px}
+  .re-riga2 input{background:var(--bg2); border:1px solid var(--linea); color:var(--testo); border-radius:8px; padding:7px 9px; font:inherit; font-size:13px}
+  .re-riga2 input[type=text]{flex:1; min-width:120px}
+  .re-sez{border:1px solid var(--linea); border-radius:10px; padding:10px; margin-bottom:12px; background:var(--bg2)}
+  .re-sez-cap{display:flex; gap:6px; align-items:center; margin-bottom:6px}
+  .re-sez-tit{flex:1; background:none; border:0; border-bottom:1px solid var(--linea); color:var(--oro2); font:inherit; font-weight:600; font-size:15px; padding:3px 2px}
+  .re-sez-btn{display:flex; gap:2px}
+  .re-sez-btn button{background:none; border:1px solid var(--linea); color:var(--dim); border-radius:6px; padding:3px 8px; font-size:13px}
+  .re-sez-txt{width:100%; background:none; border:0; color:var(--testo); font:inherit; font-size:15px; line-height:1.6; resize:none; overflow:hidden; min-height:120px}
+  .re-sez-ro{margin-bottom:14px}
+  .re-sez-ro h4{margin:0 0 4px; color:var(--oro2); font-size:14px}
+  .re-testo{color:var(--testo); font-size:14px; line-height:1.55; white-space:pre-wrap}
+  .rn-item{display:flex; gap:9px; align-items:center; padding:8px 2px; border-bottom:1px solid var(--linea); cursor:pointer}
+  .rn-item img{width:34px; height:51px; object-fit:cover; border-radius:5px}
+  .rn-mini{width:34px; height:51px; background:var(--linea); border-radius:5px; flex:0 0 auto}
+  .re-toolbar{display:flex; gap:4px; align-items:center; flex-wrap:wrap; margin:2px 0 10px; padding:5px; border:1px solid var(--linea); border-radius:10px; background:var(--bg2); position:sticky; top:0; z-index:2}
+  .re-toolbar button{background:var(--card); border:1px solid var(--linea); color:var(--testo); border-radius:7px; padding:5px 9px; font-size:14px; min-width:32px}
+  .re-col{display:inline-flex; align-items:center; gap:3px; background:var(--card); border:1px solid var(--linea); border-radius:7px; padding:2px 6px; color:var(--testo); font-size:14px}
+  .re-col input[type=color]{width:22px; height:22px; border:0; background:none; padding:0}
+  .re-sez-txt[contenteditable]{overflow:visible}
+  .re-sez-txt[contenteditable]:focus{outline:0}
+  .re-sez-txt[contenteditable]:empty:before{content:attr(data-ph); color:var(--dim)}
+  .re-sez-txt ul,.re-sez-txt ol,.re-testo ul,.re-testo ol{margin:6px 0 6px 22px}
+  .re-sez-txt ul,.re-testo ul{list-style:disc} .re-sez-txt ol,.re-testo ol{list-style:decimal}
+  .re-dove-file{display:flex; gap:8px; margin:8px 0}
+  .re-dove-file input{flex:1; background:var(--bg2); border:1px solid var(--linea); color:var(--testo); border-radius:9px; padding:8px 10px; font:inherit; font-size:13px}
 </style>
 
 <div id="app">
@@ -140,12 +200,37 @@
 
     <!-- 3) APP -->
     <section class="schermo" id="sc-app">
-      <div class="cerca">
-        <input id="q" type="search" enterkeyhint="search" placeholder="Cerca un film da aggiungere…" autocomplete="off">
+      <div class="segmenti" id="segmenti">
+        <button class="seg on" data-pan="lista">🔖 Watch List</button>
+        <button class="seg" data-pan="recensioni">📝 Recensioni</button>
       </div>
-      <div id="risultati"></div>
-      <div class="sezione"><span class="grow">La mia lista <span id="conta-lista"></span></span><button class="f-btn" id="btn-filtri">≡ filtri</button></div>
-      <div id="mia-lista"></div>
+
+      <div id="pan-lista">
+        <div class="cerca">
+          <input id="q" type="search" enterkeyhint="search" placeholder="Cerca un film da aggiungere…" autocomplete="off">
+        </div>
+        <div id="risultati"></div>
+        <div class="sezione"><span class="grow">La mia lista <span id="conta-lista"></span></span><button class="f-btn" id="btn-filtri">≡ filtri</button></div>
+        <div id="mia-lista"></div>
+      </div>
+
+      <div id="pan-recensioni" hidden>
+        <div class="rec-utenti" id="m-rec-utenti"></div>
+        <div class="rec-bar">
+          <input id="m-rec-q" type="search" placeholder="🔎 cerca…" autocomplete="off">
+          <select id="m-rec-ordina" class="inp">
+            <option value="modificato">Ultima modifica</option>
+            <option value="ultimaVisione">Ultima visione</option>
+            <option value="votoPersonale">Voto</option>
+            <option value="titolo">Titolo</option>
+            <option value="anno">Anno</option>
+          </select>
+          <button class="f-btn" id="m-rec-dir">↓</button>
+          <button class="oro f-btn" id="m-rec-nuova">✍ Nuova</button>
+        </div>
+        <details class="rec-visti" id="m-rec-visti-box" style="display:none"><summary></summary><div id="m-rec-visti"></div></details>
+        <div class="rec-galleria" id="m-rec-galleria"></div>
+      </div>
     </section>
 
   </div>
@@ -156,8 +241,11 @@
 
 <script>
 /* ══════════════════ STATO ══════════════════ */
-const S = { treeUri:null, config:{}, profili:[], me:null,
-  filtri:{ q:'', ordina:'aggiunto', dir:'desc', minDes:0, genere:[], annoDa:null, annoA:null } };
+const S = { treeUri:null, config:{}, profili:[], me:null, storico:[],
+  filtri:{ q:'', ordina:'aggiunto', dir:'desc', minDes:0, genere:[], annoDa:null, annoA:null },
+  recensioni:[], recUtente:null, recFiltri:{ q:'', ordina:'modificato', dir:'desc' }, pan:'lista' };
+const SEZIONI_DEFAULT = ['Introduzione', 'Che ne penso', 'Momento preferito', 'Messaggio', 'A chi lo consiglio'];
+const stelleLetterbox = v => { v = v||0; const p = Math.floor(v/2), m = (v%2)===1; return ('★'.repeat(p) + (m?'½':'')) || '—'; };
 const GENERI_TMDB = ['Azione','Avventura','Animazione','Commedia','Crime','Documentario','Dramma','Famiglia','Fantasy','Storia','Horror','Musica','Mistero','Romance','Fantascienza','Film TV','Thriller','Guerra','Western'];
 const filtriAttivi = () => { const f = S.filtri; return !!(f.q || f.minDes || f.genere.length || f.annoDa || f.annoA || f.ordina!=='aggiunto' || f.dir!=='desc'); };
 // Migrazione dal vecchio modello Bonus Genere (bonusGenere+generiPreferiti) al nuovo (pos/neg per genere)
@@ -223,6 +311,36 @@ async function pickFolder(){ const r = await saf().pickFolder(); return (r && r.
 async function fsLeggi(uri){ return (await saf().read({ uri })).data; }
 async function fsScrivi(uri, str){ await saf().write({ uri, data: str }); }
 
+/* ── Recensioni: strato dati (via plugin nativo SAF) ── */
+async function caricaRecensioniMobile(){
+  S.recensioni = [];
+  try {
+    const res = await saf().caricaRecensioni({ uri: S.treeUri });
+    for (const f of (res.recensioni || [])){
+      try { const r = JSON.parse(f.data);
+        if (r && (r.meta || Array.isArray(r.sezioni) || r.tmdbId != null)){ r.autore = f.slug; r._uri = f.uri; r._nome = f.nome; S.recensioni.push(r); }
+      } catch(e){}
+    }
+  } catch(e){ /* nessuna recensione o plugin vecchio: ignoro */ }
+}
+async function salvaRecensioneMobile(rec){
+  rec.autore = S.me.slug;
+  rec.modificato = new Date().toISOString();
+  if (!rec.creato) rec.creato = new Date().toISOString().slice(0,10);
+  const nome = (rec.tmdbId != null) ? rec.tmdbId + '.json' : (rec._nome || ('senza-id-' + Date.now() + '.json'));
+  const vecchioUri = rec._uri, vecchioNome = rec._nome;
+  const salvabile = {...rec}; delete salvabile._uri; delete salvabile._nome; delete salvabile.autore;
+  const res = await saf().salvaRecensione({ uri: S.treeUri, slug: S.me.slug, nome, data: JSON.stringify(salvabile) });
+  if (vecchioUri && vecchioNome && vecchioNome !== nome){ try { await saf().cancellaDoc({ uri: vecchioUri }); } catch(e){} }
+  rec._uri = res.uri; rec._nome = res.nome || nome;
+  const i = S.recensioni.findIndex(x => x.autore === S.me.slug && x._nome === rec._nome);
+  if (i >= 0) S.recensioni[i] = rec; else S.recensioni.push(rec);
+}
+async function cancellaRecensioneMobile(rec){
+  if (rec._uri) await saf().cancellaDoc({ uri: rec._uri });
+  S.recensioni = S.recensioni.filter(x => !(x.autore === S.me.slug && x._nome === rec._nome));
+}
+
 /* ══════════════════ CARICAMENTO CARTELLA + PROFILI ══════════════════ */
 async function caricaCartella(treeUri){
   const res = await saf().loadFolder({ uri: treeUri });   // { config, profili:[{name,uri,data}] }
@@ -239,6 +357,11 @@ async function caricaCartella(treeUri){
     } catch(e){}
   }
   S.profili.sort((a,b)=> (a.creato||'').localeCompare(b.creato||'') || a.slug.localeCompare(b.slug));
+
+  S.storico = [];
+  if (res.storico){ try { const st = JSON.parse(res.storico); if (Array.isArray(st.visioni)) S.storico = st.visioni; } catch(e){} }
+  await caricaRecensioniMobile();
+
   LS.set('tree', treeUri);
   disegnaProfili();
   $('#btn-indietro').style.display = 'none';
@@ -281,6 +404,7 @@ function entra(slug){
   $('#hdr-chi').innerHTML = 'sei<b>'+esc(S.me.nome)+'</b>';
   $('#q').value = ''; $('#risultati').innerHTML = '';
   disegnaMiaLista();
+  S.recUtente = null; setPan('lista');
   schermo('sc-app');
 }
 
@@ -309,6 +433,8 @@ async function dettagliFilm(id){
     collezione:j.belongs_to_collection ? j.belongs_to_collection.id : null,
     collezioneNome:j.belongs_to_collection ? j.belongs_to_collection.name : null,
     durata:j.runtime || null, regista, generi:(j.genres||[]).map(x=>x.name),
+    paese:(j.production_countries||[]).map(c=>c.name).join(', '),
+    cast:((j.credits||{}).cast||[]).slice(0,6).map(c=>c.name),
     voto, votoFonte, trama:j.overview || '',
     posterUrl:j.poster_path ? 'https://image.tmdb.org/t/p/w500'+j.poster_path : null,
     sfondoUrl:j.backdrop_path ? 'https://image.tmdb.org/t/p/w780'+j.backdrop_path : null,
@@ -579,6 +705,166 @@ async function apriImpostazioni(){
   $('#i-chiudi').onclick = chiudiModale;
 }
 
+/* ══════════════════ RECENSIONI (mobile) ══════════════════ */
+const DOVE_STREAMING = ['Netflix','Prime Video','Disney+','NOW','Sky','RaiPlay','Mediaset Infinity','Apple TV+','YouTube','Crunchyroll','Paramount+','Mubi'];
+const DOVE_FISICO = ['DVD','Blu-ray','4K UHD'];
+const testoHTML = t => { t = t||''; return /<[a-z][\s\S]*>/i.test(t) ? t : esc(t).replace(/\n/g,'<br>'); };
+const doveChipM = (label, kind, on) => `<button type="button" class="pchip${on?' con':''}" data-dove="${kind}" data-val="${esc(label)}">${on?'✓ ':''}${esc(label)}</button>`;
+function doveTestoM(d){ d=d||{}; const p=[...(d.streaming||[]),...(d.fisico||[])]; let s=p.map(x=>`<span class="pchip con" style="pointer-events:none">${esc(x)}</span>`).join(' '); if(d.percorso) s+=` <span class="pchip">📂 ${esc((d.percorso.split(/[\\/]/).pop())||d.percorso)}</span>`; return s?('📺 '+s):''; }
+const miaRecMobile = id => S.recensioni.find(r => r.autore===S.me.slug && r.tmdbId===id);
+
+function setPan(pan){
+  S.pan = pan;
+  $('#pan-lista').hidden = pan!=='lista';
+  $('#pan-recensioni').hidden = pan!=='recensioni';
+  document.querySelectorAll('#segmenti .seg').forEach(b=>b.classList.toggle('on', b.dataset.pan===pan));
+  if (pan==='recensioni') disegnaRecMobile();
+}
+function recFiltrateM(slug){
+  const f=S.recFiltri; let out=S.recensioni.filter(r=>r.autore===slug);
+  if(f.q) out=out.filter(r=>String((r.meta||{}).titolo||'').toLowerCase().includes(f.q.toLowerCase()));
+  const cmp={modificato:(a,b)=>String(a.modificato||'').localeCompare(String(b.modificato||'')),ultimaVisione:(a,b)=>String(a.ultimaVisione||'').localeCompare(String(b.ultimaVisione||'')),votoPersonale:(a,b)=>(a.votoPersonale||0)-(b.votoPersonale||0),titolo:(a,b)=>String((a.meta||{}).titolo||'').localeCompare(String((b.meta||{}).titolo||'')),anno:(a,b)=>(parseInt((a.meta||{}).anno,10)||0)-(parseInt((b.meta||{}).anno,10)||0)}[f.ordina]||(()=>0);
+  out.sort((a,b)=>cmp(a,b)||String((a.meta||{}).titolo||'').localeCompare(String((b.meta||{}).titolo||'')));
+  if(f.dir==='desc') out.reverse();
+  return out;
+}
+function filmVistiNonRecM(){
+  const recIds=new Set(S.recensioni.filter(r=>r.autore===S.me.slug && r.tmdbId!=null).map(r=>r.tmdbId));
+  const m=new Map();
+  for(const v of S.storico) if((v.partecipanti||[]).includes(S.me.slug) && v.tmdbId!=null && !recIds.has(v.tmdbId)) m.set(v.tmdbId,v.titolo);
+  return [...m.entries()].map(([tmdbId,titolo])=>({tmdbId,titolo}));
+}
+function disegnaRecMobile(){
+  if(!$('#m-rec-galleria')) return;
+  const autori=[...new Set(S.recensioni.map(r=>r.autore))];
+  const utenti=[S.me.slug, ...autori.filter(a=>a!==S.me.slug)].filter(s=>S.profili.some(p=>p.slug===s));
+  const sel=(S.recUtente && S.profili.some(p=>p.slug===S.recUtente))?S.recUtente:S.me.slug;
+  $('#m-rec-utenti').innerHTML=utenti.map(s=>{const p=S.profili.find(x=>x.slug===s);return `<button class="rec-utente${s===sel?' on':''}" data-u="${esc(s)}"><span class="pallino2" style="background:${p?(p.colore||'#c9a45c'):'#c9a45c'}"></span>${esc(nomeDi(s))}${s===S.me.slug?' (io)':''}</button>`;}).join('');
+  const mio=sel===S.me.slug;
+  $('#m-rec-nuova').style.display=mio?'':'none';
+  const box=$('#m-rec-visti-box'); const nr=mio?filmVistiNonRecM():[];
+  if(nr.length){ box.style.display=''; box.querySelector('summary').textContent=`🎬 Film visti non recensiti (${nr.length})`;
+    $('#m-rec-visti').innerHTML=nr.map(f=>`<button class="rec-nr" data-id="${f.tmdbId}">${esc(f.titolo)}</button>`).join('');
+    $('#m-rec-visti').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>avviaEditorDaTMDBM(parseInt(b.dataset.id,10)));
+  } else box.style.display='none';
+  const lista=recFiltrateM(sel); const g=$('#m-rec-galleria');
+  if(!lista.length){ g.innerHTML=`<div class="rec-vuoto">${mio?'Non hai ancora recensioni.<br>Tocca «✍ Nuova».':esc(nomeDi(sel))+' non ha recensioni.'}</div>`; return; }
+  g.innerHTML=lista.map((r,i)=>{const m=r.meta||{};const pst=m.posterUrl||'';return `<div class="rec-card2" data-i="${i}">
+    <div class="rec-poster2">${pst?`<img src="${esc(pst)}" loading="lazy" alt="">`:`<div class="seg2">${esc(m.titolo||'')}</div>`}${r.votoPersonale?`<div class="rec-voto-b">${stelleLetterbox(r.votoPersonale)}</div>`:''}</div>
+    <div class="corpo"><h5>${esc(m.titolo||'Film')}</h5><div class="sub2">${esc(m.anno||'')}</div></div></div>`;}).join('');
+  lista.forEach((r,i)=>{const el=g.querySelector(`.rec-card2[data-i="${i}"]`); if(el) el.onclick=()=>editorRecMobile(r);});
+}
+function sezioneHTMLm(s,i,ed){
+  if(!ed) return `<div class="re-sez-ro"><h4>${esc(s.titolo||'')}</h4><div class="re-testo">${testoHTML(s.testo)}</div></div>`;
+  return `<div class="re-sez" data-i="${i}">
+    <div class="re-sez-cap"><input class="re-sez-tit" value="${esc(s.titolo||'')}" placeholder="Titolo sezione">
+      <span class="re-sez-btn"><button data-az="su" data-i="${i}">▲</button><button data-az="giu" data-i="${i}">▼</button><button data-az="del" data-i="${i}">✕</button></span></div>
+    <div class="re-sez-txt" contenteditable="true" spellcheck="true" lang="it" data-ph="Scrivi qui…">${testoHTML(s.testo)}</div>
+  </div>`;
+}
+function editorRecMobile(recOrig, opts={}){
+  const ed=(recOrig.autore===S.me.slug)||!!opts.nuova;
+  const bozza=JSON.parse(JSON.stringify(recOrig));
+  bozza.meta=bozza.meta||{}; bozza.sezioni=bozza.sezioni||[]; bozza.doveVederlo=bozza.doveVederlo||{streaming:[],fisico:[],percorso:''}; delete bozza.tags;
+  let voto=bozza.votoPersonale||0;
+  function leggiCampi(){ if(!ed) return;
+    bozza.sezioni=[...document.querySelectorAll('#m-re-sezioni .re-sez')].map(row=>({titolo:row.querySelector('.re-sez-tit').value, testo:row.querySelector('.re-sez-txt').innerHTML}));
+    const p=$('#m-re-perc'); if(p) bozza.doveVederlo.percorso=p.value.trim();
+    const uv=$('#m-re-uv'); if(uv) bozza.ultimaVisione=uv.value||null;
+    bozza.votoPersonale=voto;
+  }
+  function render(){
+    const m=bozza.meta;
+    apriModale(`
+      <div class="re-head">
+        <div class="re-poster">${m.posterUrl?`<img src="${esc(m.posterUrl)}" alt="">`:''}</div>
+        <div style="flex:1;min-width:0">
+          <h3 style="margin:0 0 2px;font-size:16px">${esc(m.titolo||'Film')}${ed?'':` · <span style="font-size:12px;color:var(--dim)">di ${esc(nomeDi(recOrig.autore))}</span>`}</h3>
+          <div class="meta">${esc(m.anno||'')}${m.durata?' · '+fmtMin(m.durata):''}${m.regista?' · '+esc(m.regista):''}</div>
+          <div style="margin-top:6px">${ed?`<div class="re-stelle" id="m-re-stelle">${[1,2,3,4,5].map(i=>`<span data-s="${i}">★</span>`).join('')}</div> <span class="re-voto-num" id="m-re-voto-num"></span>`:`<span class="stelle" style="font-size:18px">${stelleLetterbox(bozza.votoPersonale)}</span>`}</div>
+        </div>
+        <button class="cambia" id="m-re-chiudi" style="font-size:18px">✕</button>
+      </div>
+      ${ed
+        ?`<div class="re-riga2"><label>Ultima visione <input type="date" id="m-re-uv" value="${esc(bozza.ultimaVisione||'')}"></label></div>
+          <div class="etich">DOVE VEDERLO</div>
+          <div class="compagnia" id="m-re-strm">${DOVE_STREAMING.map(x=>doveChipM(x,'streaming',(bozza.doveVederlo.streaming||[]).includes(x))).join('')}</div>
+          <div class="compagnia" id="m-re-fis">${DOVE_FISICO.map(x=>doveChipM(x,'fisico',(bozza.doveVederlo.fisico||[]).includes(x))).join('')}</div>
+          <div class="re-dove-file"><input type="text" id="m-re-perc" value="${esc(bozza.doveVederlo.percorso||'')}" placeholder="percorso file sul PC (nota)"></div>`
+        :`<div class="meta">${bozza.ultimaVisione?'👁 '+esc(bozza.ultimaVisione)+'  ':''}${doveTestoM(bozza.doveVederlo)}</div>`}
+      ${ed?`<div style="margin:4px 0 8px">${bozza.tmdbId==null?'<span style="color:var(--rosso2);font-size:12px">⚠ nessun film collegato · </span>':''}<button class="linkbtn" id="m-re-collega" style="padding:2px 0">🔗 ${bozza.tmdbId!=null?'Cambia film':'Collega a TMDB'}</button></div>`:''}
+      ${ed?`<div class="re-toolbar" id="m-re-toolbar">
+        <button type="button" data-cmd="bold"><b>B</b></button>
+        <button type="button" data-cmd="underline"><span style="text-decoration:underline">U</span></button>
+        <label class="re-col"><input type="color" id="m-re-colore" value="#e6c583"><span>A</span></label>
+        <button type="button" data-cmd="insertUnorderedList">•</button>
+        <button type="button" data-cmd="insertOrderedList">1.</button>
+        <button type="button" data-cmd="outdent">⇤</button>
+        <button type="button" data-cmd="indent">⇥</button>
+      </div>`:''}
+      <div id="m-re-sezioni">${bozza.sezioni.map((s,i)=>sezioneHTMLm(s,i,ed)).join('')}</div>
+      ${ed?`<button class="linkbtn" id="m-re-add-sez">＋ aggiungi sezione</button>`:''}
+      <div class="m-az" style="flex-wrap:wrap;gap:8px">
+        ${ed?`${bozza.creato?`<button class="ghost" id="m-re-del" style="color:var(--rosso2)">Elimina</button>`:''}<button class="primario" id="m-re-salva">Salva</button>`:`<button class="primario" id="m-re-chiudi2">Chiudi</button>`}
+      </div>`);
+    $('#m-re-chiudi').onclick=chiudiModale;
+    if($('#m-re-chiudi2')) $('#m-re-chiudi2').onclick=chiudiModale;
+    if(!ed) return;
+    const dip=()=>{ document.querySelectorAll('#m-re-stelle span').forEach((el,idx)=>{const val=(idx+1)*2; el.classList.toggle('piena',voto>=val); el.classList.toggle('mezza',voto===val-1);}); $('#m-re-voto-num').textContent=voto?(voto/2)+' / 5':'nessun voto'; };
+    dip();
+    $('#m-re-stelle').querySelectorAll('span').forEach(el=>{ el.onclick=ev=>{const r=el.getBoundingClientRect(); const half=(ev.clientX-r.left)<r.width/2; voto=(+el.dataset.s)*2-(half?1:0); dip();}; });
+    let selS=null; const salvaSel=()=>{const s=window.getSelection(); if(s.rangeCount && $('#m-re-sezioni').contains(s.anchorNode)) selS=s.getRangeAt(0).cloneRange();};
+    const ripSel=()=>{ if(selS){const s=window.getSelection(); s.removeAllRanges(); s.addRange(selS);} };
+    $('#m-re-sezioni').querySelectorAll('.re-sez-txt').forEach(e2=>{ e2.addEventListener('keyup',salvaSel); e2.addEventListener('mouseup',salvaSel); e2.addEventListener('keydown',ev=>{ if(ev.key==='Tab'){ev.preventDefault(); e2.focus(); document.execCommand(ev.shiftKey?'outdent':'indent');} }); });
+    const tb=$('#m-re-toolbar');
+    if(tb){ tb.querySelectorAll('[data-cmd]').forEach(b=>{ b.addEventListener('mousedown',e=>e.preventDefault()); b.onclick=()=>{ripSel(); document.execCommand(b.dataset.cmd,false,null); salvaSel();}; });
+      $('#m-re-colore').oninput=e=>{ ripSel(); document.execCommand('foreColor',false,e.target.value); }; }
+    const dv=bozza.doveVederlo;
+    const clic=(sel,ch)=>{ const box=$(sel); if(!box) return; box.onclick=e=>{ const b=e.target.closest('[data-dove]'); if(!b) return; const v=b.dataset.val, arr=dv[ch]=dv[ch]||[]; const i=arr.indexOf(v); if(i>=0) arr.splice(i,1); else arr.push(v); const on=arr.includes(v); b.classList.toggle('con',on); b.textContent=(on?'✓ ':'')+v; }; };
+    clic('#m-re-strm','streaming'); clic('#m-re-fis','fisico');
+    if($('#m-re-collega')) $('#m-re-collega').onclick=()=>{ leggiCampi(); modaleCercaFilmM(id=>collegaTMDBM(bozza,id), {titolo:bozza.tmdbId!=null?'Cambia film':'Collega a TMDB', query:(bozza.meta||{}).titolo||''}); };
+    $('#m-re-add-sez').onclick=()=>{ leggiCampi(); bozza.sezioni.push({titolo:'Nuova sezione',testo:''}); render(); };
+    $('#m-re-sezioni').querySelectorAll('[data-az]').forEach(b=>b.onclick=()=>{ leggiCampi(); const i=+b.dataset.i, az=b.dataset.az; if(az==='del') bozza.sezioni.splice(i,1); else if(az==='su'&&i>0)[bozza.sezioni[i-1],bozza.sezioni[i]]=[bozza.sezioni[i],bozza.sezioni[i-1]]; else if(az==='giu'&&i<bozza.sezioni.length-1)[bozza.sezioni[i+1],bozza.sezioni[i]]=[bozza.sezioni[i],bozza.sezioni[i+1]]; render(); });
+    $('#m-re-salva').onclick=async()=>{ leggiCampi(); if(!voto && !bozza.sezioni.some(s=>(s.testo||'').replace(/<[^>]*>/g,'').trim())){ toast('Metti un voto o del testo',true); return; }
+      $('#m-re-salva').disabled=true; $('#m-re-salva').innerHTML='<span class="spin"></span>';
+      try { await salvaRecensioneMobile(bozza); chiudiModale(); disegnaRecMobile(); toast('Recensione salvata 🎞'); }
+      catch(e){ $('#m-re-salva').disabled=false; $('#m-re-salva').textContent='Salva'; toast('Salvataggio non riuscito: '+e.message,true); } };
+    if($('#m-re-del')) $('#m-re-del').onclick=()=>{ apriModale(`<h3>Eliminare?</h3><p class="meta">La recensione di «${esc(m.titolo)}» sarà rimossa.</p><div class="m-az"><button class="ghost" id="d-no">Annulla</button><button class="primario" id="d-si">Elimina</button></div>`);
+      $('#d-no').onclick=()=>editorRecMobile(bozza); $('#d-si').onclick=async()=>{ try{ await cancellaRecensioneMobile(bozza); chiudiModale(); disegnaRecMobile(); toast('Recensione eliminata'); }catch(e){ toast('Non riuscito: '+e.message,true);} }; };
+  }
+  render();
+}
+function modaleCercaFilmM(onScegli, opts={}){
+  apriModale(`<h3>${esc(opts.titolo||'Cerca film')}</h3>
+    <input type="text" id="rnm-q" class="pw-in" placeholder="Titolo del film…" autocomplete="off">
+    <div id="rnm-ris" style="max-height:50vh;overflow:auto;margin-top:8px"></div>
+    <div class="m-az"><button class="ghost" id="rnm-x">Annulla</button></div>`);
+  $('#rnm-x').onclick=chiudiModale; let t=null;
+  const cerca=()=>{ clearTimeout(t); const q=$('#rnm-q').value.trim(); if(q.length<2){$('#rnm-ris').innerHTML='';return;}
+    t=setTimeout(async()=>{ try{ const res=await cercaFilm(q);
+      $('#rnm-ris').innerHTML=res.map(f=>`<div class="rn-item" data-id="${f.id}">${f.poster_path?`<img src="https://image.tmdb.org/t/p/w92${f.poster_path}">`:'<div class="rn-mini"></div>'}<div><div>${esc(f.title)}</div><div style="color:var(--dim);font-size:12px">${(f.release_date||'').slice(0,4)}</div></div></div>`).join('')||'<div style="color:var(--dim);padding:8px">Nessun risultato</div>';
+      $('#rnm-ris').querySelectorAll('.rn-item').forEach(el=>el.onclick=()=>onScegli(parseInt(el.dataset.id,10)));
+    }catch(e){ $('#rnm-ris').innerHTML=`<div style="color:var(--dim);padding:8px">${e.message==='nokey'?'Manca la chiave TMDB':'Ricerca non riuscita'}</div>`; } },350); };
+  $('#rnm-q').oninput=cerca; if(opts.query){ $('#rnm-q').value=opts.query; cerca(); }
+  setTimeout(()=>$('#rnm-q').focus(),50);
+}
+async function avviaEditorDaTMDBM(id){
+  const mia=miaRecMobile(id); if(mia) return editorRecMobile(mia);
+  apriModale('<h3>Un attimo…</h3><p class="meta"><span class="spin"></span> recupero il film</p>');
+  let d; try{ d=await dettagliFilm(id); }catch(e){ return toast('Scheda non recuperata',true); }
+  const rec={ tmdbId:d.tmdbId, votoPersonale:0, doveVederlo:{streaming:[],fisico:[],percorso:''}, ultimaVisione:new Date().toISOString().slice(0,10),
+    meta:{ titolo:d.titolo, anno:d.anno, generi:d.generi, regista:d.regista, durata:d.durata, paese:d.paese||'', cast:d.cast||[], voto:d.voto, votoFonte:d.votoFonte, locandina:d.locandina, posterUrl:d.posterUrl },
+    sezioni: SEZIONI_DEFAULT.map(tt=>({titolo:tt,testo:''})), link:[] };
+  editorRecMobile(rec,{nuova:true});
+}
+async function collegaTMDBM(bozza,id){
+  apriModale('<h3>Un attimo…</h3><p class="meta"><span class="spin"></span> recupero il film</p>');
+  let d; try{ d=await dettagliFilm(id); }catch(e){ return toast('Scheda non recuperata',true); }
+  bozza.tmdbId=d.tmdbId;
+  bozza.meta={ titolo:d.titolo, anno:d.anno, generi:d.generi, regista:d.regista, durata:d.durata, paese:d.paese||'', cast:d.cast||[], voto:d.voto, votoFonte:d.votoFonte, locandina:d.locandina, posterUrl:d.posterUrl };
+  editorRecMobile(bozza,{nuova:!bozza.creato}); toast('Film collegato 🎬');
+}
+
 /* ══════════════════ EVENTI ══════════════════ */
 async function scegliECarica(){
   if (!inApp()){ $('#cartella-nota').innerHTML='Questa è la versione app: aprila come APK installato (nel browser il selettore di sistema non è disponibile).'; return; }
@@ -604,6 +890,14 @@ $('#btn-cambia-utente').onclick = () => {
 $('#btn-indietro').onclick = () => { if (!S.me) return; $('#hdr').style.display='flex'; schermo('sc-app'); };
 $('#btn-filtri').onclick = apriFiltri;
 $('#btn-imp').onclick = apriImpostazioni;
+// segmenti Watch List / Recensioni
+$('#segmenti').onclick = e => { const b = e.target.closest('.seg'); if (b) setPan(b.dataset.pan); };
+$('#m-rec-utenti').onclick = e => { const b = e.target.closest('[data-u]'); if (b){ S.recUtente = b.dataset.u; disegnaRecMobile(); } };
+$('#m-rec-q').oninput = e => { S.recFiltri.q = e.target.value; disegnaRecMobile(); };
+$('#m-rec-ordina').onchange = e => { S.recFiltri.ordina = e.target.value; disegnaRecMobile(); };
+$('#m-rec-dir').onclick = () => { S.recFiltri.dir = S.recFiltri.dir === 'desc' ? 'asc' : 'desc'; $('#m-rec-dir').textContent = S.recFiltri.dir === 'desc' ? '↓' : '↑'; disegnaRecMobile(); };
+$('#m-rec-nuova').onclick = () => modaleNuovaRecensioneM();
+function modaleNuovaRecensioneM(){ modaleCercaFilmM(id => avviaEditorDaTMDBM(id), {titolo:'Nuova recensione', query:''}); }
 // ricerca in tempo reale (come su PC): niente pulsante
 $('#q').addEventListener('input', programmaRicerca);
 $('#q').addEventListener('keydown', e => { if (e.key === 'Enter'){ clearTimeout(cercaTimer); eseguiRicerca(); } });

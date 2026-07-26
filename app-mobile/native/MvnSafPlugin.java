@@ -69,12 +69,13 @@ public class MvnSafPlugin extends Plugin {
             DocumentFile root = DocumentFile.fromTreeUri(getContext(), Uri.parse(uriStr));
             if (root == null || !root.isDirectory()) { call.reject("cartella non accessibile"); return; }
 
-            String config = null;
+            String config = null, storico = null;
             DocumentFile profiliDir = null;
             for (DocumentFile f : root.listFiles()) {
                 String name = f.getName();
                 if (name == null) continue;
                 if (name.equals("config.json") && f.isFile()) config = readText(f.getUri());
+                else if (name.equals("storico.json") && f.isFile()) storico = readText(f.getUri());
                 else if (name.equals("profili") && f.isDirectory()) profiliDir = f;
             }
 
@@ -94,6 +95,7 @@ public class MvnSafPlugin extends Plugin {
 
             JSObject ret = new JSObject();
             ret.put("config", config);
+            ret.put("storico", storico);
             ret.put("profili", profili);
             call.resolve(ret);
         } catch (Exception e) {
@@ -118,13 +120,96 @@ public class MvnSafPlugin extends Plugin {
         String data = call.getString("data", "");
         if (uriStr == null) { call.reject("uri mancante"); return; }
         try {
-            Uri uri = Uri.parse(uriStr);
-            OutputStream os = getContext().getContentResolver().openOutputStream(uri, "wt");
-            if (os == null) { call.reject("impossibile aprire il file in scrittura"); return; }
-            try { os.write(data.getBytes(StandardCharsets.UTF_8)); }
-            finally { os.close(); }
+            writeText(Uri.parse(uriStr), data);
             call.resolve(new JSObject());
         } catch (Exception e) { call.reject(e.getMessage(), e); }
+    }
+
+    // Legge tutte le recensioni: recensioni/<slug>/<nome>.json → [{slug,nome,uri,data}]
+    @PluginMethod
+    public void caricaRecensioni(PluginCall call) {
+        String uriStr = call.getString("uri");
+        if (uriStr == null) { call.reject("uri mancante"); return; }
+        try {
+            DocumentFile root = DocumentFile.fromTreeUri(getContext(), Uri.parse(uriStr));
+            if (root == null || !root.isDirectory()) { call.reject("cartella non accessibile"); return; }
+            JSArray out = new JSArray();
+            DocumentFile recDir = trovaFiglio(root, "recensioni");
+            if (recDir != null && recDir.isDirectory()) {
+                for (DocumentFile userDir : recDir.listFiles()) {
+                    if (userDir == null || !userDir.isDirectory()) continue;
+                    String slug = userDir.getName();
+                    if (slug == null) continue;
+                    for (DocumentFile f : userDir.listFiles()) {
+                        String name = f.getName();
+                        if (name == null || !f.isFile() || !name.endsWith(".json")) continue;
+                        JSObject o = new JSObject();
+                        o.put("slug", slug);
+                        o.put("nome", name);
+                        o.put("uri", f.getUri().toString());
+                        o.put("data", readText(f.getUri()));
+                        out.put(o);
+                    }
+                }
+            }
+            JSObject ret = new JSObject();
+            ret.put("recensioni", out);
+            call.resolve(ret);
+        } catch (Exception e) { call.reject(e.getMessage(), e); }
+    }
+
+    // Crea/aggiorna una recensione in recensioni/<slug>/<nome> (crea le sottocartelle se mancano)
+    @PluginMethod
+    public void salvaRecensione(PluginCall call) {
+        String uriStr = call.getString("uri");
+        String slug = call.getString("slug");
+        String nome = call.getString("nome");
+        String data = call.getString("data", "");
+        if (uriStr == null || slug == null || nome == null) { call.reject("parametri mancanti"); return; }
+        try {
+            DocumentFile root = DocumentFile.fromTreeUri(getContext(), Uri.parse(uriStr));
+            if (root == null) { call.reject("cartella non accessibile"); return; }
+            DocumentFile recDir = trovaOCrea(root, "recensioni");
+            DocumentFile userDir = trovaOCrea(recDir, slug);
+            if (userDir == null) { call.reject("impossibile creare la cartella"); return; }
+            DocumentFile file = trovaFiglio(userDir, nome);
+            if (file == null) {
+                file = userDir.createFile("application/json", nome);
+                if (file == null) { call.reject("impossibile creare il file"); return; }
+            }
+            writeText(file.getUri(), data);
+            JSObject ret = new JSObject();
+            ret.put("uri", file.getUri().toString());
+            ret.put("nome", file.getName());
+            call.resolve(ret);
+        } catch (Exception e) { call.reject(e.getMessage(), e); }
+    }
+
+    @PluginMethod
+    public void cancellaDoc(PluginCall call) {
+        String uriStr = call.getString("uri");
+        if (uriStr == null) { call.reject("uri mancante"); return; }
+        try {
+            boolean ok = android.provider.DocumentsContract.deleteDocument(getContext().getContentResolver(), Uri.parse(uriStr));
+            JSObject o = new JSObject(); o.put("ok", ok); call.resolve(o);
+        } catch (Exception e) { call.reject(e.getMessage(), e); }
+    }
+
+    private DocumentFile trovaFiglio(DocumentFile parent, String nome) {
+        if (parent == null) return null;
+        for (DocumentFile f : parent.listFiles()) if (nome.equals(f.getName())) return f;
+        return null;
+    }
+    private DocumentFile trovaOCrea(DocumentFile parent, String nome) {
+        DocumentFile d = trovaFiglio(parent, nome);
+        if (d == null && parent != null) d = parent.createDirectory(nome);
+        return d;
+    }
+    private void writeText(Uri uri, String data) throws Exception {
+        OutputStream os = getContext().getContentResolver().openOutputStream(uri, "wt");
+        if (os == null) throw new Exception("impossibile aprire il file in scrittura");
+        try { os.write(data.getBytes(StandardCharsets.UTF_8)); }
+        finally { os.close(); }
     }
 
     private String readText(Uri uri) throws Exception {
