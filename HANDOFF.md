@@ -65,10 +65,18 @@ storico.json              {visioni:[{id,data,ts,tmdbId,titolo,partecipanti,propo
 archivio.json             {pronti:[tmdbId,...]}  stato "pronto alla visione" (scrive l'host)
 posters/<id>.jpg          locandine in cache (e <id>_b.jpg per gli sfondi)
 profili/<slug>.json       un file per persona
+recensioni/<slug>/<tmdbId>.json   recensioni personali (una cartella per utente, un file per film)
 ```
 
+**Recensione** `{tmdbId, autore, creato, modificato, ultimaVisione?, votoPersonale(1–10, mezze stelle),
+tags[], meta:{titolo,anno,generi,regista,durata,paese,cast,voto,votoFonte,locandina}, sezioni:[{titolo,testo}], link[]}`.
+Le **sezioni sono flessibili** (aggiungi/rinomina/riordina/rimuovi). Voto mostrato stile Letterboxd
+(5 stelle con mezze); export Markdown nel formato Obsidian di Marco. Sezione UI: **Archivio** (tutti
+gli utenti, ognuno la sua, sfogli le altrui in sola lettura). Rinomini v0.2.4: Catalogo→**Watch List**,
+vecchio Archivio host→**Pronti alla visione**, il nome **Archivio** ora è le recensioni.
+
 **Regola anti-conflitto (un solo scrittore per file):** ogni dispositivo scrive **solo**
-il proprio `profili/<slug>.json`; `storico.json` e `archivio.json` li scrive solo il PC
+il proprio `profili/<slug>.json` e la propria `recensioni/<slug>/`; `storico.json` e `archivio.json` li scrive solo il PC
 "host" (chi preme Play / prepara). Così Drive non crea copie in conflitto.
 
 **Profilo** `{nome, slug, creato, colore, password?, generiPositivi?[], generiNegativi?[], lista:[voce]}`.

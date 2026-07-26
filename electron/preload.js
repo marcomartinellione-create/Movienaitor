@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('mvnFS', {
   writeJSON:         (rel, o)  => ipcRenderer.invoke('mvn:writeJSON', rel, o),
   writeBlob:         (rel, b)  => ipcRenderer.invoke('mvn:writeBlob', rel, b),
   list:              (rel)     => ipcRenderer.invoke('mvn:list', rel),
+  elenca:            (rel)     => ipcRenderer.invoke('mvn:elenca', rel),
+  cancella:          (rel)     => ipcRenderer.invoke('mvn:cancella', rel),
   fileURL:           (rel)     => ipcRenderer.invoke('mvn:fileURL', rel),
   scaricaImmagine:   (url,rel) => ipcRenderer.invoke('mvn:scarica', url, rel),
   profiloRicordato:  ()        => ipcRenderer.invoke('mvn:getMe'),

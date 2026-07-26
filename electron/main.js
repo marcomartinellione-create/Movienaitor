@@ -92,6 +92,18 @@ function registraIPC(){
       return items.filter(d => d.isFile()).map(d => d.name);
     } catch (err) { return []; }
   });
+  ipcMain.handle('mvn:elenca', async (e, rel) => {
+    try {
+      const items = await fs.readdir(risolvi(rel), { withFileTypes: true });
+      return {
+        dirs: items.filter(d => d.isDirectory()).map(d => d.name),
+        files: items.filter(d => d.isFile()).map(d => d.name)
+      };
+    } catch (err) { return { dirs: [], files: [] }; }
+  });
+  ipcMain.handle('mvn:cancella', async (e, rel) => {
+    try { await fs.rm(risolvi(rel), { force: true }); return true; } catch (err) { return false; }
+  });
   ipcMain.handle('mvn:fileURL', async (e, rel) => {
     try {
       const p = risolvi(rel);

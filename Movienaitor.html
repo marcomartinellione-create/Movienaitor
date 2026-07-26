@@ -184,6 +184,60 @@ header .spazio{flex:1}
 .arch-filtro button{padding:6px 14px; border-radius:8px; border:1px solid var(--velluto3); color:var(--dim); background:none; cursor:pointer; font-size:13px}
 .arch-filtro button.on{border-color:var(--oro-dim); color:var(--oro2); background:var(--velluto2)}
 .arch-filtro select{background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); border-radius:8px; padding:6px 9px; font:inherit; font-size:13px}
+/* Archivio recensioni */
+.rec-testa{display:flex; flex-direction:column; gap:12px; margin-bottom:18px}
+.rec-utenti{display:flex; gap:8px; flex-wrap:wrap}
+.rec-utente{display:flex; align-items:center; gap:7px; padding:5px 12px; border-radius:999px; border:1px solid var(--velluto3); background:none; color:var(--dim); cursor:pointer; font-size:13px}
+.rec-utente.on{border-color:var(--oro-dim); color:var(--oro2); background:var(--velluto2)}
+.rec-utente .pallino{width:13px; height:13px; border-radius:50%}
+.rec-strumenti{display:flex; gap:10px 12px; align-items:center; flex-wrap:wrap; padding:10px 12px; border:1px solid var(--velluto3); border-radius:12px; background:var(--velluto2)}
+.rec-strumenti label{display:flex; align-items:center; gap:6px; color:var(--dim); font-size:13px}
+.rec-strumenti input, .rec-strumenti select{background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); border-radius:8px; padding:6px 9px; font:inherit; font-size:13px}
+.rec-strumenti #rec-q{flex:1; min-width:150px}
+.rec-galleria{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:16px}
+.rec-card{cursor:pointer; border-radius:12px; overflow:hidden; background:var(--velluto2); border:1px solid var(--velluto3); transition:.15s}
+.rec-card:hover{border-color:var(--oro-dim); transform:translateY(-2px)}
+.rec-poster{position:relative; aspect-ratio:2/3; background:var(--bg2)}
+.rec-poster img{width:100%; height:100%; object-fit:cover; display:block}
+.rec-poster .segnaposto{position:absolute; inset:0}
+.rec-voto-badge{position:absolute; bottom:6px; left:6px; background:#000c; color:var(--oro2); padding:3px 8px; border-radius:7px; font-size:12px; font-weight:600; letter-spacing:1px}
+.rec-card .corpo{padding:8px 9px}
+.rec-card h5{margin:0; font-size:13px; line-height:1.2; color:var(--crema); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.rec-card .sub{color:var(--dim2); font-size:11px; margin-top:3px}
+.rec-vuoto{grid-column:1/-1; color:var(--dim); text-align:center; padding:40px 20px; line-height:1.6}
+/* Editor recensione */
+.re-head{display:flex; gap:14px; align-items:flex-start; margin-bottom:12px}
+.re-poster{width:92px; flex:0 0 auto; aspect-ratio:2/3; border-radius:8px; overflow:hidden; position:relative; background:var(--bg2)}
+.re-poster img{width:100%; height:100%; object-fit:cover}
+.re-poster .segnaposto{position:absolute; inset:0}
+.re-x{background:none; border:0; color:var(--dim); font-size:18px; cursor:pointer; padding:4px; flex:0 0 auto}
+.re-voto{margin-top:8px; display:flex; align-items:center; gap:10px}
+.re-stelle{display:inline-flex; gap:2px; cursor:pointer; font-size:26px; line-height:1}
+.re-stelle span{color:var(--velluto3)}
+.re-stelle span.piena{color:var(--oro2)}
+.re-stelle span.mezza{background:linear-gradient(90deg,var(--oro2) 50%, var(--velluto3) 50%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent}
+.re-voto-num{color:var(--dim); font-size:13px}
+.re-riga{display:flex; gap:14px; flex-wrap:wrap; margin:4px 0 10px}
+.re-riga label{display:flex; align-items:center; gap:7px; color:var(--dim); font-size:13px}
+.re-riga input{background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); border-radius:8px; padding:7px 9px; font:inherit; font-size:13px}
+.re-riga input[type=text]{flex:1}
+.re-tag{color:var(--oro2)}
+.re-sez{border:1px solid var(--velluto3); border-radius:10px; padding:8px; margin-bottom:10px; background:var(--bg2)}
+.re-sez-cap{display:flex; gap:8px; align-items:center; margin-bottom:6px}
+.re-sez-tit{flex:1; background:none; border:0; border-bottom:1px solid var(--velluto3); color:var(--oro2); font:inherit; font-weight:600; padding:3px 2px}
+.re-sez-tit:focus{outline:0; border-color:var(--oro)}
+.re-sez-btn{display:flex; gap:2px}
+.re-sez-btn button{background:none; border:1px solid var(--velluto3); color:var(--dim); border-radius:6px; cursor:pointer; padding:2px 7px; font-size:12px}
+.re-sez-txt{width:100%; background:none; border:0; color:var(--crema); font:inherit; font-size:13.5px; line-height:1.5; resize:vertical; min-height:56px}
+.re-sez-txt:focus{outline:0}
+.re-sez-ro{margin-bottom:14px}
+.re-sez-ro h4{margin:0 0 4px; color:var(--oro2); font-size:15px}
+.re-testo{color:var(--crema); font-size:14px; line-height:1.55}
+.rn-ris{max-height:320px; overflow:auto; margin:10px 0}
+.rn-item{display:flex; gap:10px; align-items:center; padding:6px; border-radius:8px; cursor:pointer}
+.rn-item:hover{background:var(--velluto2)}
+.rn-item img{width:36px; height:54px; object-fit:cover; border-radius:5px}
+.rn-mini{width:36px; height:54px; background:var(--velluto3); border-radius:5px; flex:0 0 auto}
 .arch-lista{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:8px}
 .arch-riga{display:flex; align-items:center; gap:11px; padding:7px 10px; border:1px solid #3a2229; border-radius:10px; background:var(--velluto2)}
 .arch-riga.pronto{border-color:var(--verde)}
@@ -286,9 +340,11 @@ header .spazio{flex:1}
     <nav>
       <button class="tab attivo" data-vista="sala">🎬 Sala</button>
       <span class="nav-sep">|</span>
-      <button class="tab" data-vista="catalogo">📚 Catalogo</button>
+      <button class="tab" data-vista="catalogo">📝 Watch List</button>
+      <span class="nav-sep">|</span>
+      <button class="tab" data-vista="recensioni">🗄 Archivio</button>
       <span class="nav-sep" id="sep-archivio" hidden>|</span>
-      <button class="tab" id="tab-archivio" data-vista="archivio" hidden>🗄 Archivio</button>
+      <button class="tab" id="tab-archivio" data-vista="archivio" hidden>🎞 Pronti alla visione</button>
     </nav>
     <div class="spazio"></div>
     <div class="io-chip"><span class="pallino" id="io-colore"></span><span id="io-nome"></span></div>
@@ -364,9 +420,9 @@ header .spazio{flex:1}
     <div class="griglia" id="lista-visti"></div>
   </main>
 
-  <!-- ───── ARCHIVIO (solo host) ───── -->
+  <!-- ───── PRONTI ALLA VISIONE (solo host) ───── -->
   <main id="vista-archivio" hidden>
-    <div class="sezione-titolo" style="margin-top:6px">ARCHIVIO FILM<span class="aiuto-q" tabindex="0">?<span class="tip">Tutti i film che qualcuno vuole ancora vedere, senza preferenze né liste. Segna con la bandierina quelli che hai già procurato (pronti alla visione); il filtro ti fa vedere solo quelli che ti restano da preparare.</span></span></div>
+    <div class="sezione-titolo" style="margin-top:6px">PRONTI ALLA VISIONE<span class="aiuto-q" tabindex="0">?<span class="tip">Tutti i film che qualcuno vuole ancora vedere, senza preferenze né liste. Segna con la bandierina quelli che hai già procurato (pronti alla visione); il filtro ti fa vedere solo quelli che ti restano da preparare.</span></span></div>
     <div class="arch-filtro" id="arch-filtro">
       <button data-f="tutti" class="on">Tutti</button>
       <button data-f="daPreparare">Da preparare</button>
@@ -379,6 +435,29 @@ header .spazio{flex:1}
       </label>
     </div>
     <div class="arch-lista" id="lista-archivio"></div>
+  </main>
+
+  <!-- ───── ARCHIVIO = RECENSIONI (tutti gli utenti) ───── -->
+  <main id="vista-recensioni" hidden>
+    <div class="rec-testa">
+      <div class="rec-utenti" id="rec-utenti"></div>
+      <div class="rec-strumenti">
+        <input type="search" id="rec-q" placeholder="🔎 cerca per titolo…" autocomplete="off">
+        <label>Ordina
+          <select id="rec-ordina">
+            <option value="modificato">Ultima modifica</option>
+            <option value="ultimaVisione">Ultima visione</option>
+            <option value="votoPersonale">Voto</option>
+            <option value="titolo">Titolo (A–Z)</option>
+            <option value="anno">Anno</option>
+          </select>
+        </label>
+        <button class="bottone piccolo secondario" id="rec-dir" title="Crescente / decrescente">↓ decr.</button>
+        <button class="bottone piccolo" id="rec-nuova">✍ Nuova recensione</button>
+        <span class="cat-conta" id="rec-conta"></span>
+      </div>
+    </div>
+    <div class="rec-galleria" id="rec-galleria"></div>
   </main>
 
   <!-- ───── IMPOSTAZIONI ───── -->
@@ -569,6 +648,20 @@ const fsa = {
     } catch(e){}
     return out;
   },
+  // elenca sottocartelle e file di una cartella (per le recensioni: recensioni/<slug>/...)
+  async elenca(percorso){
+    const out = {dirs:[], files:[]};
+    try {
+      let d = this.root;
+      for (const seg of percorso) d = await d.getDirectoryHandle(seg);
+      for await (const [nome, h] of d.entries())
+        (h.kind === 'directory' ? out.dirs : out.files).push(nome);
+    } catch(e){}
+    return out;
+  },
+  async cancella(percorso){
+    try { const dir = await this._dir(percorso, false); await dir.removeEntry(percorso[percorso.length-1]); } catch(e){}
+  },
   async fileURL(percorso){
     try {
       const dir = await this._dir(percorso, false);
@@ -585,6 +678,17 @@ const demoFS = {
   async writeJSON(p, obj){ this.files.set(p.join('/'), JSON.stringify(obj)); },
   async writeBlob(){}, // niente immagini in demo
   async listaProfili(){ return [...this.files.keys()].filter(k=>k.startsWith('profili/')).map(k=>k.slice(8)); },
+  async elenca(percorso){
+    const pref = percorso.length ? percorso.join('/')+'/' : '';
+    const dirs = new Set(), files = new Set();
+    for (const k of this.files.keys()){
+      if (!k.startsWith(pref)) continue;
+      const rest = k.slice(pref.length), i = rest.indexOf('/');
+      if (i === -1) files.add(rest); else dirs.add(rest.slice(0, i));
+    }
+    return {dirs:[...dirs], files:[...files]};
+  },
+  async cancella(percorso){ this.files.delete(percorso.join('/')); },
   async fileURL(){ return null; },
   nomeCartella(){ return 'Demo (nessun salvataggio)'; }
 };
@@ -597,6 +701,8 @@ const electronFS = {
   async writeJSON(p, obj){ return await window.mvnFS.writeJSON(p.join('/'), obj); },
   async writeBlob(p, blob){ return await window.mvnFS.writeBlob(p.join('/'), await blob.arrayBuffer()); },
   async listaProfili(){ return (await window.mvnFS.list('profili')).filter(n => n.endsWith('.json')); },
+  async elenca(percorso){ return await window.mvnFS.elenca(percorso.join('/')); },
+  async cancella(p){ return await window.mvnFS.cancella(p.join('/')); },
   async fileURL(p){ return await window.mvnFS.fileURL(p.join('/')); },
   nomeCartella(){ return this.cartella ? this.cartella.name : '—'; }
 };
@@ -628,7 +734,7 @@ function applicaHost(){
   $('#sep-archivio').hidden = !S.host;
   if (!S.host && !$('#vista-archivio').hidden){ // se ero in Archivio e l'host si spegne, torno in Sala
     $$('.tab').forEach(x => x.classList.toggle('attivo', x.dataset.vista === 'sala'));
-    for (const v of ['sala','catalogo','archivio','impostazioni']) $('#vista-'+v).hidden = v !== 'sala';
+    for (const v of ['sala','catalogo','recensioni','archivio','impostazioni']) $('#vista-'+v).hidden = v !== 'sala';
   }
 }
 
@@ -648,6 +754,9 @@ const S = {
   archivioFiltro:'tutti',   // 'tutti' | 'daPreparare'
   archivioOrdine:'alfabetico', // 'alfabetico' | 'prossima'
   catFiltri:{q:'', ordina:'aggiunto', dir:'desc', minDes:0, minVoto:0, annoDa:null, annoA:null},
+  recensioni:[],            // recensioni di tutti [{...rec, autore, _file:[...]}]
+  recUtente:null,           // slug dell'utente sfogliato (null = io)
+  recFiltri:{q:'', ordina:'modificato', dir:'desc'},
   ultimaLettura:null,
   urlCache:new Map()     // percorso → objectURL
 };
@@ -744,6 +853,8 @@ async function dettagliFilm(id){
     collezione:j.belongs_to_collection ? j.belongs_to_collection.id : null,
     collezioneNome:j.belongs_to_collection ? j.belongs_to_collection.name : null,
     durata:j.runtime || null, regista, generi:(j.genres || []).map(x => x.name),
+    paese:(j.production_countries || []).map(c => c.name).join(', '),
+    cast:((j.credits || {}).cast || []).slice(0,6).map(c => c.name),
     voto, votoFonte, trama:j.overview || '',
     posterUrl:j.poster_path ? 'https://image.tmdb.org/t/p/w500'+j.poster_path : null,
     sfondoUrl:j.backdrop_path ? 'https://image.tmdb.org/t/p/w780'+j.backdrop_path : null,
@@ -929,6 +1040,7 @@ async function caricaTutto(){
   S.storico.sort((a,b) => a.data.localeCompare(b.data));
   const arch = await FS.readJSON(['archivio.json']);
   S.archivioPronti = new Set((arch && Array.isArray(arch.pronti)) ? arch.pronti : []);
+  await caricaRecensioni();
   S.presenti = new Set([...S.presenti].filter(s => profiloDi(s)));
   if (S.me && profiloDi(S.me)) S.presenti.add(S.me);
   S.ultimaLettura = new Date();
@@ -939,6 +1051,37 @@ async function salvaMioProfilo(){
   const p = mioProfilo();
   if (p) await FS.writeJSON(['profili', p.slug+'.json'], p);
 }
+
+/* ════════════════════════ RECENSIONI ════════════════════════ */
+// Sezioni di default per una nuova recensione (modificabili/aggiungibili/rimovibili).
+const SEZIONI_DEFAULT = ['Introduzione', 'Che ne penso', 'Momento preferito', 'Messaggio', 'A chi lo consiglio'];
+
+// Legge tutte le recensioni di tutti gli utenti da recensioni/<slug>/<tmdbId>.json
+async function caricaRecensioni(){
+  S.recensioni = [];
+  const { dirs } = await FS.elenca(['recensioni']);
+  for (const slug of dirs){
+    const { files } = await FS.elenca(['recensioni', slug]);
+    for (const f of files){
+      if (!f.endsWith('.json')) continue;
+      const r = await FS.readJSON(['recensioni', slug, f]);
+      if (r && r.tmdbId){ r.autore = slug; r._file = ['recensioni', slug, f]; S.recensioni.push(r); }
+    }
+  }
+}
+// Salva/aggiorna una mia recensione (scrivo solo nella MIA sottocartella: anti-conflitto).
+async function salvaRecensione(rec){
+  rec.autore = S.me;
+  rec.modificato = new Date().toISOString();
+  if (!rec.creato) rec.creato = oggiISO();
+  const percorso = ['recensioni', S.me, rec.tmdbId + '.json'];
+  const salvabile = {...rec}; delete salvabile._file; delete salvabile.autore;
+  await FS.writeJSON(percorso, salvabile);
+  rec._file = percorso;
+  const i = S.recensioni.findIndex(x => x.autore === S.me && x.tmdbId === rec.tmdbId);
+  if (i >= 0) S.recensioni[i] = rec; else S.recensioni.push(rec);
+}
+const miaRecensione = id => S.recensioni.find(r => r.autore === S.me && r.tmdbId === id);
 // stato "pronto alla visione" dell'archivio (scritto dall'host, file condiviso)
 async function salvaArchivio(){ await FS.writeJSON(['archivio.json'], {pronti:[...S.archivioPronti]}); }
 
@@ -1074,6 +1217,7 @@ function disegnaTutto(){
   disegnaSala();
   disegnaCatalogo();
   disegnaArchivio();
+  disegnaRecensioni();
   disegnaImpostazioni();
 }
 
@@ -1131,6 +1275,218 @@ function disegnaArchivio(){
       disegnaArchivio();
     };
   });
+}
+
+/* ════════════════════════ ARCHIVIO = RECENSIONI ════════════════════════ */
+// Voto interno 1–10 (mezze stelle) → stringa stelle "Letterboxd": ★★★½
+function stelleLetterbox(v){
+  v = v || 0;
+  const piene = Math.floor(v/2), mezza = (v % 2) === 1;
+  return ('★'.repeat(piene) + (mezza ? '½' : '')) || '—';
+}
+async function eliminaRecensione(id){
+  await FS.cancella(['recensioni', S.me, id + '.json']);
+  S.recensioni = S.recensioni.filter(r => !(r.autore === S.me && r.tmdbId === id));
+}
+
+function recensioniFiltrate(slug){
+  const f = S.recFiltri;
+  let out = S.recensioni.filter(r => r.autore === slug);
+  if (f.q) out = out.filter(r => String((r.meta||{}).titolo || '').toLowerCase().includes(f.q.toLowerCase()));
+  const cmp = {
+    modificato:    (a,b) => String(a.modificato||'').localeCompare(String(b.modificato||'')),
+    ultimaVisione: (a,b) => String(a.ultimaVisione||'').localeCompare(String(b.ultimaVisione||'')),
+    votoPersonale: (a,b) => (a.votoPersonale||0) - (b.votoPersonale||0),
+    titolo:        (a,b) => String((a.meta||{}).titolo||'').localeCompare(String((b.meta||{}).titolo||'')),
+    anno:          (a,b) => (parseInt((a.meta||{}).anno,10)||0) - (parseInt((b.meta||{}).anno,10)||0)
+  }[f.ordina] || (()=>0);
+  out.sort((a,b) => cmp(a,b) || String((a.meta||{}).titolo||'').localeCompare(String((b.meta||{}).titolo||'')));
+  if (f.dir === 'desc') out.reverse();
+  return out;
+}
+
+function disegnaRecensioni(){
+  if (!$('#rec-galleria')) return;
+  const autori = [...new Set(S.recensioni.map(r => r.autore))];
+  const utenti = [S.me, ...autori.filter(a => a !== S.me)].filter(s => profiloDi(s));
+  const sel = (S.recUtente && profiloDi(S.recUtente)) ? S.recUtente : S.me;
+  $('#rec-utenti').innerHTML = utenti.map(s =>
+    `<button class="rec-utente${s===sel?' on':''}" data-u="${esc(s)}"><span class="pallino" style="background:${coloreDi(s)}"></span>${esc(nomeDi(s))}${s===S.me?' (io)':''}</button>`).join('');
+  $('#rec-nuova').style.display = (sel === S.me) ? '' : 'none';
+
+  const lista = recensioniFiltrate(sel);
+  $('#rec-conta').textContent = lista.length ? lista.length + (lista.length===1?' recensione':' recensioni') : '';
+  const g = $('#rec-galleria');
+  if (!lista.length){
+    g.innerHTML = `<div class="rec-vuoto">${sel===S.me ? 'Non hai ancora scritto recensioni.<br>Premi «✍ Nuova recensione» per iniziare.' : esc(nomeDi(sel))+' non ha ancora recensioni.'}</div>`;
+    return;
+  }
+  g.innerHTML = lista.map(r => {
+    const m = r.meta || {};
+    return `<div class="rec-card" data-id="${r.tmdbId}">
+      <div class="rec-poster"><img hidden alt=""><div class="segnaposto" style="background:url('${segnapostoSVG(m.titolo||'', r.tmdbId)}') center/cover"></div>
+        ${r.votoPersonale ? `<div class="rec-voto-badge">${stelleLetterbox(r.votoPersonale)}</div>` : ''}</div>
+      <div class="corpo"><h5>${esc(m.titolo||'Film')}</h5><div class="sub">${esc(m.anno||'')}${m.regista?' · '+esc(m.regista):''}</div></div>
+    </div>`;
+  }).join('');
+  lista.forEach(r => {
+    const el = $(`.rec-card[data-id="${r.tmdbId}"]`);
+    if (!el) return;
+    urlImmagine(r.meta||{}, 'locandina').then(u => { if (u){ const img = el.querySelector('img'); img.src = u; img.hidden = false; const seg = el.querySelector('.segnaposto'); if (seg) seg.remove(); } });
+    el.onclick = () => editorRecensione(r);
+  });
+}
+
+function sezioneHTML(s, i, editabile){
+  if (!editabile) return `<div class="re-sez-ro"><h4>${esc(s.titolo||'')}</h4><div class="re-testo">${esc(s.testo||'').replace(/\n/g,'<br>')}</div></div>`;
+  return `<div class="re-sez" data-i="${i}">
+    <div class="re-sez-cap"><input class="re-sez-tit" value="${esc(s.titolo||'')}" placeholder="Titolo sezione">
+      <span class="re-sez-btn"><button data-az="su" data-i="${i}" title="sposta su">▲</button><button data-az="giu" data-i="${i}" title="sposta giù">▼</button><button data-az="del" data-i="${i}" title="rimuovi">✕</button></span></div>
+    <textarea class="re-sez-txt" rows="3" placeholder="Scrivi qui…">${esc(s.testo||'')}</textarea>
+  </div>`;
+}
+
+function editorRecensione(recOrig, opts={}){
+  const editabile = (recOrig.autore === S.me) || !!opts.nuova;
+  const bozza = JSON.parse(JSON.stringify(recOrig));
+  bozza.meta = bozza.meta || {}; bozza.sezioni = bozza.sezioni || []; bozza.tags = bozza.tags || []; bozza.link = bozza.link || [];
+  let voto = bozza.votoPersonale || 0;
+
+  function leggiCampi(){
+    if (!editabile) return;
+    bozza.sezioni = [...document.querySelectorAll('#re-sezioni .re-sez')].map(row => ({
+      titolo: row.querySelector('.re-sez-tit').value, testo: row.querySelector('.re-sez-txt').value
+    }));
+    const t = $('#re-tags'); if (t) bozza.tags = t.value.split(',').map(x=>x.trim()).filter(Boolean);
+    const uv = $('#re-uv'); if (uv) bozza.ultimaVisione = uv.value || null;
+    bozza.votoPersonale = voto;
+  }
+
+  function render(){
+    const m = bozza.meta;
+    const stelle = editabile
+      ? `<div class="re-stelle" id="re-stelle">${[1,2,3,4,5].map(i=>`<span data-s="${i}">★</span>`).join('')}</div><span class="re-voto-num" id="re-voto-num"></span>`
+      : `<span class="stelle-lb" style="font-size:20px">${stelleLetterbox(bozza.votoPersonale)}</span>`;
+    apriModale(`
+      <div class="re-head">
+        <div class="re-poster"><img hidden alt=""><div class="segnaposto" style="background:url('${segnapostoSVG(m.titolo||'', bozza.tmdbId)}') center/cover"></div></div>
+        <div style="flex:1; min-width:0">
+          <h3 style="margin:0 0 3px">${esc(m.titolo||'Film')}${editabile?'':` <span style="font-size:13px;color:var(--dim2)">· recensione di ${esc(nomeDi(recOrig.autore))}</span>`}</h3>
+          <div class="m-meta">${esc(m.anno||'')}${m.durata?' · '+fmtMin(m.durata):''}${m.regista?' · '+esc(m.regista):''}<br>
+            ${esc((m.generi||[]).join(', '))}${m.paese?' · '+esc(m.paese):''}${m.voto?` · ★ ${fmtNum(m.voto,1)} ${m.votoFonte==='imdb'?'IMDb':'TMDB'}`:''}</div>
+          ${m.cast&&m.cast.length?`<div class="m-meta" style="color:var(--dim2)">${esc(m.cast.join(', '))}</div>`:''}
+          <div class="re-voto">${stelle}</div>
+        </div>
+        <button class="re-x" id="re-chiudi" title="Chiudi">✕</button>
+      </div>
+      ${editabile
+        ? `<div class="re-riga"><label>Ultima visione <input type="date" id="re-uv" value="${esc(bozza.ultimaVisione||'')}"></label>
+             <label style="flex:1">Tag <input type="text" id="re-tags" value="${esc((bozza.tags||[]).join(', '))}" placeholder="es. Capolavoro, Rewatch"></label></div>`
+        : `<div class="m-meta">${bozza.ultimaVisione?'👁 '+esc(bozza.ultimaVisione)+'   ':''}${(bozza.tags||[]).map(t=>'<span class=\"re-tag\">#'+esc(t)+'</span>').join(' ')}</div>`}
+      <div id="re-sezioni">${bozza.sezioni.map((s,i)=>sezioneHTML(s,i,editabile)).join('')}</div>
+      ${editabile?`<button class="testo-link" id="re-add-sez" style="margin:6px 0 4px">＋ aggiungi sezione</button>`:''}
+      <div class="m-azioni" style="flex-wrap:wrap; gap:8px">
+        <button class="bottone piccolo secondario" id="re-export">⬇ Esporta .md</button>
+        ${editabile?`<span style="flex:1"></span>${bozza.creato?`<button class="bottone piccolo secondario" id="re-del" style="color:var(--rosso2); border-color:var(--rosso2)">Elimina</button>`:''}<button class="bottone piccolo" id="re-salva">Salva</button>`:'<span style="flex:1"></span><button class="bottone piccolo" id="re-chiudi2">Chiudi</button>'}
+      </div>`);
+    urlImmagine(m,'locandina').then(u => { const img = $('.re-poster img'); if (u && img){ img.src = u; img.hidden = false; const seg = $('.re-poster .segnaposto'); if (seg) seg.remove(); } });
+    $('#re-chiudi').onclick = chiudiModale;
+    if ($('#re-chiudi2')) $('#re-chiudi2').onclick = chiudiModale;
+    $('#re-export').onclick = () => { leggiCampi(); esportaMarkdown(bozza); };
+    if (!editabile) return;
+
+    const dipingi = () => {
+      document.querySelectorAll('#re-stelle span').forEach((el,idx) => {
+        const val = (idx+1)*2;
+        el.classList.toggle('piena', voto >= val);
+        el.classList.toggle('mezza', voto === val-1);
+      });
+      $('#re-voto-num').textContent = voto ? (voto/2) + ' / 5' : 'nessun voto';
+    };
+    dipingi();
+    $('#re-stelle').querySelectorAll('span').forEach(el => {
+      el.onclick = ev => { const r = el.getBoundingClientRect(); const half = (ev.clientX - r.left) < r.width/2; voto = (+el.dataset.s)*2 - (half?1:0); dipingi(); };
+    });
+    $('#re-add-sez').onclick = () => { leggiCampi(); bozza.sezioni.push({titolo:'Nuova sezione', testo:''}); render(); };
+    $('#re-sezioni').querySelectorAll('[data-az]').forEach(b => b.onclick = () => {
+      leggiCampi(); const i = +b.dataset.i, az = b.dataset.az;
+      if (az === 'del') bozza.sezioni.splice(i,1);
+      else if (az === 'su' && i>0) [bozza.sezioni[i-1], bozza.sezioni[i]] = [bozza.sezioni[i], bozza.sezioni[i-1]];
+      else if (az === 'giu' && i<bozza.sezioni.length-1) [bozza.sezioni[i+1], bozza.sezioni[i]] = [bozza.sezioni[i], bozza.sezioni[i+1]];
+      render();
+    });
+    $('#re-salva').onclick = async () => {
+      leggiCampi();
+      if (!voto && !bozza.sezioni.some(s => (s.testo||'').trim())){ toast('Metti almeno un voto o una sezione', true); return; }
+      try { await salvaRecensione(bozza); chiudiModale(); disegnaRecensioni(); toast('Recensione salvata 🎞'); }
+      catch(e){ toast('Salvataggio non riuscito: '+e.message, true); }
+    };
+    if ($('#re-del')) $('#re-del').onclick = () => confermaModale(`Eliminare la recensione di «${m.titolo}»?`, 'Elimina', async () => {
+      try { await eliminaRecensione(bozza.tmdbId); chiudiModale(); disegnaRecensioni(); toast('Recensione eliminata'); }
+      catch(e){ toast('Non riuscito: '+e.message, true); }
+    });
+  }
+  render();
+}
+
+function modaleNuovaRecensione(){
+  apriModale(`<h3>Nuova recensione</h3><p style="color:var(--dim)">Cerca il film da recensire.</p>
+    <input type="text" id="rn-q" placeholder="Titolo del film…" autocomplete="off" style="width:100%;background:var(--bg2);border:1px solid var(--velluto3);color:var(--crema);padding:9px 12px;border-radius:8px">
+    <div id="rn-ris" class="rn-ris"></div>
+    <div class="m-azioni"><button class="bottone piccolo secondario" id="rn-chiudi">Annulla</button></div>`);
+  $('#rn-chiudi').onclick = chiudiModale;
+  let t = null;
+  $('#rn-q').oninput = () => {
+    clearTimeout(t); const q = $('#rn-q').value.trim();
+    if (q.length < 2){ $('#rn-ris').innerHTML=''; return; }
+    t = setTimeout(async () => {
+      try {
+        const res = await cercaFilm(q);
+        $('#rn-ris').innerHTML = res.map(f => `<div class="rn-item" data-id="${f.id}">${f.poster_path?`<img src="https://image.tmdb.org/t/p/w92${f.poster_path}">`:'<div class="rn-mini"></div>'}<div><div>${esc(f.title)}</div><div style="color:var(--dim2);font-size:12px">${(f.release_date||'').slice(0,4)}</div></div></div>`).join('') || '<div style="color:var(--dim);padding:8px">Nessun risultato</div>';
+        $('#rn-ris').querySelectorAll('.rn-item').forEach(el => el.onclick = () => avviaEditorDaTMDB(parseInt(el.dataset.id,10)));
+      } catch(e){ $('#rn-ris').innerHTML = `<div style="color:var(--dim);padding:8px">${e.message==='nokey'?'Manca la chiave TMDB (Impostazioni)':'Ricerca non riuscita'}</div>`; }
+    }, 350);
+  };
+  setTimeout(() => $('#rn-q').focus(), 40);
+}
+async function avviaEditorDaTMDB(id){
+  const mia = miaRecensione(id);
+  if (mia) return editorRecensione(mia);
+  apriModale('<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero i dati del film.</p>');
+  let d; try { d = await dettagliFilm(id); } catch(e){ return apriModale(`<h3>Ahi</h3><p style="color:var(--dim)">Scheda non recuperata.</p><div class="m-azioni"><button class="bottone piccolo" onclick="chiudiModale()">Chiudi</button></div>`); }
+  salvaImmagini(d).then(()=>{ S.urlCache.clear(); });
+  const rec = { tmdbId:d.tmdbId, votoPersonale:0, tags:[], ultimaVisione:oggiISO(),
+    meta:{ titolo:d.titolo, anno:d.anno, generi:d.generi, regista:d.regista, durata:d.durata, paese:d.paese||'', cast:d.cast||[], voto:d.voto, votoFonte:d.votoFonte, locandina:d.locandina, posterUrl:d.posterUrl },
+    sezioni: SEZIONI_DEFAULT.map(tt => ({titolo:tt, testo:''})), link:[] };
+  editorRecensione(rec, {nuova:true});
+}
+
+// Export nel formato Obsidian di Marco (frontmatter + sezioni + voto /10)
+function esportaMarkdown(rec){
+  const m = rec.meta || {};
+  const cover = m.locandina ? m.locandina.split('/').pop() : '';
+  const righe = [
+    `title: ${m.titolo||''}`, `year: "${m.anno||''}"`, `genre: ${(m.generi||[]).join(', ')}`,
+    `director: ${m.regista||''}`, `runtime: ${m.durata?fmtMin(m.durata):''}`, `region: ${m.paese||''}`,
+    `rating: "${m.voto||''}"`, `cast: ${(m.cast||[]).join(', ')}`
+  ];
+  if (rec.ultimaVisione) righe.push(`last view: ${rec.ultimaVisione}`);
+  righe.push('tags:' + ((rec.tags||[]).length ? '\n' + rec.tags.map(x=>'  - '+x).join('\n') : ''));
+  if (cover) righe.push(`cover: ${cover}`);
+  let md = `---\n${righe.join('\n')}\n---\n`;
+  if (cover) md += `![[${cover}]]\n`;
+  for (const s of (rec.sezioni||[])){ if (!(s.titolo||s.testo)) continue; md += `## ${s.titolo||''}\n\n${s.testo||''}\n\n---\n`; }
+  if (rec.votoPersonale){
+    const st = '⭐️'.repeat(Math.floor(rec.votoPersonale/2)) + ((rec.votoPersonale%2)?'½':'');
+    md += `## Voto personale ${st}| ${rec.votoPersonale}\n`;
+  }
+  const nome = (m.titolo||'recensione').replace(/[\\/:*?"<>|]/g,'').trim() || 'recensione';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([md], {type:'text/markdown;charset=utf-8'}));
+  a.download = nome + '.md';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+  toast('Recensione esportata in Markdown ⬇');
 }
 
 function tuttiGeneri(){
@@ -1787,8 +2143,9 @@ async function ricarica(silenziosa){
 function agganciaGlobali(){
   $$('nav .tab, header .tab').forEach(b => b.onclick = () => {
     $$('.tab').forEach(x => x.classList.toggle('attivo', x === b));
-    for (const v of ['sala','catalogo','archivio','impostazioni']) $('#vista-'+v).hidden = v !== b.dataset.vista;
+    for (const v of ['sala','catalogo','recensioni','archivio','impostazioni']) $('#vista-'+v).hidden = v !== b.dataset.vista;
     if (b.dataset.vista === 'archivio') disegnaArchivio();
+    if (b.dataset.vista === 'recensioni') disegnaRecensioni();
     // apre Impostazioni → rilegge dalla cartella, così vede i cambi fatti da un altro dispositivo
     if (b.dataset.vista === 'impostazioni' && !S.demo) ricarica(true);
   });
@@ -1812,6 +2169,12 @@ function agganciaGlobali(){
     disegnaArchivio();
   };
   $('#arch-ordina').onchange = e => { S.archivioOrdine = e.target.value; disegnaArchivio(); };
+  // ── Archivio recensioni ──
+  $('#rec-utenti').onclick = e => { const b = e.target.closest('[data-u]'); if (!b) return; S.recUtente = b.dataset.u; disegnaRecensioni(); };
+  $('#rec-q').oninput = e => { S.recFiltri.q = e.target.value; disegnaRecensioni(); };
+  $('#rec-ordina').onchange = e => { S.recFiltri.ordina = e.target.value; disegnaRecensioni(); };
+  $('#rec-dir').onclick = () => { S.recFiltri.dir = S.recFiltri.dir === 'desc' ? 'asc' : 'desc'; $('#rec-dir').textContent = S.recFiltri.dir === 'desc' ? '↓ decr.' : '↑ cresc.'; disegnaRecensioni(); };
+  $('#rec-nuova').onclick = modaleNuovaRecensione;
   // ── filtri Catalogo (tempo reale) ──
   $('#cat-q').oninput = e => { S.catFiltri.q = e.target.value; disegnaCatalogo(); };
   $('#cat-ordina').onchange = e => { S.catFiltri.ordina = e.target.value; disegnaCatalogo(); };
