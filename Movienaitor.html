@@ -227,14 +227,21 @@ header .spazio{flex:1}
 .re-riga input{background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); border-radius:8px; padding:7px 9px; font:inherit; font-size:13px}
 .re-riga input[type=text]{flex:1}
 .re-tag{color:var(--oro2)}
-.re-sez{border:1px solid var(--velluto3); border-radius:10px; padding:8px; margin-bottom:10px; background:var(--bg2)}
-.re-sez-cap{display:flex; gap:8px; align-items:center; margin-bottom:6px}
-.re-sez-tit{flex:1; background:none; border:0; border-bottom:1px solid var(--velluto3); color:var(--oro2); font:inherit; font-weight:600; padding:3px 2px}
+.re-sez{border:1px solid var(--velluto3); border-radius:10px; padding:12px 14px; margin-bottom:14px; background:var(--bg2)}
+.re-sez-cap{display:flex; gap:8px; align-items:center; margin-bottom:8px}
+.re-sez-tit{flex:1; background:none; border:0; border-bottom:1px solid var(--velluto3); color:var(--oro2); font:inherit; font-size:16px; font-weight:600; padding:4px 2px}
 .re-sez-tit:focus{outline:0; border-color:var(--oro)}
 .re-sez-btn{display:flex; gap:2px}
-.re-sez-btn button{background:none; border:1px solid var(--velluto3); color:var(--dim); border-radius:6px; cursor:pointer; padding:2px 7px; font-size:12px}
-.re-sez-txt{width:100%; background:none; border:0; color:var(--crema); font:inherit; font-size:13.5px; line-height:1.5; resize:vertical; min-height:56px}
+.re-sez-btn button{background:none; border:1px solid var(--velluto3); color:var(--dim); border-radius:6px; cursor:pointer; padding:3px 8px; font-size:12px}
+.re-sez-txt{width:100%; background:none; border:0; color:var(--crema); font:inherit; font-size:15px; line-height:1.65; resize:vertical; min-height:130px; overflow:hidden}
 .re-sez-txt:focus{outline:0}
+/* editor "stile Word": modale largo, fogli ampi */
+.modale.editor-grande{max-width:min(1000px, 96vw); padding:26px 30px}
+.editor-grande .re-sez{padding:16px 20px; margin-bottom:18px}
+.editor-grande .re-sez-txt{min-height:190px; font-size:15.5px; line-height:1.7}
+.editor-grande .re-sez-tit{font-size:17px}
+.editor-grande .re-sez-ro{margin-bottom:22px}
+.editor-grande .re-testo{font-size:15.5px; line-height:1.7}
 .re-sez-ro{margin-bottom:14px}
 .re-sez-ro h4{margin:0 0 4px; color:var(--oro2); font-size:15px}
 .re-testo{color:var(--crema); font-size:14px; line-height:1.55}
@@ -1426,6 +1433,7 @@ function editorRecensione(recOrig, opts={}){
         <button class="bottone piccolo secondario" id="re-export">⬇ Esporta .md</button>
         ${editabile?`<span style="flex:1"></span>${bozza.creato?`<button class="bottone piccolo secondario" id="re-del" style="color:var(--rosso2); border-color:var(--rosso2)">Elimina</button>`:''}<button class="bottone piccolo" id="re-salva">Salva</button>`:'<span style="flex:1"></span><button class="bottone piccolo" id="re-chiudi2">Chiudi</button>'}
       </div>`);
+    $('#modale').classList.add('editor-grande');
     urlImmagine(m,'locandina').then(u => { const img = $('.re-poster img'); if (u && img){ img.src = u; img.hidden = false; const seg = $('.re-poster .segnaposto'); if (seg) seg.remove(); } });
     $('#re-chiudi').onclick = chiudiModale;
     if ($('#re-chiudi2')) $('#re-chiudi2').onclick = chiudiModale;
@@ -1444,6 +1452,9 @@ function editorRecensione(recOrig, opts={}){
     $('#re-stelle').querySelectorAll('span').forEach(el => {
       el.onclick = ev => { const r = el.getBoundingClientRect(); const half = (ev.clientX - r.left) < r.width/2; voto = (+el.dataset.s)*2 - (half?1:0); dipingi(); };
     });
+    // caselle di testo che crescono col contenuto (stile foglio)
+    const cresci = ta => { ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; };
+    $('#re-sezioni').querySelectorAll('.re-sez-txt').forEach(ta => { cresci(ta); ta.oninput = () => cresci(ta); });
     if ($('#re-collega')) $('#re-collega').onclick = () => { leggiCampi(); modaleCercaFilm(id => collegaTMDB(bozza, id), {titolo: bozza.tmdbId!=null?'Cambia film collegato':'Collega a TMDB', sub:'Scegli il film: sovrascrive i metadati e aggiunge la locandina.', query:(bozza.meta||{}).titolo||''}); };
     $('#re-add-sez').onclick = () => { leggiCampi(); bozza.sezioni.push({titolo:'Nuova sezione', testo:''}); render(); };
     $('#re-sezioni').querySelectorAll('[data-az]').forEach(b => b.onclick = () => {
@@ -1950,7 +1961,7 @@ function agganciaRicerca(){
 }
 
 /* ════════════════════════ MODALI ════════════════════════ */
-function apriModale(html){ $('#modale').innerHTML = html; $('#modale-fondo').hidden = false; }
+function apriModale(html){ $('#modale').innerHTML = html; $('#modale').classList.remove('editor-grande'); $('#modale-fondo').hidden = false; }
 function chiudiModale(){ $('#modale-fondo').hidden = true; }
 
 // conferma generica (sì/no)
