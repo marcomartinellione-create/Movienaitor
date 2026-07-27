@@ -117,7 +117,9 @@ header .spazio{flex:1}
 .rosa .posto .r-velo{position:absolute; inset:0; background:linear-gradient(180deg,transparent 40%,rgba(18,10,13,.9))}
 .rosa .posto .r-rango{position:absolute; top:6px; left:9px; font-family:var(--serif); font-size:20px; color:var(--oro2); text-shadow:0 1px 6px #000}
 .rosa .posto .r-titolo{position:absolute; left:8px; right:8px; bottom:6px; font-size:12px; color:var(--crema); text-shadow:0 1px 4px #000}
-.rosa .posto.vuoto{border-style:dashed; cursor:default; display:flex; align-items:center; justify-content:center; color:var(--dim2); font-size:13px}
+.rosa .posto.vuoto{cursor:default; display:flex; align-items:center; justify-content:center; background:repeating-linear-gradient(135deg,var(--bg2),var(--bg2) 10px,#1c1013 10px,#1c1013 20px)}
+.rosa .posto.vuoto:hover{transform:none; border-color:#4a2c33}
+.rosa .posto.vuoto .cs{font-family:var(--serif); letter-spacing:.14em; font-size:12px; color:var(--oro-dim); text-transform:uppercase; text-align:center; opacity:.85}
 .rosa .posto.proiettato{outline:2px solid var(--oro); outline-offset:-2px}
 
 /* poltrone */
@@ -552,7 +554,7 @@ header .spazio{flex:1}
 <script>
 'use strict';
 /* ════════════════════════ COSTANTI ════════════════════════ */
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.1.1';
 const CONFIG_DEFAULT = {
   tmdbKey:'', omdbKey:'',
   bonusCoralita:0.10, capCoralita:0.30, passoSoddisfazione:0.15, bonusCoppia:1.15,
@@ -1811,13 +1813,17 @@ function disegnaPlatea(){
   });
 }
 
+// casella laterale vuota (posizioni 2-5 senza film): resta visibile con "COMING SOON"
+const cellaVuota = () => '<div class="posto vuoto"><span class="cs">Coming<br>soon</span></div>';
+const rosaVuota = () => Array(4).fill(cellaVuota()).join('');
+
 async function disegnaSala(){
   disegnaPlatea();
   const schermo = $('#schermo'), inner = $('#schermo-inner'), rosaEl = $('#rosa');
   if (!S.presenti.size){
     schermo.classList.remove('aperto');
     inner.innerHTML = `<div class="messaggio">La sala è vuota…<br><small style="font-size:14px; color:var(--dim2)">clicca le poltrone di chi c'è stasera</small></div>`;
-    rosaEl.innerHTML = '';
+    rosaEl.innerHTML = rosaVuota();
     $('#riga-stato').innerHTML = '';
     return;
   }
@@ -1835,7 +1841,7 @@ async function disegnaSala(){
     schermo.classList.remove('aperto');
     inner.innerHTML = `<div class="messaggio">Niente in cartellone stasera<br>
       <small style="font-size:14px; color:var(--dim2)">${motivi || 'le liste dei presenti sono vuote: passate dal Catalogo'}</small></div>`;
-    rosaEl.innerHTML = '';
+    rosaEl.innerHTML = rosaVuota();
   } else {
     const f = scelto.film;
     const rango = ris.rosa.indexOf(scelto) + 1;
@@ -1868,7 +1874,7 @@ async function disegnaSala(){
     const celle = [];
     for (let k = 0; k < 4; k++){
       const o = altri[k];
-      if (!o){ celle.push(`<div class="posto vuoto">—</div>`); continue; }
+      if (!o){ celle.push(cellaVuota()); continue; }
       const primo = o.r.film.tmdbId === primoId;
       celle.push(`<div class="posto" data-id="${o.r.film.tmdbId}" title="${esc(o.r.film.titolo)} — clic per ${primo ? 'rimetterlo sul proiettore' : 'proiettarlo'}">
         <img hidden><div class="segnaposto"></div>
