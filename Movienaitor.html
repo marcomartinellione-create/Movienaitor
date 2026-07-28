@@ -895,33 +895,11 @@ async function dettagliFilm(id){
   };
 }
 
-async function salvaImmagini(d){ // best effort: se il download fallisce restano gli URL remoti
-  if (S.demo) return;
-  // in Electron scarica lato main (niente CORS): più robusto per l'uso offline
-  if (inElectron && window.mvnFS.scaricaImmagine){
-    if (d.posterUrl) await window.mvnFS.scaricaImmagine(d.posterUrl, `posters/${d.tmdbId}.jpg`).catch(()=>{});
-    if (d.sfondoUrl) await window.mvnFS.scaricaImmagine(d.sfondoUrl, `posters/${d.tmdbId}_b.jpg`).catch(()=>{});
-    return;
-  }
-  const scarica = async (url, nome) => {
-    try {
-      const b = await (await fetch(url)).blob();
-      await FS.writeBlob(['posters', nome], b);
-    } catch(e){ console.warn('poster non scaricato', nome, e); }
-  };
-  if (d.posterUrl) await scarica(d.posterUrl, `${d.tmdbId}.jpg`);
-  if (d.sfondoUrl) await scarica(d.sfondoUrl, `${d.tmdbId}_b.jpg`);
-}
+// Le locandine NON vengono più salvate in locale: si caricano sempre dal server TMDB.
+async function salvaImmagini(){ /* niente cache poster: gli URL remoti bastano */ }
 
-async function urlImmagine(voce, tipo){ // tipo: 'locandina' | 'sfondo'
-  const percorso = voce[tipo], url = voce[tipo === 'locandina' ? 'posterUrl' : 'sfondoUrl'];
-  if (percorso){
-    if (S.urlCache.has(percorso)) return S.urlCache.get(percorso) || url || null;
-    const u = await FS.fileURL(percorso.split('/'));
-    S.urlCache.set(percorso, u);
-    if (u) return u;
-  }
-  return url || null;
+async function urlImmagine(voce, tipo){ // tipo: 'locandina' | 'sfondo' → sempre dal server
+  return voce[tipo === 'locandina' ? 'posterUrl' : 'sfondoUrl'] || null;
 }
 
 /* ════════════════════════ LOGICA (SPECIFICA §6-8) ════════════════════════ */
