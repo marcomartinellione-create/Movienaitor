@@ -213,6 +213,16 @@ Dalla **v1.2.0**: **Lista completa** in Sala (tutti i film filtrati, in ordine d
 pertinenza, proiettabili anche fuori Top 5), **ricerca per titolo** in Pronti alla
 visione, **🐞 Segnalazioni** (bug/idee da tutti, gestione dell'host).
 
+## App mobile (`app-mobile/`)
+
+APK Capacitor, web in `www/index.html` (file unico, come il desktop), plugin nativo SAF in
+`native/MvnSafPlugin.java`. Build in cloud: GitHub Actions → "Build APK". Dalla v1.2.0 ha
+**Sala** (stessa `classifica()` del desktop, senza Play: `storico.json` lo scrive l'host) e
+**🐞 Segnala**. Per file arbitrari nella cartella il plugin espone
+`leggiPercorso`/`scriviPercorso`/`elencaJson` (JS: `fsLeggiPercorso`/`fsScriviPercorso`/
+`fsElencaJson`). Per provare la UI nel browser serve un finto `window.Capacitor.Plugins.MvnSaf`
+(niente SAF fuori dall'APK): si stubba, si chiama `caricaCartella('fake')` e `entra(slug)`.
+
 ## Punti aperti / idee
 
 - Attesa: oggi conta **tutte** le serate dall'ultima "vittoria" (anche assenti) — Marco

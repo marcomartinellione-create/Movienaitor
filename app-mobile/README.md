@@ -3,7 +3,19 @@
 App Android minimale: **entra → scegli profilo → cerca su TMDB → aggiungi/togli film**
 alla tua lista. Legge e scrive i JSON di una **cartella locale del telefono** tenuta
 sincronizzata con la cartella Google Drive del gruppo (via un'app di sync, es. Autosync
-o FolderSync). Scrive **solo** il tuo `profili/<slug>.json` (regola anti-conflitto).
+o FolderSync). Scrive **solo** il tuo `profili/<slug>.json`, la tua `recensioni/<slug>/`
+e il tuo `segnalazioni/<slug>.json` (regola anti-conflitto).
+
+Tre sezioni: **🎬 Sala**, **🔖 Lista**, **📝 Recensioni**, più il pulsante **🐞 Segnala**.
+
+- **Sala** (v1.2.0) — stessa logica del desktop: si toccano i nomi di chi c'è stasera,
+  filtri della serata (durata / regista / genere), il film in cartellone col suo rango e
+  punteggio, gli altri in classifica e la **lista completa** in ordine di pertinenza (un
+  tocco porta in cartellone anche un film fuori dalla Top 5). **Niente Play**: registrare
+  la visione resta al PC della serata, perché `storico.json` lo scrive solo l'host.
+- **🐞 Segnala** (v1.2.0) — bug / suggerimenti / idee: finiscono in
+  `segnalazioni/<slug>.json`, l'host li gestisce dal PC. Ognuno rivede lo stato delle
+  proprie e può ritirarle.
 
 Wrapper **Capacitor**; il web sta in `www/` (riusa la UI della versione PWA).
 
@@ -73,5 +85,10 @@ tantum) — NON serve rifarlo.
   sceglie la cartella col selettore di sistema; l'app prende un permesso persistente e
   legge/scrive via `DocumentFile`/`ContentResolver`. Nessun permesso globale di storage,
   nessuna dipendenza dalla versione di Android.
+- **Plugin**: oltre a `pickFolder/loadFolder/read/write` e ai metodi delle recensioni, dal
+  v1.2.0 ci sono i generici `leggiPercorso`/`scriviPercorso`/`elencaJson` (percorso
+  relativo alla cartella scelta, sottocartelle create al volo) — li usano le segnalazioni.
+  Lato JS gli helper sono `fsLeggiPercorso` / `fsScriviPercorso` / `fsElencaJson`, che
+  degradano a vuoto se l'APK installato ha un plugin più vecchio.
 - **Locandine**: non vengono scaricate da mobile (restano gli URL remoti); ci pensa il PC.
 - **Chiavi TMDB/OMDb**: lette da `config.json` nella cartella (si impostano dal PC).

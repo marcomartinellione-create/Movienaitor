@@ -30,6 +30,9 @@ import java.nio.charset.StandardCharsets;
  *  - loadFolder({ uri })   -> { config, profili:[{name,uri,data}] }
  *  - read({ uri })         -> { data }
  *  - write({ uri, data })  -> {}
+ *  - leggiPercorso({ uri, percorso })       -> { data|null }   (percorso relativo alla cartella)
+ *  - scriviPercorso({ uri, percorso, data })-> { uri }         (crea le sottocartelle)
+ *  - elencaJson({ uri, cartella })          -> { files:[{nome,uri,data}] }
  */
 @CapacitorPlugin(name = "MvnSaf")
 public class MvnSafPlugin extends Plugin {
@@ -185,6 +188,67 @@ public class MvnSafPlugin extends Plugin {
         } catch (Exception e) { call.reject(e.getMessage(), e); }
     }
 
+    // Legge un file per percorso relativo alla cartella scelta ("segnalazioni/marco.json").
+    // Torna { data: null } se non esiste: chi chiama non deve gestire eccezioni.
+    @PluginMethod
+    public void leggiPercorso(PluginCall call) {
+        String uriStr = call.getString("uri");
+        String percorso = call.getString("percorso");
+        if (uriStr == null || percorso == null) { call.reject("parametri mancanti"); return; }
+        try {
+            DocumentFile root = DocumentFile.fromTreeUri(getContext(), Uri.parse(uriStr));
+            DocumentFile f = risolvi(root, percorso, false);
+            JSObject o = new JSObject();
+            o.put("data", (f != null && f.isFile()) ? readText(f.getUri()) : null);
+            call.resolve(o);
+        } catch (Exception e) { call.reject(e.getMessage(), e); }
+    }
+
+    // Scrive un file per percorso relativo, creando le sottocartelle mancanti.
+    @PluginMethod
+    public void scriviPercorso(PluginCall call) {
+        String uriStr = call.getString("uri");
+        String percorso = call.getString("percorso");
+        String data = call.getString("data", "");
+        if (uriStr == null || percorso == null) { call.reject("parametri mancanti"); return; }
+        try {
+            DocumentFile root = DocumentFile.fromTreeUri(getContext(), Uri.parse(uriStr));
+            DocumentFile f = risolvi(root, percorso, true);
+            if (f == null) { call.reject("impossibile creare il file"); return; }
+            writeText(f.getUri(), data);
+            JSObject o = new JSObject();
+            o.put("uri", f.getUri().toString());
+            call.resolve(o);
+        } catch (Exception e) { call.reject(e.getMessage(), e); }
+    }
+
+    // Elenca i .json di una sottocartella → [{nome, uri, data}] (vuoto se non esiste).
+    @PluginMethod
+    public void elencaJson(PluginCall call) {
+        String uriStr = call.getString("uri");
+        String cartella = call.getString("cartella");
+        if (uriStr == null || cartella == null) { call.reject("parametri mancanti"); return; }
+        try {
+            DocumentFile root = DocumentFile.fromTreeUri(getContext(), Uri.parse(uriStr));
+            JSArray out = new JSArray();
+            DocumentFile dir = (root == null) ? null : trovaFiglio(root, cartella);
+            if (dir != null && dir.isDirectory()) {
+                for (DocumentFile f : dir.listFiles()) {
+                    String name = f.getName();
+                    if (name == null || !f.isFile() || !name.endsWith(".json")) continue;
+                    JSObject o = new JSObject();
+                    o.put("nome", name);
+                    o.put("uri", f.getUri().toString());
+                    o.put("data", readText(f.getUri()));
+                    out.put(o);
+                }
+            }
+            JSObject ret = new JSObject();
+            ret.put("files", out);
+            call.resolve(ret);
+        } catch (Exception e) { call.reject(e.getMessage(), e); }
+    }
+
     @PluginMethod
     public void cancellaDoc(PluginCall call) {
         String uriStr = call.getString("uri");
@@ -199,6 +263,22 @@ public class MvnSafPlugin extends Plugin {
         if (parent == null) return null;
         for (DocumentFile f : parent.listFiles()) if (nome.equals(f.getName())) return f;
         return null;
+    }
+    // "a/b/c.json" → il DocumentFile del file, creando (se crea=true) le cartelle mancanti.
+    private DocumentFile risolvi(DocumentFile root, String percorso, boolean crea) {
+        if (root == null) return null;
+        String[] parti = percorso.split("/");
+        DocumentFile d = root;
+        for (int i = 0; i < parti.length - 1; i++) {
+            if (parti[i].isEmpty()) continue;
+            DocumentFile n = crea ? trovaOCrea(d, parti[i]) : trovaFiglio(d, parti[i]);
+            if (n == null || !n.isDirectory()) return null;
+            d = n;
+        }
+        String nome = parti[parti.length - 1];
+        DocumentFile f = trovaFiglio(d, nome);
+        if (f == null && crea) f = d.createFile("application/json", nome);
+        return f;
     }
     private DocumentFile trovaOCrea(DocumentFile parent, String nome) {
         DocumentFile d = trovaFiglio(parent, nome);
