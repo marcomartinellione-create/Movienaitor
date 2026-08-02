@@ -54,6 +54,37 @@ function must(file){ if (!fs.existsSync(file)){ console.error('MANCA', file); pr
   }
 }
 
+// 3b) aggiornamento in-app: permesso di installare APK + percorsi del FileProvider.
+//     L'APK nuovo arriva dalla cartella condivisa, viene copiato nella cache e passato
+//     all'installer di sistema tramite il FileProvider di Capacitor.
+{
+  const man = 'android/app/src/main/AndroidManifest.xml';
+  must(man);
+  let s = fs.readFileSync(man, 'utf8');
+  if (!s.includes('REQUEST_INSTALL_PACKAGES')){
+    s = s.replace(/<\/manifest>/,
+      '    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n</manifest>');
+    fs.writeFileSync(man, s);
+    console.log('permesso REQUEST_INSTALL_PACKAGES aggiunto');
+  }
+  if (!s.includes('.fileprovider')){
+    console.error('MANCA il FileProvider nel manifest di Capacitor: l\'aggiornamento in-app non funzionerebbe.');
+    process.exit(1);
+  }
+  // il file_paths di Capacitor non espone la cache: lo riscrivo tenendo i suoi percorsi
+  const fp = 'android/app/src/main/res/xml/file_paths.xml';
+  fs.mkdirSync('android/app/src/main/res/xml', { recursive: true });
+  fs.writeFileSync(fp, `<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-path name="my_images" path="." />
+    <cache-path name="my_cache_images" path="." />
+    <files-path name="my_files" path="." />
+    <cache-path name="mvn_aggiornamenti" path="aggiornamenti/" />
+</paths>
+`);
+  console.log('file_paths.xml → cache-path per gli aggiornamenti');
+}
+
 // 4) versionCode crescente (necessario per aggiornare l'app installata) + versionName
 {
   const g = 'android/app/build.gradle';

@@ -199,6 +199,15 @@
   .sg-chip{flex:0 0 auto; padding:2px 8px; border-radius:999px; border:1px solid var(--linea); font-size:11px; color:var(--dim)}
   .sg-chip.st-fatto{color:var(--ok); border-color:var(--ok)}
   .sg-chip.st-in_corso{color:var(--oro2); border-color:var(--oro)}
+
+  /* ── Aggiornamento dell'APK ── */
+  .upd{display:flex; align-items:center; gap:9px; margin:2px 0 10px; padding:10px 12px; border-radius:12px;
+    border:1px solid var(--oro); background:linear-gradient(180deg,#33231a,#241619); color:var(--oro2); font-size:13px; width:100%; text-align:left}
+  .upd .frecc{font-size:16px}
+  .upd .txt{flex:1; min-width:0}
+  .upd .txt b{display:block; color:var(--testo); font-size:13.5px}
+  .upd .txt span{color:var(--dim); font-size:11.5px}
+  .upd .vai{flex:0 0 auto; color:var(--oro2)}
 </style>
 
 <div id="app">
@@ -236,6 +245,7 @@
 
     <!-- 3) APP -->
     <section class="schermo" id="sc-app">
+      <button class="upd" id="m-upd" hidden></button>
       <div class="segmenti" id="segmenti">
         <button class="seg" data-pan="sala">🎬 Sala</button>
         <button class="seg on" data-pan="lista">🔖 Lista</button>
@@ -294,7 +304,7 @@ const S = { treeUri:null, config:{}, profili:[], me:null, storico:[],
   filtri:{ q:'', ordina:'aggiunto', dir:'desc', minDes:0, genere:[], annoDa:null, annoA:null },
   recensioni:[], recUtente:null, recFiltri:{ q:'', ordina:'modificato', dir:'desc' }, pan:'lista',
   presenti:new Set(), fSala:{ durata:null, genere:[], regista:'' }, proiettato:null, tuttiSala:[],
-  segnalazioni:[], segnStato:{}, segnEliminate:[] };
+  segnalazioni:[], segnStato:{}, segnEliminate:[], aggiornamento:null };
 const SEZIONI_DEFAULT = ['Introduzione', 'Che ne penso', 'Momento preferito', 'Messaggio', 'A chi lo consiglio'];
 const stelleLetterbox = v => { v = v||0; const p = Math.floor(v/2), m = (v%2)===1; return ('★'.repeat(p) + (m?'½':'')) || '—'; };
 const GENERI_TMDB = ['Azione','Avventura','Animazione','Commedia','Crime','Documentario','Dramma','Famiglia','Fantasy','Storia','Horror','Musica','Mistero','Romance','Fantascienza','Film TV','Thriller','Guerra','Western'];
@@ -428,6 +438,7 @@ async function caricaCartella(treeUri){
   S.storico.sort((a,b)=> String(a.data||'').localeCompare(String(b.data||'')));
   await caricaRecensioniMobile();
   await caricaSegnalazioniM();
+  controllaAggiornamento();   // non blocca l'avvio
 
   LS.set('tree', treeUri);
   disegnaProfili();
@@ -1022,6 +1033,69 @@ function modaleSegnalaM(){
   agg();
 }
 
+/* ══════════════════ AGGIORNAMENTO DELL'APK ══════════════════ */
+// Marco pubblica il nuovo APK con "Pubblica APK.bat": finisce in <cartella>/Latest APK/
+// insieme a versione.json. L'app se ne accorge e propone di installarlo.
+const APK_CARTELLA = 'Latest APK';
+// confronto "1.10.0" > "1.9.3" (numerico pezzo per pezzo, non alfabetico)
+function versioneMaggiore(a, b){
+  const pa = String(a||'0').split('.').map(n=>parseInt(n,10)||0);
+  const pb = String(b||'0').split('.').map(n=>parseInt(n,10)||0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++){
+    const x = pa[i]||0, y = pb[i]||0;
+    if (x !== y) return x > y;
+  }
+  return false;
+}
+async function versioneInstallata(){
+  try { const r = await saf().versioneApp(); if (r && r.versione) return r.versione; } catch(e){}
+  return APP_VERSION;
+}
+async function controllaAggiornamento(){
+  S.aggiornamento = null;
+  const box = $('#m-upd'); if (box) box.hidden = true;
+  const txt = await fsLeggiPercorso(APK_CARTELLA + '/versione.json');
+  if (!txt) return;
+  let j; try { j = JSON.parse(txt); } catch(e){ return; }
+  if (!j || !j.versione || !j.file) return;
+  const corrente = await versioneInstallata();
+  if (!versioneMaggiore(j.versione, corrente)) return;
+  S.aggiornamento = {...j, corrente};
+  if (box){
+    box.hidden = false;
+    box.innerHTML = `<span class="frecc">↑</span>
+      <span class="txt"><b>Aggiornamento disponibile — ${esc(j.versione)}</b>
+      <span>hai la ${esc(corrente)}${j.note ? ' · '+esc(String(j.note).slice(0,60)) : ''}</span></span>
+      <span class="vai">Installa ›</span>`;
+  }
+}
+function pannelloAggiornamento(){
+  const a = S.aggiornamento; if (!a) return;
+  apriModale(`
+    <h3>Aggiornamento disponibile</h3>
+    <div class="campo-r"><label>Versione in uso</label><span>${esc(a.corrente)}</span></div>
+    <div class="campo-r"><label>Nuova versione</label><span style="color:var(--oro2)">${esc(a.versione)}</span></div>
+    ${a.note ? `<div class="meta" style="margin:8px 0">${esc(a.note)}</div>` : ''}
+    <p class="meta" style="line-height:1.6">Installa sopra a quella che hai: i tuoi dati non si toccano, stanno nella cartella condivisa. Android chiederà conferma.</p>
+    <div class="m-az"><button class="ghost" id="up-dopo">Più tardi</button><button class="primario" id="up-ok">⬇ Installa</button></div>`);
+  $('#up-dopo').onclick = chiudiModale;
+  $('#up-ok').onclick = async () => {
+    const b = $('#up-ok'); b.disabled = true; b.innerHTML = '<span class="spin"></span> preparo…';
+    try {
+      const r = await saf().installaApk({ uri:S.treeUri, percorso: APK_CARTELLA + '/' + a.file });
+      if (r && r.permesso === false){
+        chiudiModale();
+        toast('Attiva «Installa app sconosciute» per Movienaitor, poi riprova', true);
+        return;
+      }
+      chiudiModale();
+    } catch(e){
+      b.disabled = false; b.textContent = '⬇ Installa';
+      toast('Non riuscito: ' + (e.message || e), true);
+    }
+  };
+}
+
 /* ══════════════════ PANNELLO FILTRI (bottom sheet) ══════════════════ */
 function chipsGeneri(sel, attr){
   return GENERI_TMDB.map(g => `<button class="pchip ${sel.includes(g)?'con':''}" data-${attr}="${esc(g)}">${sel.includes(g)?'✓ ':''}${esc(g)}</button>`).join('');
@@ -1080,7 +1154,18 @@ async function apriImpostazioni(){
     <div class="etich">BONUS GENERE <span style="color:var(--dim);letter-spacing:0">— a parità di priorità sposta la scelta verso i generi che ti piacciono e via da quelli che eviti. Solo spareggio, non cambia la priorità.</span></div>
     <div class="etich" style="margin-top:6px">Tocca per ciclare: <b style="color:#9bbf90">verde ✓ mi piace</b> · <b style="color:#e08a86">rosso ✗ evita</b></div>
     <div class="compagnia" id="i-gen"></div>
+    <div class="etich" style="margin-top:16px">VERSIONE</div>
+    <div class="campo-r"><label id="i-ver">Movienaitor mobile v${esc(APP_VERSION)}</label>
+      <button class="inp" id="i-agg">Cerca aggiornamenti</button></div>
     <div class="m-az"><button class="primario" id="i-chiudi">Fatto</button></div>`);
+  versioneInstallata().then(v => { const el = $('#i-ver'); if (el) el.textContent = 'Movienaitor mobile v'+v; });
+  $('#i-agg').onclick = async () => {
+    const b = $('#i-agg'); b.disabled = true; b.innerHTML = '<span class="spin"></span>';
+    await controllaAggiornamento();
+    b.disabled = false; b.textContent = 'Cerca aggiornamenti';
+    if (S.aggiornamento) pannelloAggiornamento();
+    else toast('Sei già all\'ultima versione ✓');
+  };
   render();
   $('#i-gen').onclick = async e => { const b = e.target.closest('[data-gen]'); if(!b) return; const g = b.dataset.gen;
     try {
@@ -1293,6 +1378,9 @@ $('#m-presenti').onclick = e => {
 $('#m-btn-filtri-sala').onclick = apriFiltriSala;
 $('#m-lista-completa').onclick = modaleListaCompletaM;
 $('#m-segnala').onclick = modaleSegnalaM;
+$('#m-upd').onclick = pannelloAggiornamento;
+// tornando in primo piano (dopo una sync del Drive) ricontrollo se c'è un APK nuovo
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.treeUri) controllaAggiornamento(); });
 // segmenti Watch List / Recensioni
 $('#segmenti').onclick = e => { const b = e.target.closest('.seg'); if (b) setPan(b.dataset.pan); };
 $('#m-rec-utenti').onclick = e => { const b = e.target.closest('[data-u]'); if (b){ S.recUtente = b.dataset.u; disegnaRecMobile(); } };

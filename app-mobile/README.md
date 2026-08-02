@@ -19,7 +19,38 @@ Tre sezioni: **🎬 Sala**, **🔖 Lista**, **📝 Recensioni**, più il pulsant
 
 Wrapper **Capacitor**; il web sta in `www/` (riusa la UI della versione PWA).
 
-## Come si ottiene l'APK
+## Pubblicare un aggiornamento (il modo normale)
+
+Doppio clic su **`Pubblica APK.bat`**, scrivi la versione (o `+` per alzare l'ultimo
+numero) ed eventualmente una nota. Lo script fa tutto:
+
+1. scrive la versione in `package.json` e in `APP_VERSION` di `www/index.html`;
+2. committa e pusha `app-mobile/`, poi lancia la build in cloud e aspetta;
+3. scarica l'APK e lo copia in **`G:\My Drive\4 - Movienaitor\Latest APK`** insieme a
+   un `versione.json`; tiene solo gli ultimi 3 APK.
+
+Sui telefoni, appena il Drive si sincronizza, compare in cima **«Aggiornamento
+disponibile»**: un tocco, Android chiede conferma e installa sopra. (La prima volta va
+concesso «Installa app sconosciute» per Movienaitor: l'app apre da sola l'impostazione.)
+C'è anche **⚙ → Cerca aggiornamenti** per controllare a mano.
+
+```powershell
+# equivalenti da riga di comando
+node tools/pubblica-apk.js 1.3.0 --note "Sala e segnalatore bug"
+node tools/pubblica-apk.js +            # alza di uno l'ultimo numero
+node tools/pubblica-apk.js 1.3.0 --prova   # controlla tutto senza toccare niente
+node tools/pubblica-apk.js 1.3.0 --locale  # compila sul PC invece che in cloud
+```
+
+La cartella di destinazione sta in **`pubblica.txt`** (una riga, il percorso). La build in
+cloud usa `gh` (GitHub CLI) già autenticato; `--locale` usa `build-apk.ps1` e richiede la
+toolchain Android (`setup-android.ps1`).
+
+> Perché l'aggiornamento sopra funzioni la firma deve restare la stessa: ci pensa il
+> keystore fisso in `keystore/debug.keystore` (vedi sotto). Il `versionCode` cresce da
+> solo a ogni build.
+
+## Come si ottiene l'APK a mano
 
 ### A) Build in cloud — niente da installare (consigliata)
 1. **GitHub → Actions → "Build APK (Movienaitor mobile)"**.
@@ -58,6 +89,9 @@ le sue dipendenze), le successive molto più rapide.
 ## Struttura
 ```
 app-mobile/
+  Pubblica APK.bat        pubblica un aggiornamento (chiede la versione)
+  tools/pubblica-apk.js   build (cloud o locale) + copia in "Latest APK" + versione.json
+  pubblica.txt            dove pubblicare (una riga: il percorso della cartella)
   package.json            dipendenze Capacitor (@capacitor/core, android, cli)
   capacitor.config.json   appId com.movienaitor.app, webDir=www
   www/index.html          l'app (UI + strato dati via plugin nativo SAF)
@@ -90,5 +124,10 @@ tantum) — NON serve rifarlo.
   relativo alla cartella scelta, sottocartelle create al volo) — li usano le segnalazioni.
   Lato JS gli helper sono `fsLeggiPercorso` / `fsScriviPercorso` / `fsElencaJson`, che
   degradano a vuoto se l'APK installato ha un plugin più vecchio.
+- **Aggiornamento in-app**: l'app legge `Latest APK/versione.json` nella cartella
+  condivisa; se la versione è più alta di quella installata mostra il banner. Installando,
+  il plugin copia l'APK nella cache e lo passa all'installer di sistema via **FileProvider**
+  (`installaApk`). `patch-android.js` aggiunge il permesso `REQUEST_INSTALL_PACKAGES` e i
+  `file_paths` con la cache. Niente store, niente server: solo la cartella del gruppo.
 - **Locandine**: non vengono scaricate da mobile (restano gli URL remoti); ci pensa il PC.
 - **Chiavi TMDB/OMDb**: lette da `config.json` nella cartella (si impostano dal PC).

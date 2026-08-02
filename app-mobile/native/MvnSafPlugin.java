@@ -3,8 +3,11 @@ package com.movienaitor.app;
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
+import android.provider.Settings;
 
 import androidx.activity.result.ActivityResult;
+import androidx.core.content.FileProvider;
 import androidx.documentfile.provider.DocumentFile;
 
 import com.getcapacitor.JSArray;
@@ -16,6 +19,8 @@ import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +38,8 @@ import java.nio.charset.StandardCharsets;
  *  - leggiPercorso({ uri, percorso })       -> { data|null }   (percorso relativo alla cartella)
  *  - scriviPercorso({ uri, percorso, data })-> { uri }         (crea le sottocartelle)
  *  - elencaJson({ uri, cartella })          -> { files:[{nome,uri,data}] }
+ *  - versioneApp()                          -> { versione, codice }
+ *  - installaApk({ uri, percorso })         -> { permesso, avviato }  (aggiornamento dell'APK)
  */
 @CapacitorPlugin(name = "MvnSaf")
 public class MvnSafPlugin extends Plugin {
@@ -246,6 +253,74 @@ public class MvnSafPlugin extends Plugin {
             JSObject ret = new JSObject();
             ret.put("files", out);
             call.resolve(ret);
+        } catch (Exception e) { call.reject(e.getMessage(), e); }
+    }
+
+    // Versione installata (versionName del build.gradle), per il confronto con versione.json.
+    @PluginMethod
+    public void versioneApp(PluginCall call) {
+        JSObject o = new JSObject();
+        try {
+            android.content.pm.PackageInfo pi = getContext().getPackageManager()
+                    .getPackageInfo(getContext().getPackageName(), 0);
+            o.put("versione", pi.versionName);
+            o.put("codice", (Build.VERSION.SDK_INT >= 28) ? pi.getLongVersionCode() : pi.versionCode);
+        } catch (Exception e) { o.put("versione", null); }
+        call.resolve(o);
+    }
+
+    /**
+     * Installa un APK preso dalla cartella condivisa (es. "Latest APK/Movienaitor-1.3.0.apk").
+     * Lo copia nella cache dell'app e lo passa all'installer di sistema via FileProvider:
+     * un content:// dell'installer va sempre bene, quello del provider SAF no su tutti i telefoni.
+     * Se manca il consenso "installa app sconosciute" apre le impostazioni e torna {permesso:false}.
+     */
+    @PluginMethod
+    public void installaApk(PluginCall call) {
+        String uriStr = call.getString("uri");
+        String percorso = call.getString("percorso");
+        if (uriStr == null || percorso == null) { call.reject("parametri mancanti"); return; }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                    && !getContext().getPackageManager().canRequestPackageInstalls()) {
+                Intent perm = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        Uri.parse("package:" + getContext().getPackageName()));
+                perm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(perm);
+                JSObject o = new JSObject();
+                o.put("permesso", false);
+                call.resolve(o);
+                return;
+            }
+            DocumentFile root = DocumentFile.fromTreeUri(getContext(), Uri.parse(uriStr));
+            DocumentFile f = risolvi(root, percorso, false);
+            if (f == null || !f.isFile()) { call.reject("APK non trovato: " + percorso); return; }
+
+            File dir = new File(getContext().getCacheDir(), "aggiornamenti");
+            if (!dir.exists() && !dir.mkdirs()) { call.reject("cache non scrivibile"); return; }
+            File apk = new File(dir, "movienaitor-update.apk");
+            InputStream is = getContext().getContentResolver().openInputStream(f.getUri());
+            if (is == null) { call.reject("APK non leggibile"); return; }
+            try {
+                FileOutputStream os = new FileOutputStream(apk);
+                try {
+                    byte[] buf = new byte[65536];
+                    int n;
+                    while ((n = is.read(buf)) > 0) os.write(buf, 0, n);
+                } finally { os.close(); }
+            } finally { is.close(); }
+
+            Uri content = FileProvider.getUriForFile(getContext(),
+                    getContext().getPackageName() + ".fileprovider", apk);
+            Intent i = new Intent(Intent.ACTION_VIEW);
+            i.setDataAndType(content, "application/vnd.android.package-archive");
+            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(i);
+
+            JSObject o = new JSObject();
+            o.put("permesso", true);
+            o.put("avviato", true);
+            call.resolve(o);
         } catch (Exception e) { call.reject(e.getMessage(), e); }
     }
 

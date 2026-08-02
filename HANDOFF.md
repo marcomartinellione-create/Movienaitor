@@ -223,6 +223,15 @@ APK Capacitor, web in `www/index.html` (file unico, come il desktop), plugin nat
 `fsElencaJson`). Per provare la UI nel browser serve un finto `window.Capacitor.Plugins.MvnSaf`
 (niente SAF fuori dall'APK): si stubba, si chiama `caricaCartella('fake')` e `entra(slug)`.
 
+**Pubblicare l'APK** (come la Compila.bat della SustEner): `app-mobile\Pubblica APK.bat`
+→ chiede la versione → `tools/pubblica-apk.js` scrive la versione in `package.json` +
+`APP_VERSION`, committa e pusha `app-mobile/`, lancia il workflow in cloud, aspetta,
+scarica l'artifact e copia `Movienaitor-<v>.apk` + `versione.json` nella cartella di
+`pubblica.txt` (`G:\My Drive\4 - Movienaitor\Latest APK`). L'app legge quel
+`versione.json`, mostra il banner e installa via FileProvider (`installaApk`).
+`--prova` fa un giro a vuoto, `--locale` compila sul PC. **Attenzione: lo script pusha**
+— si lancia solo quando Marco vuole pubblicare (regola d'oro #1).
+
 ## Punti aperti / idee
 
 - Attesa: oggi conta **tutte** le serate dall'ultima "vittoria" (anche assenti) — Marco
