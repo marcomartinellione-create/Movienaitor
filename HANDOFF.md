@@ -217,8 +217,11 @@ visione, **🐞 Segnalazioni** (bug/idee da tutti, gestione dell'host).
 
 APK Capacitor, web in `www/index.html` (file unico, come il desktop), plugin nativo SAF in
 `native/MvnSafPlugin.java`. Build in cloud: GitHub Actions → "Build APK". Dalla v1.2.0 ha
-**Sala** (stessa `classifica()` del desktop, senza Play: `storico.json` lo scrive l'host) e
-**🐞 Segnala**. Per file arbitrari nella cartella il plugin espone
+**Sala** (stessa `classifica()` del desktop, senza Play: `storico.json` lo scrive l'host —
+poltrone in velluto `poltronaSVG`/`disegnaPlateaM` portate dal desktop; niente mensola 2-5,
+solo il cartellone + "lista completa"), **Lista** divisa in *Da vedere*/*Già visti* via
+`entryAttiva` (con "rimetti in lista" che azzera `aggiunto`), login che **ricorda l'ultimo
+profilo sbloccato** (`LS 'sbloccato'`; password richiesta solo al cambio) e **🐞 Segnala**. Per file arbitrari nella cartella il plugin espone
 `leggiPercorso`/`scriviPercorso`/`elencaJson` (JS: `fsLeggiPercorso`/`fsScriviPercorso`/
 `fsElencaJson`). Per provare la UI nel browser serve un finto `window.Capacitor.Plugins.MvnSaf`
 (niente SAF fuori dall'APK): si stubba, si chiama `caricaCartella('fake')` e `entra(slug)`.

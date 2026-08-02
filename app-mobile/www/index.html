@@ -11,6 +11,7 @@
     --testo:#f3e9e0; --dim:#b39a92; --ok:#7d9b76;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  [hidden]{display:none !important}
   html,body{margin:0}
   body{
     background:radial-gradient(120% 80% at 50% -10%, #26141a 0%, var(--bg) 60%);
@@ -165,10 +166,20 @@
   .re-dove-file input{flex:1; background:var(--bg2); border:1px solid var(--linea); color:var(--testo); border-radius:9px; padding:8px 10px; font:inherit; font-size:13px}
 
   /* ── Sala (mobile) ── */
-  .presenti{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:4px}
-  .pres{display:flex; align-items:center; gap:6px; padding:5px 11px; border-radius:999px; border:1px solid var(--linea); background:var(--bg2); color:var(--dim); font-size:12.5px}
-  .pres.on{border-color:var(--oro); color:var(--oro2); background:#2a1b16}
-  .pres .pall{width:12px; height:12px; border-radius:50%; box-shadow:inset 0 0 0 1px #0006}
+  .platea{display:flex; flex-wrap:wrap; justify-content:center; gap:6px 8px; padding:12px 4px 6px; margin-bottom:2px;
+    background:radial-gradient(65% 95% at 50% 0%, rgba(74,40,48,.22), transparent 72%); border-radius:16px}
+  .poltrona{width:62px; text-align:center; padding-top:4px; transition:transform .12s}
+  .poltrona.assegnata{cursor:pointer}
+  .poltrona.assegnata:active{transform:translateY(-2px)}
+  .poltrona svg{width:100%; display:block; filter:drop-shadow(0 4px 6px rgba(0,0,0,.4))}
+  .poltrona .nome{font-size:11px; color:var(--dim); margin-top:2px; letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .poltrona.presente .nome{color:var(--oro2)}
+  /* sotto-menù (Watch List: da vedere / già visti) */
+  .sotto-menu{display:flex; gap:6px; margin:2px 0 10px}
+  .smtab{flex:1; background:var(--bg2); border:1px solid var(--linea); color:var(--dim); border-radius:10px; padding:8px; font-size:13px; font-weight:600}
+  .smtab.on{border-color:var(--oro); color:var(--oro2); background:#2a1b16}
+  .smtab .n{opacity:.65; font-weight:400}
+  .film .visto-tag{color:var(--ok)}
   .cartellone{position:relative; border:1px solid var(--oro); border-radius:14px; overflow:hidden; background:var(--card); margin:10px 0 4px; min-height:150px}
   .cartellone .sfondo{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.55}
   .cartellone .velo{position:absolute; inset:0; background:linear-gradient(180deg,#140a0c22 20%,#140a0ceb 85%)}
@@ -254,10 +265,9 @@
 
       <div id="pan-sala" hidden>
         <div class="sezione"><span class="grow">Chi c'è stasera <span id="m-conta-pres"></span></span><button class="f-btn" id="m-btn-filtri-sala">≡ filtri</button></div>
-        <div class="presenti" id="m-presenti"></div>
+        <div class="platea" id="m-platea"></div>
         <div id="m-cartellone"></div>
-        <div class="sezione"><span class="grow">Gli altri in classifica</span><button class="f-btn" id="m-lista-completa">📋 lista completa</button></div>
-        <div id="m-rosa"></div>
+        <button class="ghost" id="m-lista-completa" style="width:100%; margin-top:8px">📋 Lista completa</button>
         <div class="stato-sala" id="m-stato-sala"></div>
       </div>
 
@@ -267,6 +277,10 @@
         </div>
         <div id="risultati"></div>
         <div class="sezione"><span class="grow">La mia lista <span id="conta-lista"></span></span><button class="f-btn" id="btn-filtri">≡ filtri</button></div>
+        <div class="sotto-menu" id="m-lista-tabs">
+          <button class="smtab on" data-vista="daVedere">Da vedere <span class="n" id="m-conta-dav"></span></button>
+          <button class="smtab" data-vista="visti">Già visti <span class="n" id="m-conta-vis"></span></button>
+        </div>
         <div id="mia-lista"></div>
       </div>
 
@@ -303,6 +317,7 @@ const CONFIG_DEFAULT = { bonusCoralita:0.10, capCoralita:0.30, passoSoddisfazion
 const S = { treeUri:null, config:{}, profili:[], me:null, storico:[],
   filtri:{ q:'', ordina:'aggiunto', dir:'desc', minDes:0, genere:[], annoDa:null, annoA:null },
   recensioni:[], recUtente:null, recFiltri:{ q:'', ordina:'modificato', dir:'desc' }, pan:'lista',
+  listaVista:'daVedere',
   presenti:new Set(), fSala:{ durata:null, genere:[], regista:'' }, proiettato:null, tuttiSala:[],
   segnalazioni:[], segnStato:{}, segnEliminate:[], aggiornamento:null };
 const SEZIONI_DEFAULT = ['Introduzione', 'Che ne penso', 'Momento preferito', 'Messaggio', 'A chi lo consiglio'];
@@ -318,6 +333,7 @@ function migraGeneri(p){
 }
 
 const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
 const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const LS = { get:k=>{try{return localStorage.getItem('mvna_'+k)}catch(e){return null}}, set:(k,v)=>{try{localStorage.setItem('mvna_'+k,v)}catch(e){}} };
 
@@ -444,12 +460,75 @@ async function caricaCartella(treeUri){
   disegnaProfili();
   $('#btn-indietro').style.display = 'none';
   schermo('sc-chi');
-  // ricorda l'utente selezionato: se c'è, entra da solo (chiede la password se serve)
+  // ricorda l'ultimo account: se è quello già sbloccato in passato, entra da solo senza
+  // richiedere la password (si richiede solo al CAMBIO profilo). La password qui è solo
+  // anti-errore (in chiaro nel JSON), quindi ricordare lo sblocco è accettabile.
   const ricordato = LS.get('me');
-  if (ricordato && S.profili.some(p => p.slug === ricordato)) scegliProfilo(ricordato);
+  if (ricordato && S.profili.some(p => p.slug === ricordato)){
+    if (LS.get('sbloccato') === ricordato) entra(ricordato);
+    else scegliProfilo(ricordato);
+  }
 }
 
 function coloreDi(p, i){ return p.colore || ['#c9a45c','#9b7da8','#6f8fae','#7d9b76','#b0805a','#a85454'][i%6]; }
+const coloreSlug = slug => { const i = S.profili.findIndex(p => p.slug === slug); return i < 0 ? '#c9a45c' : coloreDi(S.profili[i], i); };
+
+// poltrona in velluto, identica al desktop (stesso SVG). f>0 schiarisce, f<0 scurisce.
+function tinta(hex, f){
+  const n = parseInt(String(hex).replace('#',''), 16);
+  let r = (n>>16)&255, g = (n>>8)&255, b = n&255;
+  if (f >= 0){ r += (255-r)*f; g += (255-g)*f; b += (255-b)*f; }
+  else { r *= (1+f); g *= (1+f); b *= (1+f); }
+  const h = v => Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0');
+  return '#' + h(r) + h(g) + h(b);
+}
+let poltronaUid = 0;
+function poltronaSVG(colore, presente){
+  const uid = ++poltronaUid;
+  const cuscino = presente ? colore : '#5a2830';
+  const schienale = presente ? tinta(colore, -0.42) : '#4a2228';
+  const braccioli = '#4a2228';
+  return `<svg viewBox="0 0 100 88">
+    <defs>
+      <radialGradient id="mvnc${uid}" cx="50%" cy="32%" r="80%">
+        <stop offset="0%" stop-color="${tinta(cuscino, 0.16)}"/>
+        <stop offset="100%" stop-color="${tinta(cuscino, -0.14)}"/>
+      </radialGradient>
+      <linearGradient id="mvns${uid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${tinta(schienale, 0.14)}"/>
+        <stop offset="100%" stop-color="${tinta(schienale, -0.2)}"/>
+      </linearGradient>
+    </defs>
+    <g stroke="#201114" stroke-width="2.5" stroke-linejoin="round"${presente ? '' : ' opacity=".85"'}>
+      <rect x="3" y="16" width="15" height="60" rx="7.5" fill="${braccioli}"/>
+      <rect x="82" y="16" width="15" height="60" rx="7.5" fill="${braccioli}"/>
+      <rect x="17" y="6" width="66" height="60" rx="14" fill="url(#mvnc${uid})"/>
+      <rect x="24" y="13" width="52" height="46" rx="9" fill="none" stroke="${tinta(cuscino, -0.28)}" stroke-width="1.6" stroke-dasharray="3 4" opacity=".9"/>
+      <rect x="13" y="58" width="74" height="24" rx="12" fill="url(#mvns${uid})"/>
+    </g>
+    ${presente ? `<g fill="#1b1013" stroke="${colore}" stroke-width="2.2" stroke-linejoin="round">
+      <ellipse cx="50" cy="56" rx="24" ry="10.5"/>
+      <circle cx="50" cy="48" r="11.5"/>
+    </g>` : ''}
+  </svg>`;
+}
+// platea mobile: una poltrona per profilo, a capo su più righe centrate; tocca per presente
+function disegnaPlateaM(){
+  const box = $('#m-platea'); if (!box) return;
+  box.innerHTML = S.profili.map((p,i) => {
+    const presente = S.presenti.has(p.slug);
+    return `<div class="poltrona assegnata${presente?' presente':''}" data-slug="${esc(p.slug)}">
+      ${poltronaSVG(coloreDi(p,i), presente)}
+      <div class="nome">${esc(p.nome)}</div>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('.poltrona.assegnata').forEach(el => el.onclick = () => {
+    const s = el.dataset.slug;
+    if (S.presenti.has(s)) S.presenti.delete(s); else S.presenti.add(s);
+    S.proiettato = null;
+    disegnaSalaM();
+  });
+}
 
 function disegnaProfili(){
   const box = $('#lista-profili');
@@ -477,6 +556,8 @@ function entra(slug){
   S.me = S.profili.find(p => p.slug === slug);
   if (!S.me) return;
   LS.set('me', slug);
+  LS.set('sbloccato', slug);   // d'ora in poi si entra diretto; la password si richiede solo al cambio
+  S.listaVista = 'daVedere';
   if (!S.config.tmdbKey) toast('Manca la chiave TMDB in config.json (si imposta dal PC).', true);
   $('#hdr').style.display = 'flex';
   $('#hdr-chi').innerHTML = 'sei<b>'+esc(S.me.nome)+'</b>';
@@ -644,23 +725,43 @@ function filtraCatalogo(lista){
 }
 
 /* ══════════════════ LA MIA LISTA ══════════════════ */
+// data dell'ultima visione di un film per l'utente corrente (per la sezione "già visti")
+function ultimaVisioneMia(tmdbId){
+  let d = '';
+  for (const v of S.storico)
+    if (v.tmdbId === tmdbId && (v.partecipanti||[]).includes(S.me.slug) && String(v.data||'') > d) d = v.data;
+  return d;
+}
 function disegnaMiaLista(){
-  const tot = (S.me.lista||[]).slice();
-  const lista = filtraCatalogo(tot);
-  $('#conta-lista').textContent = tot.length ? (lista.length===tot.length ? '· '+tot.length : '· '+lista.length+'/'+tot.length) : '';
+  const tutte = (S.me.lista||[]).slice();
+  // una voce è "da vedere" se non c'è una visione mia successiva all'aggiunta, altrimenti "già vista"
+  const daVedere = tutte.filter(v => entryAttiva(v, S.me.slug));
+  const visti = tutte.filter(v => !entryAttiva(v, S.me.slug));
+  if ($('#m-conta-dav')) $('#m-conta-dav').textContent = daVedere.length ? '('+daVedere.length+')' : '';
+  if ($('#m-conta-vis')) $('#m-conta-vis').textContent = visti.length ? '('+visti.length+')' : '';
+  $$('#m-lista-tabs .smtab').forEach(b => b.classList.toggle('on', b.dataset.vista === S.listaVista));
+
+  const sonoVisti = S.listaVista === 'visti';
+  const base = sonoVisti ? visti : daVedere;
+  const lista = filtraCatalogo(base);
+  $('#conta-lista').textContent = base.length ? (lista.length===base.length ? '· '+base.length : '· '+lista.length+'/'+base.length) : '';
   const fb = $('#btn-filtri'); if (fb) fb.classList.toggle('attivo', filtriAttivi());
   const box = $('#mia-lista');
-  if (!tot.length){ box.innerHTML = '<div class="vuoto">Ancora nessun film. Cerca qui sopra e aggiungi il primo 🎬</div>'; return; }
+  if (!tutte.length){ box.innerHTML = '<div class="vuoto">Ancora nessun film. Cerca qui sopra e aggiungi il primo 🎬</div>'; return; }
+  if (!base.length){ box.innerHTML = `<div class="vuoto">${sonoVisti ? 'Ancora nessun film già visto in questa lista.' : 'Niente da vedere: sono già stati visti tutti 🎉'}</div>`; return; }
   if (!lista.length){ box.innerHTML = '<div class="vuoto">Nessun film corrisponde ai filtri.</div>'; return; }
   box.innerHTML = lista.map(v=>{
     const pst = v.posterUrl || '';
     const comp = [ ...(v.conChi||[]).map(s=>'✓'+nomeDi(s)), ...(v.nonCon||[]).map(s=>'✗'+nomeDi(s)) ].join(' · ');
+    const vis = sonoVisti ? ultimaVisioneMia(v.tmdbId) : '';
     return `<div class="film cliccabile" data-edit="${v.tmdbId}">
       ${pst ? `<img class="pst" src="${esc(pst)}" loading="lazy" alt="">` : '<div class="pst"></div>'}
       <div class="info">
         <div class="tit">${esc(v.titolo)}</div>
         <div class="meta">${esc(v.anno||'')}${v.durata?' · '+fmtMin(v.durata):''}</div>
-        <div class="stelle">${stelle(v.desiderio)}${comp?` <span style="color:var(--dim)">· ${esc(comp)}</span>`:''}</div>
+        <div class="stelle">${sonoVisti
+          ? `<span class="visto-tag">👁 visto${vis ? ' il '+esc(vis.split('-').reverse().join('/')) : ''}</span>`
+          : stelle(v.desiderio)}${comp?` <span style="color:var(--dim)">· ${esc(comp)}</span>`:''}</div>
       </div>
       <div class="chevron">›</div>
     </div>`;
@@ -673,11 +774,19 @@ const nomeDi = slug => { const p = S.profili.find(x=>x.slug===slug); return p ? 
 /* menù di modifica di un film già in lista: priorità (desiderio) + white/black list + rimuovi */
 function modaleModifica(id){
   const orig = (S.me.lista||[]).find(x=>x.tmdbId===id); if(!orig) return;
+  const visto = !entryAttiva(orig, S.me.slug);   // già visto in sala → non è più "da vedere"
   let desiderio = orig.desiderio || 3;
   const comp = { conChi:[...(orig.conChi||[])], nonCon:[...(orig.nonCon||[])] };
   apriModale(`
     <h3>${esc(orig.titolo)}</h3>
     <div class="meta">${esc(orig.anno||'')}${orig.durata?' · '+fmtMin(orig.durata):''}${orig.regista?' · '+esc(orig.regista):''}</div>
+    ${visto ? `
+    <div class="etich" style="margin-top:12px">GIÀ VISTO IN SALA</div>
+    <p class="meta" style="line-height:1.6">Questo film è già stato visto in una serata. Puoi <b>rimetterlo in lista</b> se vuoi rivederlo, oppure toglierlo.</p>
+    <div class="m-az">
+      <button class="ghost" id="m-togli" style="color:var(--rosso2);border-color:var(--rosso2)">🗑 Rimuovi</button>
+      <button class="primario" id="m-rivedi">↺ Rimetti in lista</button>
+    </div>` : `
     <div class="etich">QUANTO VUOI VEDERLO</div>
     <div class="picker" id="stelle">${[1,2,3,4,5].map(n=>`<span class="st${n<=desiderio?' on':''}" data-v="${n}">★</span>`).join('')}</div>
     <div class="etich">CON CHI / NON CON <span style="color:var(--dim);letter-spacing:0">— tocca: ✓ con · ✗ non</span></div>
@@ -685,17 +794,29 @@ function modaleModifica(id){
     <div class="m-az">
       <button class="ghost" id="m-togli" style="color:var(--rosso2);border-color:var(--rosso2)">🗑 Rimuovi</button>
       <button class="primario" id="m-salva">Salva</button>
-    </div>`);
-  $('#stelle').onclick = e => { const s = e.target.closest('.st'); if(!s) return; desiderio = +s.dataset.v; $('#stelle').querySelectorAll('.st').forEach(x=>x.classList.toggle('on', +x.dataset.v<=desiderio)); };
-  $('#chips').onclick = e => { const c = e.target.closest('.pchip'); if(!c) return; cicloCompagnia(comp, c.dataset.slug); $('#chips').innerHTML = chipsCompagnia(comp); };
-  $('#m-salva').onclick = async () => {
-    $('#m-salva').disabled=true; $('#m-salva').innerHTML='<span class="spin"></span>';
-    try {
-      await mutaLista(p => { const vv = (p.lista||[]).find(x=>x.tmdbId===id); if(vv){ vv.desiderio=desiderio; vv.conChi=comp.conChi; vv.nonCon=comp.nonCon; } });
-      chiudiModale(); disegnaMiaLista();
-      toast('Modifiche salvate ✓');
-    } catch(e){ $('#m-salva').disabled=false; $('#m-salva').textContent='Salva'; toast('Non riuscito: '+e.message, true); }
-  };
+    </div>`}`);
+  if (visto){
+    $('#m-rivedi').onclick = async () => {
+      $('#m-rivedi').disabled=true; $('#m-rivedi').innerHTML='<span class="spin"></span>';
+      try {
+        // aggiornando "aggiunto" la voce torna "da vedere" (le visioni precedenti non contano più)
+        await mutaLista(p => { const vv = (p.lista||[]).find(x=>x.tmdbId===id); if(vv) vv.aggiunto = new Date().toISOString(); });
+        chiudiModale(); S.listaVista = 'daVedere'; disegnaMiaLista();
+        toast(`«${orig.titolo}» di nuovo in lista ↺`);
+      } catch(e){ $('#m-rivedi').disabled=false; $('#m-rivedi').textContent='↺ Rimetti in lista'; toast('Non riuscito: '+e.message, true); }
+    };
+  } else {
+    $('#stelle').onclick = e => { const s = e.target.closest('.st'); if(!s) return; desiderio = +s.dataset.v; $('#stelle').querySelectorAll('.st').forEach(x=>x.classList.toggle('on', +x.dataset.v<=desiderio)); };
+    $('#chips').onclick = e => { const c = e.target.closest('.pchip'); if(!c) return; cicloCompagnia(comp, c.dataset.slug); $('#chips').innerHTML = chipsCompagnia(comp); };
+    $('#m-salva').onclick = async () => {
+      $('#m-salva').disabled=true; $('#m-salva').innerHTML='<span class="spin"></span>';
+      try {
+        await mutaLista(p => { const vv = (p.lista||[]).find(x=>x.tmdbId===id); if(vv){ vv.desiderio=desiderio; vv.conChi=comp.conChi; vv.nonCon=comp.nonCon; } });
+        chiudiModale(); disegnaMiaLista();
+        toast('Modifiche salvate ✓');
+      } catch(e){ $('#m-salva').disabled=false; $('#m-salva').textContent='Salva'; toast('Non riuscito: '+e.message, true); }
+    };
+  }
   $('#m-togli').onclick = () => {
     apriModale(`<h3>Togliere dalla lista?</h3><p class="meta">«${esc(orig.titolo)}» sparirà dalla tua lista.</p>
       <div class="m-az"><button class="ghost" id="m-no">Annulla</button><button class="primario" id="m-si">Rimuovi</button></div>`);
@@ -802,21 +923,20 @@ const fmtNum = (n,d=2) => Number(n||0).toLocaleString('it-IT',{minimumFractionDi
 const filtriSalaAttivi = () => !!(S.fSala.durata || S.fSala.genere.length || S.fSala.regista);
 
 function disegnaSalaM(){
-  // chi c'è stasera
-  $('#m-presenti').innerHTML = S.profili.map((p,i)=>`
-    <button class="pres${S.presenti.has(p.slug)?' on':''}" data-pres="${esc(p.slug)}">
-      <span class="pall" style="background:${esc(coloreDi(p,i))}"></span>${esc(p.nome)}</button>`).join('');
+  disegnaPlateaM();   // le poltrone in velluto, come sul desktop
   $('#m-conta-pres').textContent = S.presenti.size ? '· '+S.presenti.size : '';
   $('#m-btn-filtri-sala').classList.toggle('attivo', filtriSalaAttivi());
 
-  const cart = $('#m-cartellone'), rosaEl = $('#m-rosa'), stato = $('#m-stato-sala');
+  const cart = $('#m-cartellone'), stato = $('#m-stato-sala'), btnLC = $('#m-lista-completa');
+  const aggiornaLC = n => { if (btnLC){ btnLC.disabled = !n; btnLC.textContent = n ? `📋 Lista completa (${n})` : '📋 Lista completa'; } };
   if (!S.presenti.size){
-    cart.innerHTML = '<div class="sala-vuota">La sala è vuota…<br>tocca i nomi di chi c\'è stasera.</div>';
-    rosaEl.innerHTML = ''; stato.innerHTML = ''; S.tuttiSala = [];
+    cart.innerHTML = '<div class="sala-vuota">La sala è vuota…<br>tocca le poltrone di chi c\'è stasera.</div>';
+    stato.innerHTML = ''; S.tuttiSala = []; aggiornaLC(0);
     return;
   }
   const ris = classificaM();
   S.tuttiSala = ris.tutti;
+  aggiornaLC(ris.totale);
   if (S.proiettato && !ris.tutti.some(r => r.film.tmdbId === S.proiettato)) S.proiettato = null;
   const scelto = S.proiettato ? ris.tutti.find(r => r.film.tmdbId === S.proiettato) : ris.tutti[0];
 
@@ -825,7 +945,6 @@ function disegnaSalaM(){
     const motivi = [e.durata && e.durata+' troppo lunghi', e.genere && e.genere+' di altro genere',
       e.regista && e.regista+' di altri registi', e.vincoli && e.vincoli+' per vincoli di compagnia'].filter(Boolean).join(' · ');
     cart.innerHTML = `<div class="sala-vuota">Niente in cartellone stasera<br><span style="font-size:12px">${esc(motivi || 'le liste dei presenti sono vuote')}</span></div>`;
-    rosaEl.innerHTML = '';
   } else {
     const f = scelto.film, rango = ris.tutti.indexOf(scelto) + 1;
     const sf = f.sfondoUrl || f.posterUrl || '';
@@ -836,27 +955,9 @@ function disegnaSalaM(){
         <h4>${esc(f.titolo)}</h4>
         <div class="meta2">${esc(f.anno||'')}${f.durata?' · '+fmtMin(f.durata):''}${f.regista?' · '+esc(f.regista):''}<br>
           🎟 ${scelto.prop.length} ${scelto.prop.length===1?'proponente':'proponenti'} ·
-          <span class="punti">🏆 ${fmtNum(scelto.S)}</span>${f.voto?` · ★ ${f.voto}`:''}${scelto.M>1?' · 💛 su misura':''}</div>
+          <span class="punti">🏆 ${fmtNum(scelto.S)}</span>${f.voto?` · ★ ${f.voto}`:''}${scelto.M>1?' · 💛 su misura':''}${rango>1?' · <span style="color:var(--oro2)">dalla lista completa</span>':''}</div>
       </div></div>`;
     $('#m-cart-clic').onclick = () => modaleSchedaM(scelto);
-
-    const altri = ris.rosa.map((r,i)=>({r, rango:i+1})).filter(o => o.r !== scelto).slice(0,4);
-    const primoId = ris.tutti[0].film.tmdbId;
-    rosaEl.innerHTML = altri.map(o => {
-      const f2 = o.r.film, primo = f2.tmdbId === primoId;
-      return `<div class="film cliccabile" data-proietta="${f2.tmdbId}">
-        <span class="rango2">${o.rango}${primo?'<br><span style="font-size:11px">↩</span>':''}</span>
-        ${f2.posterUrl ? `<img class="pst" src="${esc(f2.posterUrl)}" loading="lazy" alt="">` : '<div class="pst"></div>'}
-        <div class="info"><div class="tit">${esc(f2.titolo)}</div>
-          <div class="meta">${esc(f2.anno||'')}${f2.durata?' · '+fmtMin(f2.durata):''} · 🎟 ${o.r.prop.length} · 🏆 ${fmtNum(o.r.S)}</div></div>
-        <div class="chevron">›</div>
-      </div>`;
-    }).join('') || '<div class="vuoto">Nessun altro film in classifica.</div>';
-    rosaEl.querySelectorAll('[data-proietta]').forEach(b => b.onclick = () => {
-      const id = parseInt(b.dataset.proietta,10);
-      S.proiettato = (id === primoId) ? null : id;
-      disegnaSalaM();
-    });
   }
   const e = ris.esclusi, fuori = e.durata+e.genere+e.regista+e.vincoli;
   stato.innerHTML = `🎞 ${ris.totale} in cartellone · ${S.presenti.size} in sala
@@ -1368,15 +1469,14 @@ $('#btn-cambia-utente').onclick = () => {
 $('#btn-indietro').onclick = () => { if (!S.me) return; $('#hdr').style.display='flex'; schermo('sc-app'); };
 $('#btn-filtri').onclick = apriFiltri;
 $('#btn-imp').onclick = apriImpostazioni;
-// ── Sala ──
-$('#m-presenti').onclick = e => {
-  const b = e.target.closest('[data-pres]'); if (!b) return;
-  const slug = b.dataset.pres;
-  if (S.presenti.has(slug)) S.presenti.delete(slug); else S.presenti.add(slug);
-  disegnaSalaM();
-};
+// ── Sala ── (le poltrone si agganciano in disegnaPlateaM)
 $('#m-btn-filtri-sala').onclick = apriFiltriSala;
 $('#m-lista-completa').onclick = modaleListaCompletaM;
+// ── Watch List: sotto-menù Da vedere / Già visti ──
+$('#m-lista-tabs').onclick = e => {
+  const b = e.target.closest('[data-vista]'); if (!b) return;
+  S.listaVista = b.dataset.vista; disegnaMiaLista();
+};
 $('#m-segnala').onclick = modaleSegnalaM;
 $('#m-upd').onclick = pannelloAggiornamento;
 // tornando in primo piano (dopo una sync del Drive) ricontrollo se c'è un APK nuovo
