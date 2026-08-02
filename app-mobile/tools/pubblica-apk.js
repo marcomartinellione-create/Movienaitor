@@ -129,16 +129,21 @@ if (LOCALE){
   if (altro) say(c.warn + '  ⚠ restano modifiche fuori da app-mobile, NON pubblicate:\n' + altro.split('\n').map(l => '     ' + l).join('\n') + c.x);
   if (esegui('git push').code !== 0) muori('Push non riuscito.');
 
-  step('Avvio la build in cloud…');
-  const prima = ultimoRunId();
-  if (esegui('gh workflow run ' + WORKFLOW).code !== 0) muori('Non sono riuscito ad avviare il workflow.');
-
-  // aspetto che compaia il run nuovo (a volte GitHub ci mette qualche secondo)
+  step('Build in cloud…');
+  // il push su app-mobile/ fa già partire il workflow: aspetto QUEL run (stesso commit)
+  // invece di lanciarne un secondo identico. Se non parte, lo avvio a mano.
+  const sha = esegui('git rev-parse HEAD', { zitto:true }).out;
   let runId = null;
-  for (let i = 0; i < 20 && !runId; i++){
-    attendi(3000);
-    const id = ultimoRunId();
-    if (id && id !== prima) runId = id;
+  for (let i = 0; i < 8 && !runId; i++){ attendi(4000); runId = runDelCommit(sha); }
+  if (!runId){
+    say(c.dim + '  non è partito da solo: lo avvio io' + c.x);
+    const prima = ultimoRunId();
+    if (esegui('gh workflow run ' + WORKFLOW).code !== 0) muori('Non sono riuscito ad avviare il workflow.');
+    for (let i = 0; i < 20 && !runId; i++){
+      attendi(3000);
+      const id = ultimoRunId();
+      if (id && id !== prima) runId = id;
+    }
   }
   if (!runId) muori('Il workflow non è partito. Guarda su GitHub → Actions.');
   say(c.dim + '  run ' + runId + ' — aspetto (di solito 4-6 minuti)…' + c.x);
@@ -202,5 +207,13 @@ try {
 function ultimoRunId(){
   const r = esegui('gh run list --workflow ' + WORKFLOW + ' --limit 1 --json databaseId', { zitto:true });
   try { return (JSON.parse(r.out || '[]')[0] || {}).databaseId || null; } catch(e){ return null; }
+}
+function runDelCommit(sha){
+  if (!sha) return null;
+  const r = esegui('gh run list --workflow ' + WORKFLOW + ' --limit 10 --json databaseId,headSha', { zitto:true });
+  try {
+    const run = JSON.parse(r.out || '[]').find(x => x.headSha === sha);
+    return run ? run.databaseId : null;
+  } catch(e){ return null; }
 }
 function attendi(ms){ Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); }
