@@ -37,13 +37,23 @@ Movienaitor/                  ← cartella condivisa su Google Drive
 ├── Movienaitor.html          ← l'app
 ├── config.json               ← chiavi API + costanti della formula (condiviso)
 ├── storico.json              ← registro delle visioni (fonte di verità dei "visti")
+├── archivio.json             ← "pronti alla visione" + dove trovarli (scrive l'host)
+├── segnalazioni-stato.json   ← stato/priorità/eliminate delle segnalazioni (scrive l'host)
 ├── posters/
 │   └── <tmdbId>.jpg          ← locandine in cache (~50 KB l'una, TMDB w500)
+├── recensioni/
+│   └── <slug>/<tmdbId>.json  ← una cartella per utente, un file per film
+├── segnalazioni/
+│   ├── marco.json            ← bug e idee inviati da quella persona
+│   └── ...
 └── profili/
     ├── marco.json            ← un file per persona
     ├── elena.json
     └── ...
 ```
+
+> Dalla v1.1.2 le locandine **non** vengono più messe in cache in `posters/`: si caricano
+> sempre dagli URL TMDB (`posterUrl`/`sfondoUrl` salvati nella voce film).
 
 ### 3.2 Regola d'oro anti-conflitto: **un solo scrittore per file**
 
@@ -163,9 +173,11 @@ compare una terza tab **Archivio** che elenca **tutti** i film ancora da vedere 
 (dedup, senza preferenze né liste — solo i titoli), così il PC del cinema può procurarsi
 in anticipo i film che potrebbero essere estratti. Le tre tab sono separate da una linea
 verticale. L'Archivio è una **lista compatta a icone piccole**; ogni film ha una
-bandierina **"pronto alla visione"** (l'host segna quelli già procurati) e un filtro
-**Tutti / Da preparare**. Lo stato "pronto" è condiviso in `archivio.json` (scritto
-dall'host). **Cambia utente** apre il gate come overlay con un tasto **Indietro** che
+bandierina **"pronto alla visione"** (l'host segna quelli già procurati), una **ricerca
+per titolo** (v1.2.0, cerca anche nel nome della saga) col contatore "N di M", un filtro
+**Tutti / Da preparare** e l'ordinamento alfabetico o per priorità di prossima
+apparizione. Lo stato "pronto" è condiviso in `archivio.json` (scritto dall'host).
+Con la modalità host compare anche la tab **🐞 Segnalazioni** (§11c). **Cambia utente** apre il gate come overlay con un tasto **Indietro** che
 torna alla sessione corrente senza cambiare profilo.
 
 ## 5. Catalogo (lista personale)
@@ -224,6 +236,7 @@ libera, nello stile velluto dell'app.
 | H5 | Cambio proiezione | la mensola mostra gli **altri 4** film in classifica (tutti tranne quello sul proiettore), col rango reale: un clic ne porta un altro sul proiettore; il 1° resta sempre nella mensola (con ↩), così ci si può tornare |
 | H6 | **Play** | conferma il film sul proiettore: scrive la voce nello storico coi presenti, la voce si spegne ("vista") per tutti i partecipanti, i timer di equità dei proponenti si azzerano; piccola animazione "si spengono le luci" |
 | H7 | Ricarica | rilegge tutti i JSON (Drive può impiegare qualche secondo a sincronizzare); mostra data/ora dell'ultimo aggiornamento letto |
+| H8 | **Lista completa** (v1.2.0) | pulsante sotto la mensola: apre **tutti** i film sopravvissuti ai filtri della serata, nello stesso ordine di pertinenza della Top 5 (rango, locandina, punteggio, n° proponenti) con filtro per titolo/regista. Un clic porta il film sul proiettore **anche se sta fuori dalla Top 5**: la mensola continua a mostrare la Top 5 meno quello in onda |
 
 ### 6.2 Regole di composizione della rosa
 
@@ -370,6 +383,36 @@ l'**Archivio** dell'host mostra invece tutti gli episodi (serve la scorta comple
 - Nessuna app mobile (l'HTML resta usabile da portatile collegato alla TV).
 - Serie TV: solo film in v1 (TMDB le supporterebbe: estensione futura naturale).
 - Statistiche di gruppo (chi propone di più, generi più visti…): idea per v1.x.
+
+## 11c. Segnalazioni — bug e idee (v1.2.0)
+
+Ispirata al pulsante "Segnala" della SustEner App, ma con lo stile della sala.
+
+- **Pulsante 🐞 Segnala** fisso in basso a sinistra, per **tutti**: tipo (Bug ⚠ /
+  Suggerimento ✦ / Idea ◌), titolo, descrizione e — solo per i bug — quanto pesa
+  (blocca l'uso / dà fastidio / dettaglio minore). L'app registra da sola sezione in cui
+  ti trovavi, versione e autore. Nello stesso pannello ognuno rivede **le proprie**
+  segnalazioni con lo stato, e può **ritirarle**.
+- **Sezione 🐞 Segnalazioni** (solo host, accanto a "Pronti alla visione"): elenco in
+  ordine di importanza — priorità decisa dall'host, poi tipo, poi gravità dichiarata;
+  le chiuse finiscono in fondo. Per ciascuna: **priorità** (alta/media/bassa), **stato**
+  (nuova / in lavorazione / fatta / scartata), scorciatoia **✓ Fatta** e **elimina**
+  (sparisce per tutti). Filtro Aperte/Tutte + ricerca testuale. La tab porta il conteggio
+  delle aperte.
+- **Anti-conflitto** (§3.2): chi segnala scrive **solo** `segnalazioni/<slug>.json`;
+  stato, priorità ed eliminazioni le scrive **solo l'host** in `segnalazioni-stato.json`
+  — stessa divisione di `archivio.json`. Eliminare non tocca il file altrui: l'id finisce
+  in `eliminate[]` e la segnalazione sparisce dalla vista di tutti.
+
+```jsonc
+// segnalazioni/<slug>.json — lo scrive solo quella persona
+{"segnalazioni":[{"id":"lz3k1-marco","tipo":"bug|suggerimento|idea","titolo":"…",
+  "descrizione":"…","gravita":"blocca|rallenta|minore|null","contesto":"sala",
+  "versione":"1.2.0","creato":"2026-08-02T20:10:00.000Z"}]}
+// segnalazioni-stato.json — lo scrive solo l'host
+{"stato":{"lz3k1-marco":{"stato":"in_corso","priorita":"alta","aggiornato":"…"}},
+ "eliminate":["…"]}
+```
 
 ## 11b. App desktop (Electron) — dettagli
 

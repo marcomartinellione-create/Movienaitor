@@ -2,7 +2,7 @@
 
 > Manuale operativo per continuare a lavorare sul progetto. Contesto rapido +
 > convenzioni + workflow. Per le regole di prodotto e le formule vedi **SPECIFICA.md**.
-> **Stato: v1.0.0** (pubblicata). Cartella progetto: `D:\4 - Programmi\Movienaitor`.
+> **Stato: v1.2.0** (pubblicata). Cartella progetto: `D:\4 - Programmi\Movienaitor`.
 
 ## Cos'è
 
@@ -62,7 +62,9 @@ electron/
 ```
 config.json               chiavi API (TMDB/OMDb) + costanti formula (§8.4 SPECIFICA)
 storico.json              {visioni:[{id,data,ts,tmdbId,titolo,partecipanti,proponenti}]}
-archivio.json             {pronti:[tmdbId,...]}  stato "pronto alla visione" (scrive l'host)
+archivio.json             {pronti:[tmdbId,...], dove:{}}  stato "pronto alla visione" (scrive l'host)
+segnalazioni/<slug>.json  {segnalazioni:[{id,tipo,titolo,descrizione,gravita,contesto,versione,creato}]}
+segnalazioni-stato.json   {stato:{id:{stato,priorita,aggiornato}}, eliminate:[id]}  (scrive l'host)
 posters/<id>.jpg          locandine in cache (e <id>_b.jpg per gli sfondi)
 profili/<slug>.json       un file per persona
 recensioni/<slug>/<tmdbId>.json   recensioni personali (una cartella per utente, un file per film)
@@ -76,8 +78,9 @@ gli utenti, ognuno la sua, sfogli le altrui in sola lettura). Rinomini v0.2.4: C
 vecchio Archivio host→**Pronti alla visione**, il nome **Archivio** ora è le recensioni.
 
 **Regola anti-conflitto (un solo scrittore per file):** ogni dispositivo scrive **solo**
-il proprio `profili/<slug>.json` e la propria `recensioni/<slug>/`; `storico.json` e `archivio.json` li scrive solo il PC
-"host" (chi preme Play / prepara). Così Drive non crea copie in conflitto.
+il proprio `profili/<slug>.json`, la propria `recensioni/<slug>/` e il proprio
+`segnalazioni/<slug>.json`; `storico.json`, `archivio.json` e `segnalazioni-stato.json`
+li scrive solo il PC "host" (chi preme Play / prepara). Così Drive non crea copie in conflitto.
 
 **Profilo** `{nome, slug, creato, colore, password?, generiPositivi?[], generiNegativi?[], lista:[voce]}`.
 **Voce film** `{tmdbId, titolo, anno, uscita, durata, regista, generi, voto, votoFonte,
@@ -100,8 +103,18 @@ Stato "da vedere/visto" e i valori derivati NON si salvano: si ricalcolano dallo
   D×B×W×M → Top 5). Vedi SPECIFICA §6–8.
 - **Render**: `disegnaSala` (schermo+sipario, rosa 2-5, platea, adatta poltrone),
   `disegnaCatalogo` + `disegnaGeneriCatalogo` (barre generi), `disegnaArchivio`
-  (host, lista compatta + flag pronto + filtro), `disegnaImpostazioni`, `disegnaFiltri`,
-  `poltronaSVG`.
+  (host, lista compatta + flag pronto + ricerca + filtro), `disegnaSegnalazioni`
+  (host), `disegnaImpostazioni`, `disegnaFiltri`, `poltronaSVG`.
+- **Lista completa** (v1.2.0): `classifica()` torna anche `tutti` (rosa intera);
+  `modaleListaCompleta` la mostra e `S.proiettato` può puntare a QUALSIASI film di
+  `S.tutti`, non solo alla Top 5. `aggiornaListaCompleta(n)` aggiorna il pulsante.
+- **Segnalazioni** (v1.2.0): `caricaSegnalazioni`, `salvaMieSegnalazioni` (solo il mio
+  file), `salvaStatoSegnalazioni` (solo host), `modaleSegnala` (pulsante 🐞 in basso a
+  sinistra, per tutti), `disegnaSegnalazioni` (tab host). Vedi SPECIFICA §11c.
+- **Locandine**: `mostraLocandina(box, film)` — l'unico modo giusto di mostrarle in un
+  contenitore `<img hidden> + .segnaposto`: **va rimosso il segnaposto**, che nel DOM sta
+  dopo l'img e altrimenti la copre (era il bug della scheda film, corretto in v1.2.0).
+  `urlImmagine` ripesca da TMDB gli URL mancanti nelle voci vecchie.
 - **Gate**: `gateBenvenuto/Riconnetti/NonSupportato/BenvenutoElectron`, `gateNome(conIndietro)`
   (scelta profilo + host + password + tasto Indietro), `entra`, `avviaApp`, `applicaHost`.
 - **Modali**: `apriModale/chiudiModale`, `confermaModale`, `promptPassword`,
@@ -196,6 +209,9 @@ conferma alla rimozione; **Archivio** (solo host) a icone piccole con flag "pron
 selettore **colore poltrona** (tavolozza CAD + HSV); **password** profilo (anti-errore);
 **saghe** (propone il 1º episodio non visto); **attesa** a numero di serate; cambio utente
 con Indietro; app desktop con auto-update, memoria profilo e stato finestra.
+Dalla **v1.2.0**: **Lista completa** in Sala (tutti i film filtrati, in ordine di
+pertinenza, proiettabili anche fuori Top 5), **ricerca per titolo** in Pronti alla
+visione, **🐞 Segnalazioni** (bug/idee da tutti, gestione dell'host).
 
 ## Punti aperti / idee
 

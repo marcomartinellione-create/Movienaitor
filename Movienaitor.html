@@ -109,7 +109,27 @@ header .spazio{flex:1}
 .schermo-clic{position:absolute; inset:0; z-index:2; cursor:pointer}
 
 /* rosa 2-5 */
-.rosa{display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:1fr; gap:12px}
+.rosa-col{display:flex; flex-direction:column; gap:12px; min-width:0}
+.rosa{display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:1fr; gap:12px; flex:1}
+#btn-lista-completa{flex:none; width:100%; text-align:center; padding:9px 12px; border-radius:10px;
+  border:1px solid var(--oro-dim); color:var(--oro2); background:linear-gradient(180deg,var(--velluto),var(--velluto2));
+  font-size:13.5px; letter-spacing:.04em}
+#btn-lista-completa:hover{background:linear-gradient(180deg,var(--velluto3),var(--velluto)); color:var(--oro2)}
+#btn-lista-completa:disabled{opacity:.45; cursor:default}
+/* modale "lista completa" */
+.lc-q{width:100%; background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); padding:9px 12px; border-radius:9px; margin-bottom:12px}
+.lc-lista{display:flex; flex-direction:column; gap:6px; max-height:min(60vh,520px); overflow-y:auto}
+.lc-riga{display:flex; align-items:center; gap:11px; padding:6px 10px; border:1px solid #3a2229; border-radius:10px;
+  background:var(--velluto2); cursor:pointer; transition:.12s}
+.lc-riga:hover{border-color:var(--oro-dim); transform:translateX(2px)}
+.lc-riga.in-onda{border-color:var(--oro); background:rgba(201,164,92,.09)}
+.lc-rango{flex:none; width:30px; text-align:right; font-family:var(--serif); font-size:19px; color:var(--oro2)}
+.lc-thumb{width:32px; height:48px; flex:none; border-radius:5px; object-fit:cover; background:var(--bg2)}
+.lc-info{flex:1; min-width:0}
+.lc-info h5{font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.lc-info .lc-meta{color:var(--dim2); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.lc-punti{flex:none; text-align:right; color:var(--oro); font-size:12.5px; line-height:1.3}
+.lc-punti small{display:block; color:var(--dim2); font-size:11px}
 .rosa .posto{position:relative; border:1px solid #4a2c33; border-radius:10px; overflow:hidden; background:var(--bg2);
   cursor:pointer; min-height:118px; transition:transform .12s}
 .rosa .posto:hover{transform:translateY(-2px); border-color:var(--oro-dim)}
@@ -278,6 +298,57 @@ header .spazio{flex:1}
   border:1px solid var(--velluto3); border-radius:20px; padding:4px 10px}
 .arch-riga.pronto .arch-flag{color:var(--verde); border-color:var(--verde); background:rgba(125,155,118,.1)}
 
+/* ---------- segnalazioni (bug / idee) ---------- */
+.bug-btn{position:fixed; left:18px; bottom:18px; z-index:80; display:flex; align-items:center; gap:8px;
+  padding:9px 16px; border-radius:22px; font-size:13.5px; letter-spacing:.03em;
+  background:linear-gradient(180deg,var(--velluto3),var(--velluto2)); border:1px solid var(--oro-dim);
+  color:var(--oro2); box-shadow:var(--ombra); transition:.14s}
+.bug-btn:hover{border-color:var(--oro2); transform:translateY(-1px)}
+.bug-btn .pallino-n{background:var(--rosso2); color:var(--crema); border-radius:11px; padding:0 6px; font-size:11.5px; font-weight:600}
+.sg-tipi{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:6px 0 4px}
+.sg-tipo{display:flex; flex-direction:column; gap:3px; text-align:left; padding:11px 12px; border-radius:10px;
+  border:1px solid var(--velluto3); background:var(--bg2); cursor:pointer; transition:.12s}
+.sg-tipo:hover{border-color:var(--oro-dim)}
+.sg-tipo.on{border-color:var(--oro); box-shadow:0 0 0 2px rgba(201,164,92,.16)}
+.sg-tipo .ic{font-size:18px; color:var(--oro2)}
+.sg-tipo .lb{font-weight:600; font-size:13.5px; color:var(--crema)}
+.sg-tipo .ds{font-size:11.5px; color:var(--dim2); line-height:1.35}
+.sg-campo{margin-top:12px}
+.sg-campo>label{display:block; color:var(--oro); font-size:12.5px; letter-spacing:.06em; margin-bottom:5px}
+.sg-campo input[type=text], .sg-campo textarea, .sg-campo select{width:100%; background:var(--bg2);
+  border:1px solid var(--velluto3); color:var(--crema); border-radius:9px; padding:9px 12px; font:inherit}
+.sg-campo textarea{min-height:120px; resize:vertical; line-height:1.5}
+.sg-ctx{color:var(--dim2); font-size:12px; margin-top:10px}
+.sg-mie{margin-top:18px; border-top:1px solid var(--velluto3); padding-top:12px}
+.sg-mie h4{color:var(--oro); font-size:13px; letter-spacing:.06em; font-weight:400; margin-bottom:8px}
+.sg-mia{display:flex; align-items:center; gap:9px; padding:6px 4px; font-size:13px; color:var(--dim)}
+.sg-mia .t{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--crema)}
+.sg-strumenti{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:14px}
+.sg-strumenti button.f{padding:6px 14px; border-radius:8px; border:1px solid var(--velluto3); color:var(--dim); font-size:13px}
+.sg-strumenti button.f.on{border-color:var(--oro-dim); color:var(--oro2); background:var(--velluto2)}
+.sg-strumenti input[type=search], .sg-strumenti select{background:var(--bg2); border:1px solid var(--velluto3);
+  color:var(--crema); border-radius:8px; padding:6px 9px; font:inherit; font-size:13px}
+.sg-lista{display:flex; flex-direction:column; gap:10px}
+.sg-card{border:1px solid #3a2229; border-left:3px solid var(--velluto3); border-radius:12px;
+  background:linear-gradient(180deg,var(--velluto),var(--velluto2)); padding:12px 15px; display:flex; flex-direction:column; gap:9px}
+.sg-card.pr-alta{border-left-color:var(--rosso2)} .sg-card.pr-media{border-left-color:var(--oro)} .sg-card.pr-bassa{border-left-color:var(--dim2)}
+.sg-card.chiusa{opacity:.55}
+.sg-cap{display:flex; align-items:flex-start; gap:10px}
+.sg-ic{font-size:17px; flex:none; margin-top:1px}
+.sg-cap .main{flex:1; min-width:0}
+.sg-tit{font-weight:600; font-size:14.5px; color:var(--crema)}
+.sg-meta{color:var(--dim2); font-size:11.5px; margin-top:2px}
+.sg-desc{color:var(--dim); font-size:13.5px; line-height:1.5; white-space:pre-wrap; border-top:1px dashed var(--velluto3); padding-top:9px}
+.sg-az{display:flex; gap:9px; align-items:center; flex-wrap:wrap}
+.sg-az select{background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); border-radius:8px; padding:5px 8px; font:inherit; font-size:12.5px}
+.sg-chip{display:inline-flex; align-items:center; padding:2px 9px; border-radius:20px; font-size:11.5px;
+  border:1px solid var(--velluto3); color:var(--dim2); white-space:nowrap; flex:none}
+.sg-chip.st-fatto{color:var(--verde); border-color:var(--verde); background:rgba(125,155,118,.1)}
+.sg-chip.st-in_corso{color:var(--oro2); border-color:var(--oro-dim); background:rgba(201,164,92,.08)}
+.sg-chip.st-scartato{color:var(--dim2)}
+.sg-chip.pr-alta{color:var(--rosso2); border-color:var(--rosso2)}
+.sg-chip.pr-media{color:var(--oro2); border-color:var(--oro-dim)}
+
 /* aiuti contestuali: ? cerchiato con tooltip (solo nei menù, non in Sala) */
 .aiuto-q{display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; flex:none;
   border-radius:50%; border:1px solid var(--oro-dim); color:var(--oro-dim); font:600 11px/1 system-ui,sans-serif;
@@ -374,6 +445,8 @@ header .spazio{flex:1}
       <button class="tab" data-vista="recensioni">📝 Recensioni</button>
       <span class="nav-sep" id="sep-archivio" hidden>|</span>
       <button class="tab" id="tab-archivio" data-vista="archivio" hidden>🎞 Pronti alla visione</button>
+      <span class="nav-sep" id="sep-segnalazioni" hidden>|</span>
+      <button class="tab" id="tab-segnalazioni" data-vista="segnalazioni" hidden>🐞 Segnalazioni</button>
     </nav>
     <div class="spazio"></div>
     <div class="io-chip"><span class="pallino" id="io-colore"></span><span id="io-nome"></span></div>
@@ -410,7 +483,10 @@ header .spazio{flex:1}
         </div>
       </div>
 
-      <div class="rosa" id="rosa"></div>
+      <div class="rosa-col">
+        <div class="rosa" id="rosa"></div>
+        <button id="btn-lista-completa" title="Tutti i film che passano i filtri di stasera, in ordine di pertinenza">📋 Lista completa</button>
+      </div>
     </div>
 
     <div id="platea"></div>
@@ -453,9 +529,11 @@ header .spazio{flex:1}
   <main id="vista-archivio" hidden>
     <div class="sezione-titolo" style="margin-top:6px">PRONTI ALLA VISIONE<span class="aiuto-q" tabindex="0">?<span class="tip">Tutti i film che qualcuno vuole ancora vedere, senza preferenze né liste. Segna con la bandierina quelli che hai già procurato (pronti alla visione); il filtro ti fa vedere solo quelli che ti restano da preparare.</span></span></div>
     <div class="arch-filtro" id="arch-filtro">
+      <input type="search" id="arch-q" placeholder="🔎 cerca per titolo…" autocomplete="off"
+        style="background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); border-radius:8px; padding:6px 10px; font:inherit; font-size:13px; min-width:200px">
       <button data-f="tutti" class="on">Tutti</button>
       <button data-f="daPreparare">Da preparare</button>
-      <span style="margin-left:auto"></span>
+      <span class="cat-conta" id="arch-conta" style="margin-left:auto"></span>
       <label style="display:flex;align-items:center;gap:6px;color:var(--dim);font-size:13px">Ordina
         <select id="arch-ordina">
           <option value="alfabetico">Alfabetico</option>
@@ -464,6 +542,18 @@ header .spazio{flex:1}
       </label>
     </div>
     <div class="arch-lista" id="lista-archivio"></div>
+  </main>
+
+  <!-- ───── SEGNALAZIONI (solo host) ───── -->
+  <main id="vista-segnalazioni" hidden>
+    <div class="sezione-titolo" style="margin-top:6px">SEGNALAZIONI DEL GRUPPO<span class="aiuto-q" tabindex="0">?<span class="tip">Bug e idee che gli altri mandano col pulsante 🐞 Segnala, in ordine di importanza. Cambia stato quando ci lavori, segna «Fatto» quando è risolta, oppure eliminala se non serve più.</span></span></div>
+    <div class="sg-strumenti" id="sg-strumenti">
+      <button class="f on" data-f="aperte">Aperte</button>
+      <button class="f" data-f="tutte">Tutte</button>
+      <input type="search" id="sg-q" placeholder="🔎 cerca…" autocomplete="off" style="min-width:180px">
+      <span class="cat-conta" id="sg-conta" style="margin-left:auto"></span>
+    </div>
+    <div class="sg-lista" id="sg-lista"></div>
   </main>
 
   <!-- ───── ARCHIVIO = RECENSIONI (tutti gli utenti) ───── -->
@@ -545,6 +635,8 @@ header .spazio{flex:1}
       </div>
     </div>
   </main>
+
+  <button class="bug-btn" id="btn-segnala" title="Segnala un bug o proponi un'idea">🐞 <span>Segnala</span></button>
 </div>
 
 <div id="modale-fondo" hidden><div class="modale" id="modale"></div></div>
@@ -554,7 +646,7 @@ header .spazio{flex:1}
 <script>
 'use strict';
 /* ════════════════════════ COSTANTI ════════════════════════ */
-const APP_VERSION = '1.1.2';
+const APP_VERSION = '1.2.0';
 const CONFIG_DEFAULT = {
   tmdbKey:'', omdbKey:'',
   bonusCoralita:0.10, capCoralita:0.30, passoSoddisfazione:0.15, bonusCoppia:1.15,
@@ -763,11 +855,15 @@ async function ricordaHost(on){
 function applicaHost(){
   $('#tab-archivio').hidden = !S.host;
   $('#sep-archivio').hidden = !S.host;
-  if (!S.host && !$('#vista-archivio').hidden){ // se ero in Archivio e l'host si spegne, torno in Sala
+  $('#tab-segnalazioni').hidden = !S.host;
+  $('#sep-segnalazioni').hidden = !S.host;
+  // se ero in una vista da host e l'host si spegne, torno in Sala
+  if (!S.host && (!$('#vista-archivio').hidden || !$('#vista-segnalazioni').hidden)){
     $$('.tab').forEach(x => x.classList.toggle('attivo', x.dataset.vista === 'sala'));
-    for (const v of ['sala','catalogo','recensioni','archivio','impostazioni']) $('#vista-'+v).hidden = v !== 'sala';
+    for (const v of VISTE) $('#vista-'+v).hidden = v !== 'sala';
   }
 }
+const VISTE = ['sala','catalogo','recensioni','archivio','segnalazioni','impostazioni'];
 
 /* ════════════════════════ STATO ════════════════════════ */
 const S = {
@@ -780,11 +876,18 @@ const S = {
   presenti:new Set(),
   filtri:{durata:null, genere:[], regista:''},
   proiettato:null,       // tmdbId scelto manualmente
-  rosa:[],               // ultima classifica calcolata
+  rosa:[],               // ultima classifica calcolata (Top 5)
+  tutti:[],              // classifica completa (per la "lista completa")
   archivioPronti:new Set(), // tmdbId segnati "pronto alla visione" dall'host
   archivioDove:{},          // tmdbId → {streaming,fisico,percorso} (dove trovarlo)
   archivioFiltro:'tutti',   // 'tutti' | 'daPreparare'
   archivioOrdine:'alfabetico', // 'alfabetico' | 'prossima'
+  archivioQ:'',             // ricerca per titolo in "Pronti alla visione"
+  segnalazioni:[],          // [{...segnalazione, autore}] da segnalazioni/<slug>.json
+  segnStato:{},             // id → {stato, priorita, aggiornato} (scritto dall'host)
+  segnEliminate:[],         // id nascosti dall'host
+  segnFiltro:'aperte',      // 'aperte' | 'tutte'
+  segnQ:'',
   catFiltri:{q:'', ordina:'aggiunto', dir:'desc', minDes:0, minVoto:0, annoDa:null, annoA:null},
   recensioni:[],            // recensioni di tutti [{...rec, autore, _file:[...]}]
   recUtente:null,           // slug dell'utente sfogliato (null = io)
@@ -848,6 +951,12 @@ function semina(){
   for (const p of profili) demoFS.files.set('profili/'+p.slug+'.json', JSON.stringify(p));
   demoFS.files.set('storico.json', JSON.stringify({visioni:storico}));
   demoFS.files.set('config.json', JSON.stringify({...CONFIG_DEFAULT}));
+  demoFS.files.set('segnalazioni/elena.json', JSON.stringify({segnalazioni:[
+    {id:'demo-sg-1', tipo:'bug', titolo:'La locandina non si vede nella scheda', descrizione:'Apro la scheda di un film dalla Watch List e al posto della copertina resta il rettangolo col titolo.',
+     gravita:'rallenta', contesto:'catalogo', versione:'1.1.2', creato:g(6)+'T20:10:00'}]}));
+  demoFS.files.set('segnalazioni/simone.json', JSON.stringify({segnalazioni:[
+    {id:'demo-sg-2', tipo:'suggerimento', titolo:'Vedere tutti i film della serata, non solo i primi cinque', descrizione:'Con tanti presenti la Top 5 è poca: servirebbe la lista intera in ordine di pertinenza.',
+     gravita:null, contesto:'sala', versione:'1.1.2', creato:g(3)+'T22:40:00'}]}));
 }
 
 /* ════════════════════════ API FILM ════════════════════════ */
@@ -899,7 +1008,31 @@ async function dettagliFilm(id){
 async function salvaImmagini(){ /* niente cache poster: gli URL remoti bastano */ }
 
 async function urlImmagine(voce, tipo){ // tipo: 'locandina' | 'sfondo' → sempre dal server
-  return voce[tipo === 'locandina' ? 'posterUrl' : 'sfondoUrl'] || null;
+  const chiave = tipo === 'locandina' ? 'posterUrl' : 'sfondoUrl';
+  if (voce[chiave]) return voce[chiave];
+  // voci vecchie salvate senza gli URL remoti: le recupero da TMDB una volta sola
+  if (voce.tmdbId && !S.demo && S.config.tmdbKey && !voce._noPoster){
+    try {
+      const d = await dettagliFilm(voce.tmdbId);
+      voce.posterUrl = d.posterUrl; voce.sfondoUrl = d.sfondoUrl;
+      if (!d.posterUrl && !d.sfondoUrl) voce._noPoster = true;
+      return voce[chiave] || null;
+    } catch(e){ voce._noPoster = true; }
+  }
+  return null;
+}
+
+// Mostra la locandina in un contenitore che ha <img hidden> + .segnaposto: l'immagine va
+// resa visibile E il segnaposto rimosso (nel DOM sta dopo l'img, quindi la coprirebbe).
+function mostraLocandina(box, film){
+  if (!box) return;
+  const img = box.querySelector('img');
+  urlImmagine(film, 'locandina').then(u => {
+    if (!u || !img || !img.isConnected) return;
+    img.src = u; img.hidden = false;
+    const seg = box.querySelector('.segnaposto');
+    if (seg) seg.remove();
+  });
 }
 
 /* ════════════════════════ LOGICA (SPECIFICA §6-8) ════════════════════════ */
@@ -1028,7 +1161,8 @@ function classifica(){
     (b.G || 0) - (a.G || 0) ||
     (b.film.voto || 0) - (a.film.voto || 0) ||
     String(a.film.titolo).localeCompare(b.film.titolo));
-  return {rosa:rosa.slice(0,5), totale:rosa.length, esclusi};
+  // `tutti` = la classifica intera (stesso ordine di pertinenza): la usa la "lista completa"
+  return {rosa:rosa.slice(0,5), tutti:rosa, totale:rosa.length, esclusi};
 }
 
 /* ════════════════════════ CARICAMENTO DATI ════════════════════════ */
@@ -1052,6 +1186,7 @@ async function caricaTutto(){
   S.archivioPronti = new Set((arch && Array.isArray(arch.pronti)) ? arch.pronti : []);
   S.archivioDove = (arch && arch.dove && typeof arch.dove === 'object') ? arch.dove : {};
   await caricaRecensioni();
+  await caricaSegnalazioni();
   S.presenti = new Set([...S.presenti].filter(s => profiloDi(s)));
   if (S.me && profiloDi(S.me)) S.presenti.add(S.me);
   S.ultimaLettura = new Date();
@@ -1138,6 +1273,191 @@ async function salvaRecensione(rec){
 const miaRecensione = id => S.recensioni.find(r => r.autore === S.me && r.tmdbId === id);
 // stato "pronto alla visione" dell'archivio (scritto dall'host, file condiviso)
 async function salvaArchivio(){ await FS.writeJSON(['archivio.json'], {pronti:[...S.archivioPronti], dove:S.archivioDove}); }
+
+/* ════════════════════════ SEGNALAZIONI (bug & idee) ════════════════════════ */
+// Anti-conflitto come per i profili: ognuno scrive SOLO il proprio
+// `segnalazioni/<slug>.json`; lo stato (fatto / in lavorazione / eliminata) lo scrive
+// solo l'host in `segnalazioni-stato.json`, esattamente come per archivio.json.
+const SEGN_TIPI = {
+  bug:         {label:'Bug',         ic:'⚠', desc:'Qualcosa non funziona come dovrebbe', peso:30},
+  suggerimento:{label:'Suggerimento',ic:'✦', desc:'Una funzione pensata, con un\'idea di come dovrebbe funzionare', peso:20},
+  idea:        {label:'Idea',        ic:'◌', desc:'Un\'intuizione ancora grezza, ma che potrebbe valere', peso:10}
+};
+const SEGN_GRAVITA = {blocca:{label:'Blocca l\'uso', peso:9}, rallenta:{label:'Dà fastidio', peso:6}, minore:{label:'Dettaglio minore', peso:3}};
+const SEGN_STATI = {nuovo:{label:'Nuova'}, in_corso:{label:'In lavorazione'}, fatto:{label:'Fatta'}, scartato:{label:'Scartata'}};
+const SEGN_PRIORITA = {alta:{label:'Alta', peso:300}, media:{label:'Media', peso:200}, bassa:{label:'Bassa', peso:100}};
+
+async function caricaSegnalazioni(){
+  S.segnalazioni = [];
+  const { files } = await FS.elenca(['segnalazioni']);
+  for (const f of files){
+    if (!f.endsWith('.json')) continue;
+    const slug = f.slice(0, -5);
+    const d = await FS.readJSON(['segnalazioni', f]);
+    const arr = (d && Array.isArray(d.segnalazioni)) ? d.segnalazioni : [];
+    for (const s of arr) if (s && s.id) S.segnalazioni.push({...s, autore:slug});
+  }
+  const st = await FS.readJSON(['segnalazioni-stato.json']);
+  S.segnStato = (st && st.stato && typeof st.stato === 'object') ? st.stato : {};
+  S.segnEliminate = (st && Array.isArray(st.eliminate)) ? st.eliminate : [];
+}
+async function salvaMieSegnalazioni(){
+  const mie = S.segnalazioni.filter(s => s.autore === S.me).map(s => { const c = {...s}; delete c.autore; return c; });
+  await FS.writeJSON(['segnalazioni', S.me + '.json'], {segnalazioni:mie});
+}
+async function salvaStatoSegnalazioni(){
+  await FS.writeJSON(['segnalazioni-stato.json'], {stato:S.segnStato, eliminate:S.segnEliminate});
+}
+const statoSegn    = s => (S.segnStato[s.id] || {}).stato || 'nuovo';
+const prioritaSegn = s => (S.segnStato[s.id] || {}).priorita || null;
+const segnChiusa   = s => statoSegn(s) === 'fatto' || statoSegn(s) === 'scartato';
+// Importanza: priorità decisa dall'host, poi tipo, poi gravità dichiarata da chi segnala.
+function punteggioSegn(s){
+  let p = 0;
+  const pr = prioritaSegn(s);
+  if (pr && SEGN_PRIORITA[pr]) p += SEGN_PRIORITA[pr].peso;
+  p += (SEGN_TIPI[s.tipo] || {}).peso || 0;
+  if (s.gravita && SEGN_GRAVITA[s.gravita]) p += SEGN_GRAVITA[s.gravita].peso;
+  return p;
+}
+function segnalazioniOrdinate(){
+  const via = new Set(S.segnEliminate);
+  return S.segnalazioni.filter(s => !via.has(s.id)).sort((a,b) =>
+    (segnChiusa(a) - segnChiusa(b)) ||                        // le chiuse in fondo
+    (punteggioSegn(b) - punteggioSegn(a)) ||
+    String(b.creato || '').localeCompare(String(a.creato || '')));
+}
+const segnAperte = () => segnalazioniOrdinate().filter(s => !segnChiusa(s)).length;
+
+function modaleSegnala(){
+  let tipo = 'bug';
+  const vistaCorrente = () => {
+    const t = $$('nav .tab, header .tab').find(x => x.classList.contains('attivo'));
+    return t ? t.dataset.vista : 'sala';
+  };
+  const contesto = vistaCorrente();
+  const mie = S.segnalazioni.filter(s => s.autore === S.me && !S.segnEliminate.includes(s.id));
+  apriModale(`
+    <h3>🐞 Segnala un problema o un'idea</h3>
+    <p style="color:var(--dim); font-size:13.5px">Finisce nella cartella del gruppo: l'host la trova nella sua sezione Segnalazioni e la segna come fatta quando l'ha sistemata.</p>
+    <div class="sg-tipi" id="sg-tipi">${Object.keys(SEGN_TIPI).map(k => `
+      <button type="button" class="sg-tipo${k === tipo ? ' on' : ''}" data-t="${k}">
+        <span class="ic">${SEGN_TIPI[k].ic}</span><span class="lb">${SEGN_TIPI[k].label}</span>
+        <span class="ds">${esc(SEGN_TIPI[k].desc)}</span></button>`).join('')}</div>
+    <div class="sg-campo"><label>TITOLO</label><input type="text" id="sg-tit" maxlength="120" placeholder="il problema in una riga…"></div>
+    <div class="sg-campo"><label>DESCRIZIONE</label><textarea id="sg-desc" placeholder="Cosa succede, cosa ti aspettavi, come farlo ricapitare (passo per passo)…"></textarea></div>
+    <div class="sg-campo" id="sg-grav-riga"><label>QUANTO PESA</label>
+      <select id="sg-grav">${Object.keys(SEGN_GRAVITA).map(g => `<option value="${g}">${SEGN_GRAVITA[g].label}</option>`).join('')}</select></div>
+    <div class="sg-ctx">Registro in automatico: sezione «${esc(contesto)}» · v${APP_VERSION} · ${esc(nomeDi(S.me))}</div>
+    <div class="m-azioni">
+      <button class="bottone piccolo secondario" id="sg-annulla">Annulla</button>
+      <button class="bottone piccolo" id="sg-invia">📨 Invia</button>
+    </div>
+    ${mie.length ? `<div class="sg-mie"><h4>LE TUE SEGNALAZIONI</h4>${mie.map(s => `
+      <div class="sg-mia" data-mia="${esc(s.id)}">
+        <span>${(SEGN_TIPI[s.tipo] || {ic:'•'}).ic}</span>
+        <span class="t">${esc(s.titolo)}</span>
+        <span class="sg-chip st-${statoSegn(s)}">${(SEGN_STATI[statoSegn(s)] || {}).label}</span>
+        <button class="testo-link" data-togli="${esc(s.id)}">ritira</button>
+      </div>`).join('')}</div>` : ''}`);
+  const aggiornaTipo = () => {
+    $$('#sg-tipi .sg-tipo').forEach(b => b.classList.toggle('on', b.dataset.t === tipo));
+    $('#sg-grav-riga').hidden = tipo !== 'bug';
+    $('#sg-desc').placeholder = tipo === 'bug'
+      ? 'Cosa succede, cosa ti aspettavi, come farlo ricapitare (passo per passo)…'
+      : tipo === 'suggerimento' ? 'Cosa dovrebbe fare, come dovrebbe funzionare, perché è utile…'
+      : 'Butta giù l\'intuizione, anche grezza: a cosa potrebbe servire…';
+  };
+  $('#sg-tipi').onclick = e => { const b = e.target.closest('[data-t]'); if (!b) return; tipo = b.dataset.t; aggiornaTipo(); };
+  $('#sg-annulla').onclick = chiudiModale;
+  $('#sg-invia').onclick = async () => {
+    const titolo = $('#sg-tit').value.trim();
+    if (!titolo){ toast('Serve almeno un titolo', true); $('#sg-tit').focus(); return; }
+    const s = {
+      id:`${Date.now().toString(36)}-${S.me}`, tipo, titolo,
+      descrizione:$('#sg-desc').value.trim(),
+      gravita: tipo === 'bug' ? $('#sg-grav').value : null,
+      contesto, versione:APP_VERSION, creato:new Date().toISOString(), autore:S.me
+    };
+    S.segnalazioni.push(s);
+    try { await salvaMieSegnalazioni(); }
+    catch(e){ S.segnalazioni = S.segnalazioni.filter(x => x !== s); return toast('Invio non riuscito: '+e.message, true); }
+    chiudiModale(); disegnaSegnalazioni(); aggiornaBadgeSegnalazioni();
+    toast('Segnalazione inviata, grazie! 🐞');
+  };
+  $$('#modale [data-togli]').forEach(b => b.onclick = () => confermaModale('Ritirare questa segnalazione?', 'Ritira', async () => {
+    S.segnalazioni = S.segnalazioni.filter(x => x.id !== b.dataset.togli);
+    try { await salvaMieSegnalazioni(); } catch(e){ return toast('Non riuscito: '+e.message, true); }
+    disegnaSegnalazioni(); aggiornaBadgeSegnalazioni(); toast('Segnalazione ritirata');
+  }));
+  aggiornaTipo();
+  setTimeout(() => $('#sg-tit').focus(), 40);
+}
+function aggiornaBadgeSegnalazioni(){
+  const n = S.host ? segnAperte() : 0;
+  const t = $('#tab-segnalazioni');
+  if (t) t.innerHTML = `🐞 Segnalazioni${n ? ` <span style="color:var(--rosso2)">${n}</span>` : ''}`;
+}
+
+function disegnaSegnalazioni(){
+  aggiornaBadgeSegnalazioni();
+  if (!S.host || !$('#sg-lista')) return;
+  $$('#sg-strumenti button.f').forEach(b => b.classList.toggle('on', b.dataset.f === S.segnFiltro));
+  let lista = segnalazioniOrdinate();
+  const tot = lista.length;
+  if (S.segnFiltro === 'aperte') lista = lista.filter(s => !segnChiusa(s));
+  const q = (S.segnQ || '').trim().toLowerCase();
+  if (q) lista = lista.filter(s => (s.titolo+' '+(s.descrizione||'')).toLowerCase().includes(q));
+  $('#sg-conta').textContent = tot ? `${segnAperte()} aperte · ${tot} in tutto` : '';
+  $('#sg-lista').innerHTML = lista.map(s => {
+    const t = SEGN_TIPI[s.tipo] || {ic:'•', label:s.tipo};
+    const st = statoSegn(s), pr = prioritaSegn(s);
+    return `<div class="sg-card${segnChiusa(s) ? ' chiusa' : ''}${pr ? ' pr-'+pr : ''}" data-sg="${esc(s.id)}">
+      <div class="sg-cap">
+        <span class="sg-ic">${t.ic}</span>
+        <div class="main">
+          <div class="sg-tit">${esc(s.titolo)}</div>
+          <div class="sg-meta">${esc(t.label)}${s.gravita && SEGN_GRAVITA[s.gravita] ? ' · '+SEGN_GRAVITA[s.gravita].label : ''} ·
+            ${esc(nomeDi(s.autore))} · ${esc(String(s.creato || '').slice(0,10))}${s.contesto ? ' · in '+esc(s.contesto) : ''}${s.versione ? ' · v'+esc(s.versione) : ''}</div>
+        </div>
+        ${pr ? `<span class="sg-chip pr-${pr}">${SEGN_PRIORITA[pr].label}</span>` : ''}
+        <span class="sg-chip st-${st}">${(SEGN_STATI[st] || {}).label}</span>
+      </div>
+      ${s.descrizione ? `<div class="sg-desc">${esc(s.descrizione)}</div>` : ''}
+      <div class="sg-az">
+        <select data-prio="${esc(s.id)}">
+          <option value="">Priorità…</option>
+          ${Object.keys(SEGN_PRIORITA).map(p => `<option value="${p}"${pr === p ? ' selected' : ''}>${SEGN_PRIORITA[p].label}</option>`).join('')}
+        </select>
+        <select data-stato="${esc(s.id)}">
+          ${Object.keys(SEGN_STATI).map(x => `<option value="${x}"${st === x ? ' selected' : ''}>${SEGN_STATI[x].label}</option>`).join('')}
+        </select>
+        <button class="bottone piccolo secondario" data-fatto="${esc(s.id)}">${st === 'fatto' ? '↩ Riapri' : '✓ Fatta'}</button>
+        <span style="flex:1"></span>
+        <button class="testo-link" data-elimina="${esc(s.id)}">elimina</button>
+      </div>
+    </div>`;
+  }).join('') || `<div class="vuoto-msg">${tot ? 'Niente da mostrare con questo filtro.' : 'Nessuna segnalazione, per ora. 🎉'}</div>`;
+
+  const tocca = async (id, patch) => {
+    S.segnStato[id] = {...(S.segnStato[id] || {}), ...patch, aggiornato:new Date().toISOString()};
+    try { await salvaStatoSegnalazioni(); } catch(e){ return toast('Salvataggio non riuscito: '+e.message, true); }
+    disegnaSegnalazioni();
+  };
+  $$('#sg-lista [data-prio]').forEach(sel => sel.onchange = () => tocca(sel.dataset.prio, {priorita:sel.value || null}));
+  $$('#sg-lista [data-stato]').forEach(sel => sel.onchange = () => tocca(sel.dataset.stato, {stato:sel.value}));
+  $$('#sg-lista [data-fatto]').forEach(b => b.onclick = () => {
+    const s = S.segnalazioni.find(x => x.id === b.dataset.fatto);
+    tocca(b.dataset.fatto, {stato: s && statoSegn(s) === 'fatto' ? 'nuovo' : 'fatto'});
+  });
+  $$('#sg-lista [data-elimina]').forEach(b => b.onclick = () => confermaModale(
+    'Eliminare questa segnalazione? Sparisce per tutti.', 'Elimina', async () => {
+      if (!S.segnEliminate.includes(b.dataset.elimina)) S.segnEliminate.push(b.dataset.elimina);
+      delete S.segnStato[b.dataset.elimina];
+      try { await salvaStatoSegnalazioni(); } catch(e){ return toast('Non riuscito: '+e.message, true); }
+      disegnaSegnalazioni(); toast('Segnalazione eliminata');
+    }));
+}
 
 async function registraVisione(voce){
   const attuale = await FS.readJSON(['storico.json']) || {visioni:[]};
@@ -1272,6 +1592,7 @@ function disegnaTutto(){
   disegnaCatalogo();
   disegnaArchivio();
   disegnaRecensioni();
+  disegnaSegnalazioni();
   disegnaImpostazioni();
 }
 
@@ -1299,8 +1620,14 @@ function disegnaArchivio(){
   const mappa = new Map();
   for (const p of S.profili) for (const v of (p.lista || []))
     if (v.tmdbId && entryAttiva(v, p.slug) && !mappa.has(v.tmdbId)) mappa.set(v.tmdbId, v);
+  const totale = mappa.size;
   let film = [...mappa.values()];
   if (S.archivioFiltro === 'daPreparare') film = film.filter(v => !S.archivioPronti.has(v.tmdbId));
+  const q = (S.archivioQ || '').trim().toLowerCase();
+  if (q) film = film.filter(v => String(v.titolo || '').toLowerCase().includes(q)
+                              || String(v.collezioneNome || '').toLowerCase().includes(q));
+  const conta = $('#arch-conta');
+  if (conta) conta.textContent = film.length === totale ? `${totale} film` : `${film.length} di ${totale}`;
   const selOrd = $('#arch-ordina'); if (selOrd) selOrd.value = S.archivioOrdine;
   if (S.archivioOrdine === 'prossima')
     film.sort((a, b) => punteggioProssima(b) - punteggioProssima(a) || String(a.titolo).localeCompare(String(b.titolo)));
@@ -1318,7 +1645,7 @@ function disegnaArchivio(){
       </div>
       <span class="arch-flag">${pronto ? '✓ pronto' : '⚑ segna'}</span>
     </div>`;
-  }).join('') || `<div class="vuoto-msg" style="grid-column:1/-1">${S.archivioFiltro === 'daPreparare' ? 'Sono tutti pronti 🎉' : 'Nessun film da vedere nell\'archivio.'}</div>`;
+  }).join('') || `<div class="vuoto-msg" style="grid-column:1/-1">${q ? 'Nessun film con questo titolo.' : S.archivioFiltro === 'daPreparare' ? 'Sono tutti pronti 🎉' : 'Nessun film da vedere nell\'archivio.'}</div>`;
   $$('#lista-archivio .arch-riga').forEach(el => {
     const id = parseInt(el.dataset.arch, 10);
     const v = mappa.get(id);
@@ -1803,12 +2130,16 @@ async function disegnaSala(){
     inner.innerHTML = `<div class="messaggio">La sala è vuota…<br><small style="font-size:14px; color:var(--dim2)">clicca le poltrone di chi c'è stasera</small></div>`;
     rosaEl.innerHTML = rosaVuota();
     $('#riga-stato').innerHTML = '';
+    aggiornaListaCompleta(0);
     return;
   }
   const ris = classifica();
-  S.rosa = ris.rosa;
-  if (S.proiettato && !ris.rosa.some(r => r.film.tmdbId === S.proiettato)) S.proiettato = null;
-  const scelto = S.proiettato ? ris.rosa.find(r => r.film.tmdbId === S.proiettato) : ris.rosa[0];
+  S.rosa = ris.rosa; S.tutti = ris.tutti;
+  aggiornaListaCompleta(ris.totale);
+  // il proiettore può mostrare QUALSIASI film della classifica (anche scelto dalla lista
+  // completa, oltre la Top 5): la rosa laterale resta la Top 5 meno quello in onda.
+  if (S.proiettato && !ris.tutti.some(r => r.film.tmdbId === S.proiettato)) S.proiettato = null;
+  const scelto = S.proiettato ? ris.tutti.find(r => r.film.tmdbId === S.proiettato) : ris.tutti[0];
 
   if (!scelto){
     const e = ris.esclusi;
@@ -1822,7 +2153,7 @@ async function disegnaSala(){
     rosaEl.innerHTML = rosaVuota();
   } else {
     const f = scelto.film;
-    const rango = ris.rosa.indexOf(scelto) + 1;
+    const rango = ris.tutti.indexOf(scelto) + 1;
     inner.innerHTML = `
       <img class="sfondo" hidden><div class="velo"></div>
       <div class="rango serif">${rango}</div>
@@ -1864,7 +2195,7 @@ async function disegnaSala(){
     $$('#rosa .posto[data-id]').forEach(el => {
       const id = parseInt(el.dataset.id, 10);
       el.onclick = () => { S.proiettato = (id === primoId) ? null : id; disegnaSala(); };
-      const r = ris.rosa.find(x => x.film.tmdbId === id);
+      const r = ris.tutti.find(x => x.film.tmdbId === id);
       const img2 = el.querySelector('img'), seg = el.querySelector('.segnaposto');
       seg.style.background = `url("${segnapostoSVG(r.film.titolo, r.film.tmdbId)}") center/cover`;
       urlImmagine(r.film, 'locandina').then(u => { if (u){ img2.src = u; img2.hidden = false; seg.remove(); } });
@@ -1878,6 +2209,60 @@ async function disegnaSala(){
     <span>${S.presenti.size} in sala</span>
     <span>aggiornato ${S.ultimaLettura ? S.ultimaLettura.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'}) : '—'}</span>
     <span>v${APP_VERSION}${S.demo ? ' · DEMO (niente salvataggio su disco)' : ''}</span>`;
+}
+
+// Pulsante "lista completa" accanto alla rosa: attivo solo se c'è qualcosa in cartellone.
+function aggiornaListaCompleta(totale){
+  const b = $('#btn-lista-completa'); if (!b) return;
+  b.disabled = !totale;
+  b.innerHTML = totale ? `📋 Lista completa <span style="color:var(--dim2)">(${totale})</span>` : '📋 Lista completa';
+}
+
+// Tutti i film che passano i filtri di stasera, nello stesso ordine di pertinenza della
+// Top 5. Un clic mette il film sul proiettore (anche se sta fuori dalla Top 5).
+function modaleListaCompleta(){
+  if (!S.tutti.length) return;
+  const inOnda = () => S.proiettato || (S.tutti[0] && S.tutti[0].film.tmdbId);
+  apriModale(`
+    <h3>Lista completa — ${S.tutti.length} film</h3>
+    <p style="color:var(--dim); font-size:13.5px; margin-bottom:12px">In ordine di pertinenza secondo i presenti e i filtri di stasera. Clic su un film per metterlo sul proiettore.</p>
+    <input type="search" class="lc-q" id="lc-q" placeholder="🔎 filtra per titolo o regista…" autocomplete="off">
+    <div class="lc-lista" id="lc-lista"></div>
+    <div class="m-azioni"><button class="bottone piccolo" id="lc-chiudi">Chiudi</button></div>`);
+  const box = $('#lc-lista');
+  const render = () => {
+    const q = ($('#lc-q').value || '').trim().toLowerCase();
+    const onda = inOnda();
+    const righe = S.tutti
+      .map((r, i) => ({r, rango:i+1}))
+      .filter(o => !q || String(o.r.film.titolo || '').toLowerCase().includes(q)
+                      || String(o.r.film.regista || '').toLowerCase().includes(q));
+    box.innerHTML = righe.map(o => {
+      const f = o.r.film;
+      return `<div class="lc-riga${f.tmdbId === onda ? ' in-onda' : ''}" data-id="${f.tmdbId}">
+        <span class="lc-rango">${o.rango}</span>
+        <img class="lc-thumb" src="${segnapostoSVG(f.titolo, f.tmdbId)}" alt="">
+        <div class="lc-info">
+          <h5>${esc(f.titolo)}</h5>
+          <div class="lc-meta">${esc(f.anno || '')} · ${fmtMin(f.durata)}${f.regista ? ' · '+esc(f.regista) : ''} · 🎟 ${o.r.prop.length}</div>
+        </div>
+        <div class="lc-punti">🏆 ${fmtNum(o.r.S)}${f.voto ? `<small>★ ${fmtNum(f.voto,1)}</small>` : ''}</div>
+      </div>`;
+    }).join('') || '<div class="vuoto-msg">Nessun film con questo testo.</div>';
+    $$('#lc-lista .lc-riga').forEach(el => {
+      const id = parseInt(el.dataset.id, 10);
+      const r = S.tutti.find(x => x.film.tmdbId === id);
+      if (r) urlImmagine(r.film, 'locandina').then(u => { if (u) el.querySelector('.lc-thumb').src = u; });
+      el.onclick = () => {
+        S.proiettato = (id === (S.tutti[0] && S.tutti[0].film.tmdbId)) ? null : id;
+        chiudiModale(); disegnaSala();
+      };
+    });
+  };
+  $('#lc-q').oninput = render;
+  $('#lc-chiudi').onclick = chiudiModale;
+  render();
+  setTimeout(() => $('#lc-q').focus(), 40);
 }
 
 /* ════════════════════════ RENDER — CATALOGO ════════════════════════ */
@@ -2221,7 +2606,7 @@ function modaleScheda(r){
   apriModale(`
     <h3>${esc(f.titolo)}</h3>
     <div class="m-riga">
-      <div class="m-poster"><img hidden><div class="segnaposto" style="background:url('${segnapostoSVG(f.titolo, f.tmdbId)}') center/cover"></div></div>
+      <div class="m-poster"><img hidden><div class="segnaposto" style="background:url('${segnapostoSVG(f.titolo, f.tmdbId)}') center/cover; z-index:-1"></div></div>
       <div style="flex:1">
         <div class="m-meta">${esc(f.anno || '')} · ${fmtMin(f.durata)}${f.regista ? ' · '+esc(f.regista) : ''}<br>
           ${esc((f.generi || []).join(', ') || '—')}${f.voto ? ` · ★ ${fmtNum(f.voto,1)} ${f.votoFonte === 'imdb' ? 'IMDb' : 'TMDB'}` : ''}</div>
@@ -2232,7 +2617,9 @@ function modaleScheda(r){
     ${f.trama ? `<div class="trama">${esc(f.trama)}</div>` : ''}
     <div class="m-azioni"><button class="bottone piccolo" id="m-chiudi">Chiudi</button></div>`);
   $('#m-chiudi').onclick = chiudiModale;
-  urlImmagine(f, 'locandina').then(u => { const img = $('.m-poster img'); if (u && img){ img.src = u; img.hidden = false; } });
+  // la locandina va SOPRA il segnaposto: senza togliere il segnaposto (che nel DOM viene
+  // dopo l'img) la copertina resterebbe coperta e non si vedrebbe mai.
+  mostraLocandina($('#modale .m-poster'), f);
 }
 
 function modalePlay(r){
@@ -2352,7 +2739,8 @@ function agganciaImpostazioni(){
     await ricordaHost(S.host);
     applicaHost();
     if (S.host) disegnaArchivio();
-    toast(S.host ? 'Modalità host attiva: tab Archivio 🗄' : 'Modalità host disattivata');
+    disegnaSegnalazioni();
+    toast(S.host ? 'Modalità host attiva: tab Pronti alla visione e Segnalazioni 🗄' : 'Modalità host disattivata');
   };
 }
 
@@ -2366,9 +2754,10 @@ async function ricarica(silenziosa){
 function agganciaGlobali(){
   $$('nav .tab, header .tab').forEach(b => b.onclick = () => {
     $$('.tab').forEach(x => x.classList.toggle('attivo', x === b));
-    for (const v of ['sala','catalogo','recensioni','archivio','impostazioni']) $('#vista-'+v).hidden = v !== b.dataset.vista;
+    for (const v of VISTE) $('#vista-'+v).hidden = v !== b.dataset.vista;
     if (b.dataset.vista === 'archivio') disegnaArchivio();
     if (b.dataset.vista === 'recensioni') disegnaRecensioni();
+    if (b.dataset.vista === 'segnalazioni') disegnaSegnalazioni();
     // apre Impostazioni → rilegge dalla cartella, così vede i cambi fatti da un altro dispositivo
     if (b.dataset.vista === 'impostazioni' && !S.demo) ricarica(true);
   });
@@ -2392,6 +2781,15 @@ function agganciaGlobali(){
     disegnaArchivio();
   };
   $('#arch-ordina').onchange = e => { S.archivioOrdine = e.target.value; disegnaArchivio(); };
+  $('#arch-q').oninput = e => { S.archivioQ = e.target.value; disegnaArchivio(); };
+  // ── Segnalazioni ──
+  $('#btn-segnala').onclick = modaleSegnala;
+  $('#btn-lista-completa').onclick = modaleListaCompleta;
+  $('#sg-strumenti').onclick = e => {
+    const b = e.target.closest('button[data-f]'); if (!b) return;
+    S.segnFiltro = b.dataset.f; disegnaSegnalazioni();
+  };
+  $('#sg-q').oninput = e => { S.segnQ = e.target.value; disegnaSegnalazioni(); };
   // ── Archivio recensioni ──
   $('#rec-utenti').onclick = e => { const b = e.target.closest('[data-u]'); if (!b) return; S.recUtente = b.dataset.u; disegnaRecensioni(); };
   $('#rec-q').oninput = e => { S.recFiltri.q = e.target.value; disegnaRecensioni(); };
