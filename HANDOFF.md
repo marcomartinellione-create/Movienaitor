@@ -103,8 +103,13 @@ Stato "da vedere/visto" e i valori derivati NON si salvano: si ricalcolano dallo
   D×B×W×M → Top 5). Vedi SPECIFICA §6–8.
 - **Render**: `disegnaSala` (schermo+sipario, rosa 2-5, platea, adatta poltrone),
   `disegnaCatalogo` + `disegnaGeneriCatalogo` (barre generi), `disegnaArchivio`
-  (host, lista compatta + flag pronto + ricerca + filtro), `disegnaSegnalazioni`
-  (host), `disegnaImpostazioni`, `disegnaFiltri`, `poltronaSVG`.
+  (host: scorta aggregata con flag pronto/ricerca/filtro, **oppure** `disegnaArchivioUtente`
+  — la watch list di un utente in sola lettura, scelto dai chip `disegnaChiArchivio`;
+  stato `S.archivioChi`), `disegnaSegnalazioni` (host), `disegnaImpostazioni`,
+  `disegnaFiltri`, `poltronaSVG`.
+- **Modale protetto** (v1.2.1): `modaleProtetta()` = il modale ha classe `editor-grande`
+  (solo l'editor recensioni). Clic sul backdrop ed Esc **non** lo chiudono (si perderebbe
+  il lavoro): si chiude solo con Salva/Chiudi. Gli altri modali si chiudono normalmente.
 - **Lista completa** (v1.2.0): `classifica()` torna anche `tutti` (rosa intera);
   `modaleListaCompleta` la mostra e `S.proiettato` può puntare a QUALSIASI film di
   `S.tutti`, non solo alla Top 5. `aggiornaListaCompleta(n)` aggiorna il pulsante.

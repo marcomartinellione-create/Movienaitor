@@ -177,6 +177,10 @@ bandierina **"pronto alla visione"** (l'host segna quelli già procurati), una *
 per titolo** (v1.2.0, cerca anche nel nome della saga) col contatore "N di M", un filtro
 **Tutti / Da preparare** e l'ordinamento alfabetico o per priorità di prossima
 apparizione. Lo stato "pronto" è condiviso in `archivio.json` (scritto dall'host).
+In cima una **box "Chi"** (v1.2.1): chip **Tutti (scorta)** + un chip per persona. Con
+un nome selezionato l'host vede **la watch list di quella persona in sola lettura**
+(desiderio e compagnia visibili ma non modificabili, film già visti in coda), senza flag
+"pronto" né ordinamenti aggregati — solo consultazione.
 Con la modalità host compare anche la tab **🐞 Segnalazioni** (§11c). **Cambia utente** apre il gate come overlay con un tasto **Indietro** che
 torna alla sessione corrente senza cambiare profilo.
 

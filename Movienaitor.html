@@ -297,6 +297,15 @@ header .spazio{flex:1}
 .arch-flag{flex:none; display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none; font-size:12px; color:var(--dim2);
   border:1px solid var(--velluto3); border-radius:20px; padding:4px 10px}
 .arch-riga.pronto .arch-flag{color:var(--verde); border-color:var(--verde); background:rgba(125,155,118,.1)}
+/* box "Chi": scegli di chi vedere la lista (sola lettura) */
+.arch-chi{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px}
+.arch-chi .rec-utente{cursor:pointer}
+.arch-riga.vista{opacity:.62}
+.arch-pref{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:3px}
+.arch-pref .stelle{font-size:15px; cursor:default}
+.arch-pref .compagnia-ro{display:flex; gap:5px; flex-wrap:wrap}
+.arch-pref .pchip{cursor:default}
+.arch-visto-tag{color:var(--verde); font-size:11.5px}
 
 /* ---------- segnalazioni (bug / idee) ---------- */
 .bug-btn{position:fixed; left:18px; bottom:18px; z-index:80; display:flex; align-items:center; gap:8px;
@@ -527,14 +536,17 @@ header .spazio{flex:1}
 
   <!-- ───── PRONTI ALLA VISIONE (solo host) ───── -->
   <main id="vista-archivio" hidden>
-    <div class="sezione-titolo" style="margin-top:6px">PRONTI ALLA VISIONE<span class="aiuto-q" tabindex="0">?<span class="tip">Tutti i film che qualcuno vuole ancora vedere, senza preferenze né liste. Segna con la bandierina quelli che hai già procurato (pronti alla visione); il filtro ti fa vedere solo quelli che ti restano da preparare.</span></span></div>
+    <div class="sezione-titolo" style="margin-top:6px">PRONTI ALLA VISIONE<span class="aiuto-q" tabindex="0">?<span class="tip">Tutti i film che qualcuno vuole ancora vedere. Con «Tutti» è la scorta aggregata (dedup) da procurare: la bandierina segna quelli già pronti. Con il nome di una persona vedi la sua lista in sola lettura, senza poterla modificare.</span></span></div>
+    <div class="arch-chi" id="arch-chi"></div>
     <div class="arch-filtro" id="arch-filtro">
       <input type="search" id="arch-q" placeholder="🔎 cerca per titolo…" autocomplete="off"
         style="background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); border-radius:8px; padding:6px 10px; font:inherit; font-size:13px; min-width:200px">
-      <button data-f="tutti" class="on">Tutti</button>
-      <button data-f="daPreparare">Da preparare</button>
+      <span id="arch-solo-tutti" style="display:contents">
+        <button data-f="tutti" class="on">Tutti</button>
+        <button data-f="daPreparare">Da preparare</button>
+      </span>
       <span class="cat-conta" id="arch-conta" style="margin-left:auto"></span>
-      <label style="display:flex;align-items:center;gap:6px;color:var(--dim);font-size:13px">Ordina
+      <label id="arch-lbl-ordina" style="display:flex;align-items:center;gap:6px;color:var(--dim);font-size:13px">Ordina
         <select id="arch-ordina">
           <option value="alfabetico">Alfabetico</option>
           <option value="prossima">Priorità di prossima apparizione</option>
@@ -883,6 +895,7 @@ const S = {
   archivioFiltro:'tutti',   // 'tutti' | 'daPreparare'
   archivioOrdine:'alfabetico', // 'alfabetico' | 'prossima'
   archivioQ:'',             // ricerca per titolo in "Pronti alla visione"
+  archivioChi:null,         // null = scorta aggregata; slug = lista di quell'utente (sola lettura)
   segnalazioni:[],          // [{...segnalazione, autore}] da segnalazioni/<slug>.json
   segnStato:{},             // id → {stato, priorita, aggiornato} (scritto dall'host)
   segnEliminate:[],         // id nascosti dall'host
@@ -891,7 +904,7 @@ const S = {
   catFiltri:{q:'', ordina:'aggiunto', dir:'desc', minDes:0, minVoto:0, annoDa:null, annoA:null},
   recensioni:[],            // recensioni di tutti [{...rec, autore, _file:[...]}]
   recUtente:null,           // slug dell'utente sfogliato (null = io)
-  recFiltri:{q:'', ordina:'modificato', dir:'desc'},
+  recFiltri:{q:'', ordina:'votoPersonale', dir:'desc'},
   ultimaLettura:null,
   urlCache:new Map()     // percorso → objectURL
 };
@@ -1614,9 +1627,61 @@ function punteggioProssima(film){
   return D * B * W;
 }
 
+// Box "Chi": chip "Tutti" + un chip per profilo, per scegliere di chi vedere la lista.
+function disegnaChiArchivio(){
+  const box = $('#arch-chi'); if (!box) return;
+  const chip = (slug, etichetta, colore) =>
+    `<button class="rec-utente${(S.archivioChi||'') === (slug||'') ? ' on' : ''}" data-u="${esc(slug||'')}">${colore ? `<span class="pallino" style="background:${colore}"></span>` : ''}${esc(etichetta)}</button>`;
+  box.innerHTML = chip('', '🗄 Tutti (scorta)') +
+    S.profili.map(p => chip(p.slug, nomeDi(p.slug), coloreDi(p.slug))).join('');
+  box.onclick = e => { const b = e.target.closest('[data-u]'); if (!b) return; S.archivioChi = b.dataset.u || null; disegnaArchivio(); };
+}
+
+// Ramo "sola lettura": la watch list di un utente, senza poterla modificare.
+function disegnaArchivioUtente(slug){
+  const p = profiloDi(slug); if (!p){ S.archivioChi = null; return disegnaArchivio(); }
+  const q = (S.archivioQ || '').trim().toLowerCase();
+  let voci = (p.lista || []).filter(v => v.tmdbId);
+  const totale = voci.length;
+  if (q) voci = voci.filter(v => String(v.titolo || '').toLowerCase().includes(q) || String(v.collezioneNome || '').toLowerCase().includes(q));
+  // da vedere prima (per desiderio), poi i già visti
+  voci.sort((a, b) => (entryAttiva(b, slug) - entryAttiva(a, slug))
+    || ((b.desiderio||3) - (a.desiderio||3)) || String(a.titolo).localeCompare(String(b.titolo)));
+  const conta = $('#arch-conta');
+  if (conta) conta.textContent = voci.length === totale ? `${totale} film` : `${voci.length} di ${totale}`;
+  const compagniaRO = v => {
+    const parti = [...(v.conChi||[]).map(s => `<span class="pchip con">✓ ${esc(nomeDi(s))}</span>`),
+                   ...(v.nonCon||[]).map(s => `<span class="pchip non">✗ ${esc(nomeDi(s))}</span>`)];
+    return parti.length ? `<span class="compagnia-ro">${parti.join('')}</span>` : '';
+  };
+  $('#lista-archivio').innerHTML = voci.map(v => {
+    const visto = !entryAttiva(v, slug);
+    return `<div class="arch-riga${visto ? ' vista' : ''}" data-arch="${v.tmdbId}">
+      <img class="arch-thumb" src="${segnapostoSVG(v.titolo, v.tmdbId)}" alt="">
+      <div class="arch-info">
+        <h5>${esc(v.titolo)}</h5>
+        <div class="arch-meta">${esc(v.anno || '')} · ${fmtMin(v.durata)}${visto ? ' · <span class="arch-visto-tag">👁 già visto</span>' : ''}</div>
+        <div class="arch-pref">${stelleHTML(v.desiderio || 3, false)}${compagniaRO(v)}</div>
+      </div>
+    </div>`;
+  }).join('') || `<div class="vuoto-msg" style="grid-column:1/-1">${q ? 'Nessun film con questo titolo.' : esc(nomeDi(slug))+' non ha film in lista.'}</div>`;
+  $$('#lista-archivio .arch-riga').forEach(el => {
+    const id = parseInt(el.dataset.arch, 10);
+    const v = (p.lista || []).find(x => x.tmdbId === id);
+    const img = el.querySelector('.arch-thumb');
+    if (v){ urlImmagine(v, 'locandina').then(u => { if (u) img.src = u; }); img.onclick = () => modaleScheda({ film: v, prop: null }); }
+  });
+}
+
 function disegnaArchivio(){
   if (!S.host) return;
-  $$('#arch-filtro button').forEach(b => b.classList.toggle('on', b.dataset.f === S.archivioFiltro));
+  disegnaChiArchivio();
+  const perUtente = !!(S.archivioChi && profiloDi(S.archivioChi));
+  // i controlli "Tutti / Da preparare / Ordina" valgono solo per la scorta aggregata
+  const solo = $('#arch-solo-tutti'); if (solo) solo.style.display = perUtente ? 'none' : 'contents';
+  const lbl = $('#arch-lbl-ordina'); if (lbl) lbl.style.display = perUtente ? 'none' : 'flex';
+  if (perUtente) return disegnaArchivioUtente(S.archivioChi);
+  $$('#arch-filtro button[data-f]').forEach(b => b.classList.toggle('on', b.dataset.f === S.archivioFiltro));
   const mappa = new Map();
   for (const p of S.profili) for (const v of (p.lista || []))
     if (v.tmdbId && entryAttiva(v, p.slug) && !mappa.has(v.tmdbId)) mappa.set(v.tmdbId, v);
@@ -1740,6 +1805,8 @@ function disegnaRecensioni(){
     $('#rec-visti').querySelectorAll('[data-id]').forEach(b => b.onclick = () => avviaEditorDaTMDB(parseInt(b.dataset.id,10)));
   } else boxV.style.display = 'none';
 
+  const so = $('#rec-ordina'); if (so) so.value = S.recFiltri.ordina;
+  const sd = $('#rec-dir'); if (sd) sd.textContent = S.recFiltri.dir === 'desc' ? '↓ decr.' : '↑ cresc.';
   const lista = recensioniFiltrate(sel);
   $('#rec-conta').textContent = lista.length ? lista.length + (lista.length===1?' recensione':' recensioni') : '';
   const g = $('#rec-galleria');
@@ -2552,7 +2619,17 @@ function apriColorPicker(iniziale, onScegli){
   $('#cp-ok').onclick = () => { chiudiModale(); onScegli(sel); };
   applica();
 }
-$('#modale-fondo') && ($('#modale-fondo').onclick = e => { if (e.target.id === 'modale-fondo') chiudiModale(); });
+// Clic fuori dalla box chiude il modale — MA non l'editor recensione (si perderebbe il
+// lavoro): quello si chiude solo con Salva/Chiudi. Vale anche per Esc.
+function modaleProtetta(){ return $('#modale').classList.contains('editor-grande'); }
+$('#modale-fondo') && ($('#modale-fondo').onclick = e => {
+  if (e.target.id !== 'modale-fondo') return;
+  if (modaleProtetta()){ toast('Per chiudere la recensione usa Salva o Chiudi, così non perdi il lavoro'); return; }
+  chiudiModale();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !$('#modale-fondo').hidden && !modaleProtetta()) chiudiModale();
+});
 
 async function modaleAggiungi(id){
   apriModale('<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero la scheda del film.</p>');
