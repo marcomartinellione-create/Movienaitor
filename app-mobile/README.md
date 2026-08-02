@@ -8,12 +8,13 @@ e il tuo `segnalazioni/<slug>.json` (regola anti-conflitto).
 
 Tre sezioni: **🎬 Sala**, **🔖 Lista**, **📝 Recensioni**, più il pulsante **🐞 Segnala**.
 
-- **Sala** — stessa logica del desktop: **poltrone in velluto** (una per profilo, tocca
-  per chi c'è stasera), filtri della serata (durata / regista / genere), il film in
-  cartellone col suo rango e punteggio, e la **lista completa** in ordine di pertinenza —
-  un tocco porta in cartellone anche un film in fondo alla classifica. **Niente Play**:
-  registrare la visione resta al PC della serata, perché `storico.json` lo scrive solo
-  l'host.
+- **Sala** — stessa logica del desktop: uno **schermo cinema** (proporzione 16/9 come il
+  desktop) con il **sipario animato** che si apre sul film, il rango e il punteggio; sotto,
+  le **poltrone in velluto** (una per profilo + posti liberi per utenti futuri, tocca per
+  chi c'è stasera); filtri della serata (durata / regista / genere) e la **lista completa**
+  in ordine di pertinenza — un tocco porta sullo schermo anche un film in fondo alla
+  classifica. **Niente Play**: registrare la visione resta al PC della serata, perché
+  `storico.json` lo scrive solo l'host.
 - **Lista** — divisa in due sotto-menù **Da vedere** / **Già visti** (col conteggio): i
   film visti in sala restano consultabili e da lì si possono **rimettere in lista** per
   rivederli. Ricerca e filtri agiscono sulla sezione attiva.

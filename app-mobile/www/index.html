@@ -181,17 +181,26 @@
   .smtab.on{border-color:var(--oro); color:var(--oro2); background:#2a1b16}
   .smtab .n{opacity:.65; font-weight:400}
   .film .visto-tag{color:var(--ok)}
-  /* schermo: stesso aspetto cinemascope del desktop (21/9) */
-  .cartellone{position:relative; border:3px double var(--oro); border-radius:12px; overflow:hidden; background:#120a0d; margin:10px 0 4px; aspect-ratio:21/9; box-shadow:0 0 40px rgba(201,164,92,.12)}
+  /* schermo: stessa proporzione del desktop (16/9) + sipario animato */
+  .cartellone{position:relative; border:3px double var(--oro); border-radius:12px; overflow:hidden; background:#120a0d; margin:10px 0 4px; aspect-ratio:16/9; box-shadow:0 0 40px rgba(201,164,92,.12)}
+  .cartellone-inner{position:absolute; inset:0}
   .cartellone .sfondo{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.7}
   .cartellone .velo{position:absolute; inset:0; background:linear-gradient(180deg,#140a0c22 25%,#140a0cf0 88%)}
-  .cartellone .dentro{position:absolute; inset:0; padding:12px 14px; display:flex; flex-direction:column; justify-content:flex-end}
-  .cartellone .rango{position:absolute; top:6px; left:12px; font-size:24px; font-family:var(--serif,Georgia,serif); color:var(--oro2); text-shadow:0 1px 6px #000; z-index:1}
+  .cartellone .dentro{position:absolute; inset:0; padding:12px 14px; display:flex; flex-direction:column; justify-content:flex-end; z-index:1}
+  .cartellone .rango{position:absolute; top:6px; left:12px; font-size:24px; font-family:var(--serif,Georgia,serif); color:var(--oro2); text-shadow:0 1px 6px #000; z-index:2}
   .cartellone h4{margin:0; font-size:18px; line-height:1.15; color:var(--testo); text-shadow:0 1px 8px #000;
     overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical}
-  .cartellone .meta2{color:var(--dim); font-size:11.5px; margin-top:3px; text-shadow:0 1px 6px #000; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical}
+  .cartellone .meta2{color:var(--dim); font-size:11.5px; margin-top:3px; text-shadow:0 1px 6px #000; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical}
   .cartellone .punti{color:var(--oro2)}
-  .sala-vuota{border:3px double var(--oro); border-radius:12px; background:#120a0d; aspect-ratio:21/9; display:flex; align-items:center; justify-content:center; text-align:center; color:var(--dim); font-size:13px; margin:10px 0; line-height:1.6; padding:16px}
+  .cartellone .msg{position:absolute; inset:0; display:flex; flex-direction:column; gap:6px; align-items:center; justify-content:center; text-align:center; color:var(--dim); font-size:13px; padding:18px; line-height:1.55; z-index:6}
+  /* sipario: tende chiuse di base, si aprono scorrendo quando c'è un film (.aperto) */
+  .cartellone .tenda{position:absolute; top:-6px; bottom:-6px; width:54%; z-index:4; pointer-events:none;
+    background:repeating-linear-gradient(90deg,#7a3838 0 10px,#5a282c 10px 20px);
+    transition:transform .9s cubic-bezier(.55,.06,.3,1)}
+  .cartellone .tenda.sx{left:-4px; box-shadow:inset -18px 0 28px rgba(0,0,0,.55)}
+  .cartellone .tenda.dx{right:-4px; box-shadow:inset 18px 0 28px rgba(0,0,0,.55)}
+  .cartellone.aperto .tenda.sx{transform:translateX(calc(-100% + 22px))}
+  .cartellone.aperto .tenda.dx{transform:translateX(calc(100% - 22px))}
   .film .rango2{flex:0 0 auto; width:20px; text-align:center; color:var(--oro2); font-size:16px}
   .stato-sala{color:var(--dim); font-size:11.5px; text-align:center; margin:10px 2px; line-height:1.5}
   .stato-sala .avv{color:var(--rosso2)}
@@ -268,7 +277,10 @@
 
       <div id="pan-sala" hidden>
         <div class="sezione"><span class="grow">Stasera</span><button class="f-btn" id="m-btn-filtri-sala">≡ filtri</button></div>
-        <div id="m-cartellone"></div>
+        <div class="cartellone" id="m-schermo">
+          <div class="cartellone-inner" id="m-schermo-inner"></div>
+          <div class="tenda sx"></div><div class="tenda dx"></div>
+        </div>
         <button class="ghost" id="m-lista-completa" style="width:100%; margin-top:8px">📋 Lista completa</button>
         <div class="sezione"><span class="grow">Chi c'è stasera <span id="m-conta-pres"></span></span></div>
         <div class="platea" id="m-platea"></div>
@@ -937,10 +949,12 @@ function disegnaSalaM(){
   $('#m-conta-pres').textContent = S.presenti.size ? '· '+S.presenti.size : '';
   $('#m-btn-filtri-sala').classList.toggle('attivo', filtriSalaAttivi());
 
-  const cart = $('#m-cartellone'), stato = $('#m-stato-sala'), btnLC = $('#m-lista-completa');
+  const schermo = $('#m-schermo'), inner = $('#m-schermo-inner'), stato = $('#m-stato-sala'), btnLC = $('#m-lista-completa');
   const aggiornaLC = n => { if (btnLC){ btnLC.disabled = !n; btnLC.textContent = n ? `📋 Lista completa (${n})` : '📋 Lista completa'; } };
+  // schermo.classList `aperto` apre le tende (sipario); l'inner si rifà ad ogni render
   if (!S.presenti.size){
-    cart.innerHTML = '<div class="sala-vuota">La sala è vuota…<br>tocca le poltrone di chi c\'è stasera.</div>';
+    schermo.classList.remove('aperto');
+    inner.innerHTML = '<div class="msg">La sala è vuota…<br><span style="font-size:12px; color:var(--dim)">tocca le poltrone di chi c\'è stasera</span></div>';
     stato.innerHTML = ''; S.tuttiSala = []; aggiornaLC(0);
     return;
   }
@@ -954,11 +968,12 @@ function disegnaSalaM(){
     const e = ris.esclusi;
     const motivi = [e.durata && e.durata+' troppo lunghi', e.genere && e.genere+' di altro genere',
       e.regista && e.regista+' di altri registi', e.vincoli && e.vincoli+' per vincoli di compagnia'].filter(Boolean).join(' · ');
-    cart.innerHTML = `<div class="sala-vuota">Niente in cartellone stasera<br><span style="font-size:12px">${esc(motivi || 'le liste dei presenti sono vuote')}</span></div>`;
+    schermo.classList.remove('aperto');
+    inner.innerHTML = `<div class="msg">Niente in cartellone stasera<br><span style="font-size:12px">${esc(motivi || 'le liste dei presenti sono vuote')}</span></div>`;
   } else {
     const f = scelto.film, rango = ris.tutti.indexOf(scelto) + 1;
     const sf = f.sfondoUrl || f.posterUrl || '';
-    cart.innerHTML = `<div class="cartellone" id="m-cart-clic">
+    inner.innerHTML = `
       ${sf ? `<img class="sfondo" src="${esc(sf)}" alt="">` : ''}<div class="velo"></div>
       <div class="rango">${rango}</div>
       <div class="dentro">
@@ -966,8 +981,13 @@ function disegnaSalaM(){
         <div class="meta2">${esc(f.anno||'')}${f.durata?' · '+fmtMin(f.durata):''}${f.regista?' · '+esc(f.regista):''}<br>
           🎟 ${scelto.prop.length} ${scelto.prop.length===1?'proponente':'proponenti'} ·
           <span class="punti">🏆 ${fmtNum(scelto.S)}</span>${f.voto?` · ★ ${f.voto}`:''}${scelto.M>1?' · 💛 su misura':''}${rango>1?' · <span style="color:var(--oro2)">dalla lista completa</span>':''}</div>
-      </div></div>`;
-    $('#m-cart-clic').onclick = () => modaleSchedaM(scelto);
+      </div>`;
+    inner.onclick = () => modaleSchedaM(scelto);
+    // Sipario: se era chiuso lo apro dopo un attimo, così le tende partono chiuse e si
+    // vedono scorrere (transizione CSS). Se era già aperto (cambio film) resta aperto,
+    // niente flash. setTimeout e non rAF: scatta anche col tab in background, così il
+    // film non resta mai coperto.
+    if (!schermo.classList.contains('aperto')) setTimeout(() => schermo.classList.add('aperto'), 60);
   }
   const e = ris.esclusi, fuori = e.durata+e.genere+e.regista+e.vincoli;
   stato.innerHTML = `🎞 ${ris.totale} in cartellone · ${S.presenti.size} in sala
