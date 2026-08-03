@@ -13,8 +13,10 @@ Tre sezioni: **🎬 Sala**, **🔖 Lista**, **📝 Recensioni**, più il pulsant
   le **poltrone in velluto** (una per profilo + posti liberi per utenti futuri, tocca per
   chi c'è stasera); filtri della serata (durata / regista / genere) e la **lista completa**
   in ordine di pertinenza — un tocco porta sullo schermo anche un film in fondo alla
-  classifica. **Niente Play**: registrare la visione resta al PC della serata, perché
-  `storico.json` lo scrive solo l'host.
+  classifica. C'è anche il **tasto ▶ Play** (come sul desktop): elegge il film e lo
+  registra come visto per chi è in sala. Scrive `storico.json` rileggendolo fresco e
+  fondendo le voci per `id` (§ anti-conflitto), così anche se PC e telefono registrano
+  non si perde nulla; alla serata, comunque, lo preme un dispositivo solo.
 - **Lista** — divisa in due sotto-menù **Da vedere** / **Già visti** (col conteggio): i
   film visti in sala restano consultabili e da lì si possono **rimettere in lista** per
   rivederli. Ricerca e filtri agiscono sulla sezione attiva.

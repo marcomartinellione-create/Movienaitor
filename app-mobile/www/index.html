@@ -201,6 +201,17 @@
   .cartellone .tenda.dx{right:-4px; box-shadow:inset 18px 0 28px rgba(0,0,0,.55)}
   .cartellone.aperto .tenda.sx{transform:translateX(calc(-100% + 22px))}
   .cartellone.aperto .tenda.dx{transform:translateX(calc(100% - 22px))}
+  /* tasto Play (registra la serata come sul desktop) */
+  .cartellone .play{position:absolute; right:12px; bottom:12px; z-index:5; width:50px; height:50px; border-radius:50%; border:0;
+    background:radial-gradient(circle at 35% 30%, var(--oro2), var(--oro) 70%, #8a7347); color:#231208; font-size:21px;
+    box-shadow:0 5px 16px rgba(201,164,92,.45); display:grid; place-items:center; cursor:pointer}
+  .cartellone .play:active{transform:scale(.93)}
+  /* "si spengono le luci" dopo il Play */
+  #m-luci{position:fixed; inset:0; background:#000; z-index:60; display:flex; flex-direction:column; gap:12px;
+    align-items:center; justify-content:center; text-align:center; padding:24px; color:var(--oro2); font-size:26px;
+    opacity:0; pointer-events:none; transition:opacity .5s}
+  #m-luci.giu{opacity:1; pointer-events:auto}
+  #m-luci small{font-size:13px; color:var(--dim)}
   .film .rango2{flex:0 0 auto; width:20px; text-align:center; color:var(--oro2); font-size:16px}
   .stato-sala{color:var(--dim); font-size:11.5px; text-align:center; margin:10px 2px; line-height:1.5}
   .stato-sala .avv{color:var(--rosso2)}
@@ -324,6 +335,7 @@
 
 <button class="bug-btn" id="m-segnala" style="display:none">🐞 Segnala</button>
 <div class="backdrop" id="backdrop"><div class="modale" id="modale"></div></div>
+<div id="m-luci"><div>🎬 Buona visione!</div><small id="m-luci-tit"></small></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -981,8 +993,10 @@ function disegnaSalaM(){
         <div class="meta2">${esc(f.anno||'')}${f.durata?' · '+fmtMin(f.durata):''}${f.regista?' · '+esc(f.regista):''}<br>
           🎟 ${scelto.prop.length} ${scelto.prop.length===1?'proponente':'proponenti'} ·
           <span class="punti">🏆 ${fmtNum(scelto.S)}</span>${f.voto?` · ★ ${f.voto}`:''}${scelto.M>1?' · 💛 su misura':''}${rango>1?' · <span style="color:var(--oro2)">dalla lista completa</span>':''}</div>
-      </div>`;
+      </div>
+      <button class="play" id="m-play" title="Segna questo film come visto stasera">▶</button>`;
     inner.onclick = () => modaleSchedaM(scelto);
+    $('#m-play').onclick = e => { e.stopPropagation(); modalePlayM(scelto); };
     // Sipario: se era chiuso lo apro dopo un attimo, così le tende partono chiuse e si
     // vedono scorrere (transizione CSS). Se era già aperto (cambio film) resta aperto,
     // niente flash. setTimeout e non rAF: scatta anche col tab in background, così il
@@ -992,7 +1006,7 @@ function disegnaSalaM(){
   const e = ris.esclusi, fuori = e.durata+e.genere+e.regista+e.vincoli;
   stato.innerHTML = `🎞 ${ris.totale} in cartellone · ${S.presenti.size} in sala
     ${fuori ? `<br><span class="avv">esclusi: ${[e.durata&&e.durata+' per durata', e.genere&&e.genere+' per genere', e.regista&&e.regista+' per regista', e.vincoli&&e.vincoli+' per compagnia'].filter(Boolean).join(', ')}</span>` : ''}
-    <br><span style="color:var(--dim)">Il <b>Play</b> resta al PC della serata: qui si guarda e si decide.</span>`;
+    <br><span style="color:var(--dim)">▶ registra il film come visto per chi è in sala.</span>`;
 }
 
 function modaleSchedaM(r){
@@ -1011,6 +1025,54 @@ function modaleSchedaM(r){
     ${f.trama?`<div class="trama">${esc(f.trama)}</div>`:''}
     <div class="m-az"><button class="primario" id="m-chiudi">Chiudi</button></div>`);
   $('#m-chiudi').onclick = chiudiModale;
+}
+
+// Registra la visione nello storico condiviso. Come sul desktop: rilegge storico.json
+// FRESCO e fonde le voci per `id` (ognuna ha id univoco timestamp+autore), così anche se
+// più dispositivi registrano non si perde nulla (SPECIFICA §3.2).
+async function registraVisioneM(voce){
+  let attuale = {visioni:[]};
+  const txt = await fsLeggiPercorso('storico.json');
+  if (txt){ try { const j = JSON.parse(txt); if (j && Array.isArray(j.visioni)) attuale = j; } catch(e){} }
+  if (!Array.isArray(attuale.visioni)) attuale.visioni = [];
+  const ids = new Set(attuale.visioni.map(v => v.id));
+  for (const v of S.storico) if (v.id && !ids.has(v.id)){ attuale.visioni.push(v); ids.add(v.id); }
+  if (!ids.has(voce.id)) attuale.visioni.push(voce);
+  await fsScriviPercorso('storico.json', JSON.stringify(attuale));
+  S.storico = attuale.visioni.sort((a,b) => String(a.data||'').localeCompare(String(b.data||'')));
+}
+
+// Play mobile: elegge il film della serata e lo registra come visto per i presenti,
+// esattamente come il tasto Play del desktop.
+function modalePlayM(r){
+  const f = r.film;
+  const nomi = [...S.presenti].map(nomeDi).join(', ');
+  apriModale(`
+    <h3>Si spengono le luci…</h3>
+    <p class="meta" style="line-height:1.6">Il film della serata è <b style="color:var(--oro2)">«${esc(f.titolo)}»</b>.<br>
+    Lo registro come <b>visto</b> per: ${esc(nomi)}.<br>
+    <span style="font-size:12px">Per i proponenti riparte il timer dell'attesa e il film esce dalle loro liste.</span></p>
+    <div class="m-az">
+      <button class="ghost" id="mp-annulla">Non ancora</button>
+      <button class="primario" id="mp-ok">▶ Buona visione</button>
+    </div>`);
+  $('#mp-annulla').onclick = chiudiModale;
+  $('#mp-ok').onclick = async () => {
+    $('#mp-ok').disabled = true; $('#mp-ok').innerHTML = '<span class="spin"></span>';
+    const voce = {
+      id:`${Date.now().toString(36)}-${S.me.slug}`, data:new Date().toISOString().slice(0,10), ts:new Date().toISOString(),
+      tmdbId:f.tmdbId, titolo:f.titolo,
+      partecipanti:[...S.presenti], proponenti:r.prop.map(p => p.slug)
+    };
+    try { await registraVisioneM(voce); }
+    catch(e){ $('#mp-ok').disabled=false; $('#mp-ok').textContent='▶ Buona visione'; return toast('Registrazione non riuscita: '+e.message, true); }
+    chiudiModale();
+    $('#m-luci-tit').textContent = `${f.titolo} — registrato per ${voce.partecipanti.length} spettatori`;
+    $('#m-luci').classList.add('giu');
+    setTimeout(() => $('#m-luci').classList.remove('giu'), 2300);
+    S.proiettato = null;
+    disegnaSalaM(); disegnaMiaLista();
+  };
 }
 
 function modaleListaCompletaM(){
