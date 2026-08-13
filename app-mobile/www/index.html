@@ -121,6 +121,10 @@
   .rec-poster2 img{width:100%; height:100%; object-fit:cover; display:block}
   .rec-poster2 .seg2{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; font-size:11px; color:var(--dim); padding:4px; line-height:1.3}
   .rec-voto-b{position:absolute; bottom:4px; left:4px; background:#000c; color:var(--oro2); padding:2px 6px; border-radius:6px; font-size:11px; letter-spacing:1px}
+  .rec-card2.in-corso{outline:2px solid var(--oro); outline-offset:-2px}
+  .rec-incorso-b{position:absolute; top:4px; left:4px; background:var(--oro); color:#231208; font-size:11px; font-weight:700; padding:1px 6px; border-radius:6px}
+  .re-incorso2{display:inline-flex; align-items:center; gap:6px; color:var(--oro2); font-size:12.5px; border:1px solid var(--oro); border-radius:9px; padding:6px 10px}
+  .re-incorso2 input{accent-color:var(--oro); width:15px; height:15px}
   .rec-card2 .corpo{padding:6px 7px}
   .rec-card2 h5{margin:0; font-size:12px; line-height:1.15; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .rec-card2 .sub2{color:var(--dim); font-size:10.5px; margin-top:1px}
@@ -344,7 +348,7 @@ const APP_VERSION = '1.4.2';
 const CONFIG_DEFAULT = { bonusCoralita:0.10, capCoralita:0.30, passoSoddisfazione:0.15, bonusCoppia:1.15, sogliaSpareggio:0.02 };
 const S = { treeUri:null, config:{}, profili:[], me:null, storico:[],
   filtri:{ q:'', ordina:'aggiunto', dir:'desc', minDes:0, genere:[], annoDa:null, annoA:null },
-  recensioni:[], recUtente:null, recFiltri:{ q:'', ordina:'modificato', dir:'desc' }, pan:'lista',
+  recensioni:[], recUtente:null, recFiltri:{ q:'', ordina:'votoPersonale', dir:'desc' }, pan:'lista',
   listaVista:'daVedere',
   presenti:new Set(), fSala:{ durata:null, genere:[], regista:'' }, proiettato:null, tuttiSala:[],
   segnalazioni:[], segnStato:{}, segnEliminate:[], aggiornamento:null };
@@ -1397,6 +1401,7 @@ function recFiltrateM(slug){
   const cmp={modificato:(a,b)=>String(a.modificato||'').localeCompare(String(b.modificato||'')),ultimaVisione:(a,b)=>String(a.ultimaVisione||'').localeCompare(String(b.ultimaVisione||'')),votoPersonale:(a,b)=>(a.votoPersonale||0)-(b.votoPersonale||0),titolo:(a,b)=>String((a.meta||{}).titolo||'').localeCompare(String((b.meta||{}).titolo||'')),anno:(a,b)=>(parseInt((a.meta||{}).anno,10)||0)-(parseInt((b.meta||{}).anno,10)||0)}[f.ordina]||(()=>0);
   out.sort((a,b)=>cmp(a,b)||String((a.meta||{}).titolo||'').localeCompare(String((b.meta||{}).titolo||'')));
   if(f.dir==='desc') out.reverse();
+  out=[...out.filter(r=>r.inCorso), ...out.filter(r=>!r.inCorso)];   // "in corso" sempre in cima
   return out;
 }
 function filmVistiNonRecM(){
@@ -1418,10 +1423,11 @@ function disegnaRecMobile(){
     $('#m-rec-visti').innerHTML=nr.map(f=>`<button class="rec-nr" data-id="${f.tmdbId}">${esc(f.titolo)}</button>`).join('');
     $('#m-rec-visti').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>avviaEditorDaTMDBM(parseInt(b.dataset.id,10)));
   } else box.style.display='none';
+  const so=$('#m-rec-ordina'); if(so) so.value=S.recFiltri.ordina;
   const lista=recFiltrateM(sel); const g=$('#m-rec-galleria');
   if(!lista.length){ g.innerHTML=`<div class="rec-vuoto">${mio?'Non hai ancora recensioni.<br>Tocca «✍ Nuova».':esc(nomeDi(sel))+' non ha recensioni.'}</div>`; return; }
-  g.innerHTML=lista.map((r,i)=>{const m=r.meta||{};const pst=m.posterUrl||'';return `<div class="rec-card2" data-i="${i}">
-    <div class="rec-poster2">${pst?`<img src="${esc(pst)}" loading="lazy" alt="">`:`<div class="seg2">${esc(m.titolo||'')}</div>`}${r.votoPersonale?`<div class="rec-voto-b">${stelleLetterbox(r.votoPersonale)}</div>`:''}</div>
+  g.innerHTML=lista.map((r,i)=>{const m=r.meta||{};const pst=m.posterUrl||'';return `<div class="rec-card2${r.inCorso?' in-corso':''}" data-i="${i}">
+    <div class="rec-poster2">${pst?`<img src="${esc(pst)}" loading="lazy" alt="">`:`<div class="seg2">${esc(m.titolo||'')}</div>`}${r.inCorso?'<div class="rec-incorso-b">✍</div>':''}${r.votoPersonale?`<div class="rec-voto-b">${stelleLetterbox(r.votoPersonale)}</div>`:''}</div>
     <div class="corpo"><h5>${esc(m.titolo||'Film')}</h5><div class="sub2">${esc(m.anno||'')}</div></div></div>`;}).join('');
   lista.forEach((r,i)=>{const el=g.querySelector(`.rec-card2[data-i="${i}"]`); if(el) el.onclick=()=>editorRecMobile(r);});
 }
@@ -1442,6 +1448,7 @@ function editorRecMobile(recOrig, opts={}){
     bozza.sezioni=[...document.querySelectorAll('#m-re-sezioni .re-sez')].map(row=>({titolo:row.querySelector('.re-sez-tit').value, testo:row.querySelector('.re-sez-txt').innerHTML}));
     const p=$('#m-re-perc'); if(p) bozza.doveVederlo.percorso=p.value.trim();
     const uv=$('#m-re-uv'); if(uv) bozza.ultimaVisione=uv.value||null;
+    const ic=$('#m-re-incorso'); if(ic) bozza.inCorso=ic.checked;
     bozza.votoPersonale=voto;
   }
   function render(){
@@ -1457,7 +1464,8 @@ function editorRecMobile(recOrig, opts={}){
         <button class="cambia" id="m-re-chiudi" style="font-size:18px">✕</button>
       </div>
       ${ed
-        ?`<div class="re-riga2"><label>Ultima visione <input type="date" id="m-re-uv" value="${esc(bozza.ultimaVisione||'')}"></label></div>
+        ?`<div class="re-riga2"><label>Ultima visione <input type="date" id="m-re-uv" value="${esc(bozza.ultimaVisione||'')}"></label>
+            <label class="re-incorso2"><input type="checkbox" id="m-re-incorso"${bozza.inCorso?' checked':''}> ✍ In corso</label></div>
           <div class="etich">DOVE VEDERLO</div>
           <div class="compagnia" id="m-re-strm">${DOVE_STREAMING.map(x=>doveChipM(x,'streaming',(bozza.doveVederlo.streaming||[]).includes(x))).join('')}</div>
           <div class="compagnia" id="m-re-fis">${DOVE_FISICO.map(x=>doveChipM(x,'fisico',(bozza.doveVederlo.fisico||[]).includes(x))).join('')}</div>
@@ -1523,7 +1531,7 @@ async function avviaEditorDaTMDBM(id){
   const mia=miaRecMobile(id); if(mia) return editorRecMobile(mia);
   apriModale('<h3>Un attimo…</h3><p class="meta"><span class="spin"></span> recupero il film</p>');
   let d; try{ d=await dettagliFilm(id); }catch(e){ return toast('Scheda non recuperata',true); }
-  const rec={ tmdbId:d.tmdbId, votoPersonale:0, doveVederlo:{streaming:[],fisico:[],percorso:''}, ultimaVisione:new Date().toISOString().slice(0,10),
+  const rec={ tmdbId:d.tmdbId, votoPersonale:0, doveVederlo:{streaming:[],fisico:[],percorso:''}, ultimaVisione:ultimaVisioneMia(d.tmdbId)||new Date().toISOString().slice(0,10),
     meta:{ titolo:d.titolo, anno:d.anno, generi:d.generi, regista:d.regista, durata:d.durata, paese:d.paese||'', cast:d.cast||[], voto:d.voto, votoFonte:d.votoFonte, locandina:d.locandina, posterUrl:d.posterUrl },
     sezioni: SEZIONI_DEFAULT.map(tt=>({titolo:tt,testo:''})), link:[] };
   editorRecMobile(rec,{nuova:true});

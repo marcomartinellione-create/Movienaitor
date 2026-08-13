@@ -70,10 +70,14 @@ profili/<slug>.json       un file per persona
 recensioni/<slug>/<tmdbId>.json   recensioni personali (una cartella per utente, un file per film)
 ```
 
-**Recensione** `{tmdbId, autore, creato, modificato, ultimaVisione?, votoPersonale(1–10, mezze stelle),
+**Recensione** `{tmdbId, autore, creato, modificato, ultimaVisione?, inCorso?, votoPersonale(1–10, mezze stelle),
 tags[], meta:{titolo,anno,generi,regista,durata,paese,cast,voto,votoFonte,locandina}, sezioni:[{titolo,testo}], link[]}`.
 Le **sezioni sono flessibili** (aggiungi/rinomina/riordina/rimuovi). Voto mostrato stile Letterboxd
-(5 stelle con mezze); export Markdown nel formato Obsidian di Marco. Sezione UI: **Archivio** (tutti
+(5 stelle con mezze); export Markdown nel formato Obsidian di Marco. **`ultimaVisione`** di una
+nuova recensione si pre-compila dalla data reale dello storico (`ultimaVisioneDi`/`ultimaVisioneMia`),
+non da oggi. **`inCorso`** (v1.2.1): la recensione resta **sempre in cima** all'elenco (qualunque
+ordinamento) con bordo oro + badge, finché non la si completa. Ordinamento di **default: per voto**
+(desktop e mobile). Sezione UI: **Archivio** (tutti
 gli utenti, ognuno la sua, sfogli le altrui in sola lettura). Rinomini v0.2.4: Catalogo→**Watch List**,
 vecchio Archivio host→**Pronti alla visione**, il nome **Archivio** ora è le recensioni.
 
@@ -110,6 +114,12 @@ Stato "da vedere/visto" e i valori derivati NON si salvano: si ricalcolano dallo
 - **Modale protetto** (v1.2.1): `modaleProtetta()` = il modale ha classe `editor-grande`
   (solo l'editor recensioni). Clic sul backdrop ed Esc **non** lo chiudono (si perderebbe
   il lavoro): si chiude solo con Salva/Chiudi. Gli altri modali si chiudono normalmente.
+- **Streaming** (v1.2.1, §5.3 SPECIFICA): `providersFilm(tmdbId)` (TMDB watch/providers, IT,
+  flatrate, cache in `S.providersCache`), `serviziGruppo`/`chiHaServizio`/`badgeStreaming`;
+  `serviziStreaming` nel profilo (`disegnaServizi`). Badge nella scheda e in Pronti; tasto
+  «rileva da TMDB» in «dove vederlo». `PROVIDER_ALIAS` normalizza i nomi TMDB→`DOVE_STREAMING`.
+- **Pronti alla visione**: `S.archivioChi` è un **Set** (multi-utente); `disegnaArchivio`
+  filtra la scorta ai film voluti dai selezionati, mostra chi li vuole + pronto + streaming.
 - **Lista completa** (v1.2.0): `classifica()` torna anche `tutti` (rosa intera);
   `modaleListaCompleta` la mostra e `S.proiettato` può puntare a QUALSIASI film di
   `S.tutti`, non solo alla Top 5. `aggiornaListaCompleta(n)` aggiorna il pulsante.

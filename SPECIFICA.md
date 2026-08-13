@@ -104,6 +104,10 @@ Google Drive non fonde le modifiche: se due dispositivi scrivono lo stesso file 
 
 - `voto` = media voti IMDb (vedi §5.1).
 - `password` (profilo, facoltativa, in chiaro): solo anti-errore, vedi §4.
+- `serviziStreaming` (profilo, facoltativo, v1.2.1): array di piattaforme che la persona ha
+  in abbonamento (es. `["Netflix","Prime Video"]`, da `DOVE_STREAMING`). L'unione tra i
+  profili è "ciò che il gruppo ha": i film disponibili su uno di quei servizi vengono
+  evidenziati in verde nella scheda e in Pronti alla visione (§5.3).
 - `collezione`/`collezioneNome`/`uscita` (film): id saga TMDB + nome + data d'uscita, per
   la logica saghe (§8.5). Assenti se il film non fa parte di una collezione.
 - `conChi` (white list) e `nonCon` (black list): slug scelti tra i profili **già registrati**
@@ -177,10 +181,10 @@ bandierina **"pronto alla visione"** (l'host segna quelli già procurati), una *
 per titolo** (v1.2.0, cerca anche nel nome della saga) col contatore "N di M", un filtro
 **Tutti / Da preparare** e l'ordinamento alfabetico o per priorità di prossima
 apparizione. Lo stato "pronto" è condiviso in `archivio.json` (scritto dall'host).
-In cima una **box "Chi"** (v1.2.1): chip **Tutti (scorta)** + un chip per persona. Con
-un nome selezionato l'host vede **la watch list di quella persona in sola lettura**
-(desiderio e compagnia visibili ma non modificabili, film già visti in coda), senza flag
-"pronto" né ordinamenti aggregati — solo consultazione.
+In cima una **box "Chi"** (v1.2.1): chip **Tutti** + un chip per persona, a **selezione
+multipla**. Scegliendo una o più persone la scorta si filtra ai film voluti da almeno una
+di loro; ogni riga mostra **chi lo vuole** (i selezionati in evidenza), lo **stato pronto**
+(segnabile) e la **disponibilità streaming** (§5.3). "Tutti" azzera la selezione.
 Con la modalità host compare anche la tab **🐞 Segnalazioni** (§11c). **Cambia utente** apre il gate come overlay con un tasto **Indietro** che
 torna alla sessione corrente senza cambiare profilo.
 
@@ -212,6 +216,21 @@ durata, generi, regista. Per la **media voti IMDb** vera si aggiunge **OMDb API*
 
 Doppioni: lo stesso film in liste di persone diverse è normale (si fondono in Home);
 nella **stessa** lista il film è unico per `tmdbId`.
+
+### 5.3 Disponibilità streaming (v1.2.1, desktop)
+
+Ogni profilo dichiara i propri **servizi streaming** (Impostazioni → `serviziStreaming`).
+L'app interroga il **database TMDB `movie/{id}/watch/providers`** (dati JustWatch, regione
+**IT**, tipo *flatrate* = abbonamento; risultati in cache di sessione, nomi normalizzati
+alle etichette `DOVE_STREAMING`) e mostra dove il film è in streaming:
+
+- nella **scheda film** e nelle righe di **Pronti alla visione**, come badge; quelli
+  disponibili su un servizio che **qualcuno del gruppo ha** sono evidenziati in verde (col
+  nome di chi ce l'ha nel tooltip);
+- in **Pronti alla visione → «dove vederlo»**, il tasto **🔄 rileva da TMDB** pre-compila i
+  chip streaming del film, così l'host non cerca a mano.
+
+In demo i provider sono finti/deterministici (nessuna rete). Senza chiave TMDB, niente badge.
 
 ## 6. Home — la Sala
 
