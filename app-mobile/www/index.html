@@ -9,9 +9,21 @@
     --bg:#140a0c; --bg2:#1c1113; --card:#241619; --linea:#3a2226;
     --oro:#c9a45c; --oro2:#e6c583; --rosso:#7a1f1f; --rosso2:#c0504d;
     --testo:#f3e9e0; --dim:#b39a92; --ok:#7d9b76;
+    --su-oro:#231208;      /* testo scuro sopra i fondi oro */
+    --sel:#2a1b16;         /* fondo delle voci scelte (chip, poltrone, tab) */
+    --velo-badge:#000c;    /* fondo dei badge sopra le locandine */
+    --rapida:.15s;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   [hidden]{display:none !important}
+  /* messa a fuoco visibile (tastiera esterna / navigazione) */
+  :focus-visible{outline:2px solid var(--oro); outline-offset:2px}
+  /* caselle di spunta in tinta col velluto invece del bianco di sistema */
+  input[type=checkbox]{appearance:none; -webkit-appearance:none; width:18px; height:18px; flex:none;
+    border:1px solid var(--oro); border-radius:5px; background:var(--bg2); margin:0;
+    display:inline-grid; place-content:center}
+  input[type=checkbox]:checked{background:var(--oro); border-color:var(--oro)}
+  input[type=checkbox]:checked::after{content:'✓'; color:var(--su-oro); font-size:13px; font-weight:700; line-height:1}
   html,body{margin:0}
   body{
     background:radial-gradient(120% 80% at 50% -10%, #26141a 0%, var(--bg) 60%);
@@ -35,10 +47,10 @@
   .centro{min-height:70dvh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:14px; padding:20px}
   .bollo{font-size:52px}
 
-  button{font:inherit; cursor:pointer; border:0; border-radius:11px; padding:11px 15px; color:var(--testo); background:var(--card); transition:.15s}
+  button{font:inherit; cursor:pointer; border:0; border-radius:11px; padding:11px 15px; color:var(--testo); background:var(--card); transition:var(--rapida)}
   button:active{transform:scale(.97)}
   .primario{background:linear-gradient(180deg,var(--rosso2),var(--rosso)); color:#fff; font-weight:600; box-shadow:0 6px 18px #0006}
-  .oro{background:linear-gradient(180deg,var(--oro2),var(--oro)); color:#231208; font-weight:700}
+  .oro{background:linear-gradient(180deg,var(--oro2),var(--oro)); color:var(--su-oro); font-weight:700}
   .ghost{background:transparent; border:1px solid var(--linea); color:var(--dim)}
   .grande{width:100%; max-width:340px; padding:16px}
   .linkbtn{background:none; padding:8px; color:var(--dim); text-decoration:underline; font-size:13px}
@@ -82,6 +94,7 @@
   .pchip.con{border-color:var(--ok); color:#d3e8cc; background:#20301c}
   .pchip.non{border-color:var(--rosso2); color:#f2cecc; background:#331919}
   .etich{font-size:12px; letter-spacing:.12em; color:var(--dim); margin-top:12px}
+  .etich.sotto{font-size:11px; letter-spacing:.06em; text-transform:uppercase; margin:8px 0 2px; color:var(--dim); opacity:.8}
   .pw-in{width:100%; background:var(--bg2); border:1px solid var(--linea); color:var(--testo); padding:12px; border-radius:10px; font:inherit; margin-top:8px}
   .pw-in:focus{outline:0; border-color:var(--oro)}
 
@@ -120,9 +133,9 @@
   .rec-poster2{position:relative; aspect-ratio:2/3; background:var(--bg2)}
   .rec-poster2 img{width:100%; height:100%; object-fit:cover; display:block}
   .rec-poster2 .seg2{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; font-size:11px; color:var(--dim); padding:4px; line-height:1.3}
-  .rec-voto-b{position:absolute; bottom:4px; left:4px; background:#000c; color:var(--oro2); padding:2px 6px; border-radius:6px; font-size:11px; letter-spacing:1px}
+  .rec-voto-b{position:absolute; bottom:4px; left:4px; background:var(--velo-badge); color:var(--oro2); padding:2px 6px; border-radius:6px; font-size:11px; letter-spacing:1px}
   .rec-card2.in-corso{outline:2px solid var(--oro); outline-offset:-2px}
-  .rec-incorso-b{position:absolute; top:4px; left:4px; background:var(--oro); color:#231208; font-size:11px; font-weight:700; padding:1px 6px; border-radius:6px}
+  .rec-incorso-b{position:absolute; top:4px; left:4px; background:var(--oro); color:var(--su-oro); font-size:11px; font-weight:700; padding:1px 6px; border-radius:6px}
   .re-incorso2{display:inline-flex; align-items:center; gap:6px; color:var(--oro2); font-size:12.5px; border:1px solid var(--oro); border-radius:9px; padding:6px 10px}
   .re-incorso2 input{accent-color:var(--oro); width:15px; height:15px}
   .rec-card2 .corpo{padding:6px 7px}
@@ -182,7 +195,7 @@
   /* sotto-menù (Watch List: da vedere / già visti) */
   .sotto-menu{display:flex; gap:6px; margin:2px 0 10px}
   .smtab{flex:1; background:var(--bg2); border:1px solid var(--linea); color:var(--dim); border-radius:10px; padding:8px; font-size:13px; font-weight:600}
-  .smtab.on{border-color:var(--oro); color:var(--oro2); background:#2a1b16}
+  .smtab.on{border-color:var(--oro); color:var(--oro2); background:var(--sel)}
   .smtab .n{opacity:.65; font-weight:400}
   .film .visto-tag{color:var(--ok)}
   /* schermo: stessa proporzione del desktop (16/9) + sipario animato */
@@ -207,7 +220,7 @@
   .cartellone.aperto .tenda.dx{transform:translateX(calc(100% - 22px))}
   /* tasto Play (registra la serata come sul desktop) */
   .cartellone .play{position:absolute; right:12px; bottom:12px; z-index:5; width:50px; height:50px; border-radius:50%; border:0;
-    background:radial-gradient(circle at 35% 30%, var(--oro2), var(--oro) 70%, #8a7347); color:#231208; font-size:21px;
+    background:radial-gradient(circle at 35% 30%, var(--oro2), var(--oro) 70%, #8a7347); color:var(--su-oro); font-size:21px;
     box-shadow:0 5px 16px rgba(201,164,92,.45); display:grid; place-items:center; cursor:pointer}
   .cartellone .play:active{transform:scale(.93)}
   /* "si spengono le luci" dopo il Play */
@@ -226,7 +239,7 @@
     background:linear-gradient(180deg,#3a2226,#241619); border:1px solid var(--oro); color:var(--oro2); box-shadow:0 6px 18px #0008}
   .sg-tipi{display:flex; flex-direction:column; gap:7px; margin:8px 0 2px}
   .sg-tipo{display:block; text-align:left; padding:10px 12px; border-radius:11px; border:1px solid var(--linea); background:var(--bg2); color:var(--testo)}
-  .sg-tipo.on{border-color:var(--oro); background:#2a1b16}
+  .sg-tipo.on{border-color:var(--oro); background:var(--sel)}
   .sg-tipo .lb{font-weight:600; font-size:13.5px}
   .sg-tipo .ds{display:block; color:var(--dim); font-size:11.5px; margin-top:2px; line-height:1.35}
   .sg-in{width:100%; background:var(--bg2); border:1px solid var(--linea); color:var(--testo); border-radius:10px; padding:11px; font:inherit; margin-top:6px}
@@ -1467,7 +1480,9 @@ function editorRecMobile(recOrig, opts={}){
         ?`<div class="re-riga2"><label>Ultima visione <input type="date" id="m-re-uv" value="${esc(bozza.ultimaVisione||'')}"></label>
             <label class="re-incorso2"><input type="checkbox" id="m-re-incorso"${bozza.inCorso?' checked':''}> ✍ In corso</label></div>
           <div class="etich">DOVE VEDERLO</div>
+          <div class="etich sotto">Streaming</div>
           <div class="compagnia" id="m-re-strm">${DOVE_STREAMING.map(x=>doveChipM(x,'streaming',(bozza.doveVederlo.streaming||[]).includes(x))).join('')}</div>
+          <div class="etich sotto">Fisico</div>
           <div class="compagnia" id="m-re-fis">${DOVE_FISICO.map(x=>doveChipM(x,'fisico',(bozza.doveVederlo.fisico||[]).includes(x))).join('')}</div>
           <div class="re-dove-file"><input type="text" id="m-re-perc" value="${esc(bozza.doveVederlo.percorso||'')}" placeholder="percorso file sul PC (nota)"></div>`
         :`<div class="meta">${bozza.ultimaVisione?'👁 '+esc(bozza.ultimaVisione)+'  ':''}${doveTestoM(bozza.doveVederlo)}</div>`}

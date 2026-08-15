@@ -201,6 +201,25 @@ utenti scarica la nuova versione al prossimo avvio.
   Lancia da `electron/`: `electron . --user-data-dir=<temp>` per isolare la config.
   Serve a verificare persistenza profilo/finestra e roundtrip fs senza toccare i dati reali.
 
+## Convenzioni di stile (dalla revisione estetica)
+
+- **Colori solo da token** in `:root`. Oltre a quelli storici: `--bordo` (pannelli e schede)
+  e `--bordo2` (righe compatte) — prima erano hex quasi identici sparsi (`#4a2c33`,
+  `#3a2229`); `--stella-off` (stella non assegnata, era diversa tra catalogo ed editor);
+  `--velo-badge` (fondo dei badge sulle locandine); `--rapida`/`--media` per le transizioni.
+  Sul mobile ci sono gli equivalenti `--su-oro`, `--sel`, `--velo-badge`, `--rapida`.
+- **Niente `style=` inline che duplica il CSS**: se serve una regola, va nel foglio
+  (es. `.arch-filtro input[type=search]`, `.sezione-titolo.prima`, `.griglia .vuoto-msg`).
+- **`.aiuto`** è il testo di servizio piccolo e smorzato; **`.etich`** l'etichetta di gruppo
+  nei modali (`.etich.sotto` per le sotto-etichette). Entrambe hanno una regola globale:
+  prima `.aiuto` funzionava solo dentro `.campo` e `.etich` non esisteva affatto.
+- **`.testo-link`** vira all'oro; il rosso è riservato a `.testo-link.pericolo`
+  (rimuovi / elimina / ritira), non a «modifica» o «rileva».
+- **Locandine**: l'immagine sta sopra il segnaposto con `z-index`, mai mandando il
+  segnaposto dietro con `z-index:-1` (sparirebbe dentro il fondo del contenitore).
+- **Caselle di spunta** ridisegnate in tinta col velluto; attenzione che una regola
+  `input{width:100%}` non le stiri (serve `:not([type=checkbox])`).
+
 ## Gotcha
 
 - **localStorage NON persiste su `app://mvn`** (Electron): profilo/host/stato finestra
