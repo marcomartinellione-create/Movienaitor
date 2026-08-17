@@ -217,7 +217,7 @@ durata, generi, regista. Per la **media voti IMDb** vera si aggiunge **OMDb API*
 Doppioni: lo stesso film in liste di persone diverse è normale (si fondono in Home);
 nella **stessa** lista il film è unico per `tmdbId`.
 
-### 5.3 Disponibilità streaming (v1.2.1, desktop)
+### 5.3 Disponibilità streaming (v1.2.1 desktop; recensioni v1.5.2 desktop+mobile)
 
 Ogni profilo dichiara i propri **servizi streaming** (Impostazioni → `serviziStreaming`).
 L'app interroga il **database TMDB `movie/{id}/watch/providers`** (dati JustWatch, regione
@@ -228,9 +228,14 @@ alle etichette `DOVE_STREAMING`) e mostra dove il film è in streaming:
   disponibili su un servizio che **qualcuno del gruppo ha** sono evidenziati in verde (col
   nome di chi ce l'ha nel tooltip);
 - in **Pronti alla visione → «dove vederlo»**, il tasto **🔄 rileva da TMDB** pre-compila i
-  chip streaming del film, così l'host non cerca a mano.
+  chip streaming del film, così l'host non cerca a mano;
+- nell'**editor recensione** (desktop **e mobile**, v1.5.2): aprendo una recensione di un
+  film TMDB i servizi streaming si **spuntano da soli** (una volta, solo se il campo è
+  ancora vuoto — le scelte manuali non si toccano); un tasto **🔄 rileva** accanto a
+  «Streaming» li ri-cerca a mano, aggiungendo senza rimuovere.
 
-In demo i provider sono finti/deterministici (nessuna rete). Senza chiave TMDB, niente badge.
+In demo i provider sono finti/deterministici (nessuna rete). Senza chiave TMDB, niente
+badge né rilevamento (sul mobile serve la chiave in `config.json`, impostata dal PC).
 
 ## 6. Home — la Sala
 

@@ -20,6 +20,9 @@ Tre sezioni: **🎬 Sala**, **🔖 Lista**, **📝 Recensioni**, più il pulsant
 - **Lista** — divisa in due sotto-menù **Da vedere** / **Già visti** (col conteggio): i
   film visti in sala restano consultabili e da lì si possono **rimettere in lista** per
   rivederli. Ricerca e filtri agiscono sulla sezione attiva.
+- **📝 Recensioni** — nell'editor, «dove vederlo» rileva i **servizi streaming** da TMDB
+  (Italia): all'apertura si spuntano da soli se il campo è vuoto, o col tasto **🔄 rileva**.
+  Serve la chiave TMDB in `config.json` (impostata dal PC).
 - **🐞 Segnala** — bug / suggerimenti / idee: finiscono in `segnalazioni/<slug>.json`,
   l'host li gestisce dal PC. Ognuno rivede lo stato delle proprie e può ritirarle.
 

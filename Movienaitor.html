@@ -1974,6 +1974,7 @@ function editorRecensione(recOrig, opts={}){
   bozza.doveVederlo = bozza.doveVederlo || {streaming:[], fisico:[], percorso:''};
   delete bozza.tags;   // i tag sono stati sostituiti da "dove vederlo"
   let voto = bozza.votoPersonale || 0;
+  let streamRilevato = false;   // per rilevare i servizi da TMDB una volta sola all'apertura
 
   function leggiCampi(){
     if (!editabile) return;
@@ -2007,7 +2008,7 @@ function editorRecensione(recOrig, opts={}){
         ? `<div class="re-riga"><label>Ultima visione <input type="date" id="re-uv" value="${esc(bozza.ultimaVisione||'')}"></label>
              <label class="re-incorso" title="Tienila in cima all'elenco finché non la completi"><input type="checkbox" id="re-incorso"${bozza.inCorso?' checked':''}> ✍ In corso</label></div>
            <div class="etich">DOVE VEDERLO</div>
-           <div class="etich sotto">Streaming</div>
+           <div class="etich sotto">Streaming <button class="testo-link" id="re-dove-rileva" style="font-size:12px; margin-left:6px">🔄 rileva da TMDB</button></div>
            <div class="re-dove-chips" id="re-dove-strm">${DOVE_STREAMING.map(x=>doveChip(x,'streaming', (bozza.doveVederlo.streaming||[]).includes(x))).join('')}</div>
            <div class="etich sotto">Fisico</div>
            <div class="re-dove-chips" id="re-dove-fis">${DOVE_FISICO.map(x=>doveChip(x,'fisico', (bozza.doveVederlo.fisico||[]).includes(x))).join('')}</div>
@@ -2074,6 +2075,27 @@ function editorRecensione(recOrig, opts={}){
       const on = arr.includes(v); b.classList.toggle('con', on); b.textContent = (on?'✓ ':'') + v;
     }; };
     clicDove('#re-dove-strm', 'streaming'); clicDove('#re-dove-fis', 'fisico');
+    // rileva da TMDB i servizi streaming dove è disponibile il film (regione Italia) e
+    // spunta i chip corrispondenti, senza toccare quelli già scelti a mano.
+    const rilevaStreaming = async (silenzioso) => {
+      if (bozza.tmdbId == null){ if (!silenzioso) toast('Nessun film TMDB collegato', true); return; }
+      const btn = $('#re-dove-rileva'); if (btn && !silenzioso) btn.textContent = '⏳ cerco…';
+      const sv = await providersFilm(bozza.tmdbId);
+      if (btn) btn.textContent = '🔄 rileva da TMDB';
+      const noti = sv.filter(x => DOVE_STREAMING.includes(x) && !(dv.streaming||[]).includes(x));
+      if (!noti.length){ if (!silenzioso) toast(sv.length ? 'Già segnati / non in elenco: '+sv.join(', ') : 'Nessun abbonamento streaming trovato (Italia)', true); return; }
+      dv.streaming = [...(dv.streaming||[]), ...noti];
+      const box = $('#re-dove-strm'); if (!box) return;
+      box.innerHTML = DOVE_STREAMING.map(x=>doveChip(x,'streaming',(dv.streaming||[]).includes(x))).join('');
+      clicDove('#re-dove-strm','streaming');
+      if (!silenzioso) toast('Rilevati: '+noti.join(', ')+' 📺');
+    };
+    if ($('#re-dove-rileva')) $('#re-dove-rileva').onclick = () => rilevaStreaming(false);
+    // auto: all'apertura, se non c'è ancora nessun servizio segnato, provo a rilevarli
+    if (!streamRilevato && bozza.tmdbId != null && !(dv.streaming||[]).length){
+      streamRilevato = true;
+      rilevaStreaming(true);
+    }
     if ($('#re-dove-apri')) $('#re-dove-apri').onclick = () => {
       const p = $('#re-dove-perc').value.trim(); if (!p) return toast('Scrivi prima un percorso', true);
       if (inElectron && window.mvnFS.apriPercorso) window.mvnFS.apriPercorso(p).then(ok => { if (!ok) toast('Percorso non trovato sul PC', true); });

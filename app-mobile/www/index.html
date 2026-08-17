@@ -364,7 +364,8 @@ const S = { treeUri:null, config:{}, profili:[], me:null, storico:[],
   recensioni:[], recUtente:null, recFiltri:{ q:'', ordina:'votoPersonale', dir:'desc' }, pan:'lista',
   listaVista:'daVedere',
   presenti:new Set(), fSala:{ durata:null, genere:[], regista:'' }, proiettato:null, tuttiSala:[],
-  segnalazioni:[], segnStato:{}, segnEliminate:[], aggiornamento:null };
+  segnalazioni:[], segnStato:{}, segnEliminate:[], aggiornamento:null,
+  providersCache:new Map() };   // tmdbId → [servizi streaming] da TMDB (sessione)
 const SEZIONI_DEFAULT = ['Introduzione', 'Che ne penso', 'Momento preferito', 'Messaggio', 'A chi lo consiglio'];
 const stelleLetterbox = v => { v = v||0; const p = Math.floor(v/2), m = (v%2)===1; return ('★'.repeat(p) + (m?'½':'')) || '—'; };
 const GENERI_TMDB = ['Azione','Avventura','Animazione','Commedia','Crime','Documentario','Dramma','Famiglia','Fantasy','Storia','Horror','Musica','Mistero','Romance','Fantascienza','Film TV','Thriller','Guerra','Western'];
@@ -652,6 +653,32 @@ async function dettagliFilm(id){
     locandina:j.poster_path ? `posters/${j.id}.jpg` : null,
     sfondo:j.backdrop_path ? `posters/${j.id}_b.jpg` : null
   };
+}
+// Servizi streaming dove è disponibile il film (flatrate = abbonamento, regione IT),
+// da TMDB watch/providers. Nomi TMDB → etichette nostre (DOVE_STREAMING). Cache in sessione.
+const PROVIDER_ALIAS = {
+  'Netflix':'Netflix', 'Netflix basic with Ads':'Netflix',
+  'Amazon Prime Video':'Prime Video', 'Amazon Video':'Prime Video',
+  'Disney Plus':'Disney+', 'NOW':'NOW', 'Now TV':'NOW',
+  'Sky Go':'Sky', 'Apple TV Plus':'Apple TV+', 'Apple TV':'Apple TV+',
+  'RaiPlay':'RaiPlay', 'Mediaset Infinity':'Mediaset Infinity', 'Infinity+':'Mediaset Infinity',
+  'YouTube':'YouTube', 'Crunchyroll':'Crunchyroll', 'Paramount Plus':'Paramount+',
+  'Paramount+ with Showtime':'Paramount+', 'Mubi':'Mubi', 'Timvision':'TIMVISION'
+};
+const normProvider = nome => PROVIDER_ALIAS[nome] || nome;
+async function providersFilm(tmdbId){
+  if (!tmdbId || !S.config.tmdbKey) return [];
+  if (S.providersCache.has(tmdbId)) return S.providersCache.get(tmdbId);
+  let out = [];
+  try {
+    const r = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}/watch/providers?api_key=${S.config.tmdbKey}`);
+    if (r.ok){
+      const it = ((await r.json()).results || {}).IT || {};
+      out = [...new Set((it.flatrate || []).map(p => normProvider(p.provider_name)))];
+    }
+  } catch(e){}
+  S.providersCache.set(tmdbId, out);
+  return out;
 }
 
 /* ══════════════════ RICERCA + RISULTATI ══════════════════ */
@@ -1457,6 +1484,7 @@ function editorRecMobile(recOrig, opts={}){
   const bozza=JSON.parse(JSON.stringify(recOrig));
   bozza.meta=bozza.meta||{}; bozza.sezioni=bozza.sezioni||[]; bozza.doveVederlo=bozza.doveVederlo||{streaming:[],fisico:[],percorso:''}; delete bozza.tags;
   let voto=bozza.votoPersonale||0;
+  let streamRilevato=false;   // rilevo i servizi da TMDB una volta sola all'apertura
   function leggiCampi(){ if(!ed) return;
     bozza.sezioni=[...document.querySelectorAll('#m-re-sezioni .re-sez')].map(row=>({titolo:row.querySelector('.re-sez-tit').value, testo:row.querySelector('.re-sez-txt').innerHTML}));
     const p=$('#m-re-perc'); if(p) bozza.doveVederlo.percorso=p.value.trim();
@@ -1480,7 +1508,7 @@ function editorRecMobile(recOrig, opts={}){
         ?`<div class="re-riga2"><label>Ultima visione <input type="date" id="m-re-uv" value="${esc(bozza.ultimaVisione||'')}"></label>
             <label class="re-incorso2"><input type="checkbox" id="m-re-incorso"${bozza.inCorso?' checked':''}> ✍ In corso</label></div>
           <div class="etich">DOVE VEDERLO</div>
-          <div class="etich sotto">Streaming</div>
+          <div class="etich sotto">Streaming <button class="linkbtn" id="m-re-rileva" style="padding:2px 4px; font-size:12px">🔄 rileva</button></div>
           <div class="compagnia" id="m-re-strm">${DOVE_STREAMING.map(x=>doveChipM(x,'streaming',(bozza.doveVederlo.streaming||[]).includes(x))).join('')}</div>
           <div class="etich sotto">Fisico</div>
           <div class="compagnia" id="m-re-fis">${DOVE_FISICO.map(x=>doveChipM(x,'fisico',(bozza.doveVederlo.fisico||[]).includes(x))).join('')}</div>
@@ -1516,6 +1544,24 @@ function editorRecMobile(recOrig, opts={}){
     const dv=bozza.doveVederlo;
     const clic=(sel,ch)=>{ const box=$(sel); if(!box) return; box.onclick=e=>{ const b=e.target.closest('[data-dove]'); if(!b) return; const v=b.dataset.val, arr=dv[ch]=dv[ch]||[]; const i=arr.indexOf(v); if(i>=0) arr.splice(i,1); else arr.push(v); const on=arr.includes(v); b.classList.toggle('con',on); b.textContent=(on?'✓ ':'')+v; }; };
     clic('#m-re-strm','streaming'); clic('#m-re-fis','fisico');
+    // rileva da TMDB i servizi streaming dove è disponibile il film (Italia) e spunta i
+    // chip corrispondenti, senza toccare quelli già scelti a mano.
+    const rilevaStreaming=async(silenzioso)=>{
+      if(bozza.tmdbId==null){ if(!silenzioso) toast('Nessun film collegato',true); return; }
+      if(!S.config.tmdbKey){ if(!silenzioso) toast('Manca la chiave TMDB (dal PC)',true); return; }
+      const btn=$('#m-re-rileva'); if(btn && !silenzioso) btn.textContent='⏳…';
+      const sv=await providersFilm(bozza.tmdbId);
+      if(btn) btn.textContent='🔄 rileva';
+      const noti=sv.filter(x=>DOVE_STREAMING.includes(x) && !(dv.streaming||[]).includes(x));
+      if(!noti.length){ if(!silenzioso) toast(sv.length?'Già segnati / non in elenco':'Nessun abbonamento streaming (Italia)',true); return; }
+      dv.streaming=[...(dv.streaming||[]), ...noti];
+      const box=$('#m-re-strm'); if(!box) return;
+      box.innerHTML=DOVE_STREAMING.map(x=>doveChipM(x,'streaming',(dv.streaming||[]).includes(x))).join('');
+      clic('#m-re-strm','streaming');
+      if(!silenzioso) toast('Rilevati: '+noti.join(', ')+' 📺');
+    };
+    if($('#m-re-rileva')) $('#m-re-rileva').onclick=()=>rilevaStreaming(false);
+    if(!streamRilevato && bozza.tmdbId!=null && !(dv.streaming||[]).length){ streamRilevato=true; rilevaStreaming(true); }
     if($('#m-re-collega')) $('#m-re-collega').onclick=()=>{ leggiCampi(); modaleCercaFilmM(id=>collegaTMDBM(bozza,id), {titolo:bozza.tmdbId!=null?'Cambia film':'Collega a TMDB', query:(bozza.meta||{}).titolo||''}); };
     $('#m-re-add-sez').onclick=()=>{ leggiCampi(); bozza.sezioni.push({titolo:'Nuova sezione',testo:''}); render(); };
     $('#m-re-sezioni').querySelectorAll('[data-az]').forEach(b=>b.onclick=()=>{ leggiCampi(); const i=+b.dataset.i, az=b.dataset.az; if(az==='del') bozza.sezioni.splice(i,1); else if(az==='su'&&i>0)[bozza.sezioni[i-1],bozza.sezioni[i]]=[bozza.sezioni[i],bozza.sezioni[i-1]]; else if(az==='giu'&&i<bozza.sezioni.length-1)[bozza.sezioni[i+1],bozza.sezioni[i]]=[bozza.sezioni[i],bozza.sezioni[i+1]]; render(); });
