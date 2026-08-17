@@ -748,6 +748,8 @@ const giorniDa = iso => Math.max(0, (Date.now() - new Date(iso+'T12:00:00').getT
 const fmtMin = m => m ? `${Math.floor(m/60)}h ${String(m%60).padStart(2,'0')}'` : 'durata n.d.';
 const fmtNum = (n,d=2) => n.toLocaleString('it-IT',{minimumFractionDigits:d, maximumFractionDigits:d});
 const fmtData = iso => new Date(iso+'T12:00:00').toLocaleDateString('it-IT',{day:'numeric', month:'long', year:'numeric'});
+// data breve in formato europeo gg/mm/aaaa (deterministico, non dipende dalla locale)
+const dataBreve = d => { d = String(d||'').slice(0,10); const m = d.match(/^(\d{4})-(\d\d)-(\d\d)$/); return m ? `${m[3]}/${m[2]}/${m[1]}` : d; };
 const maiuscola = s => s ? s[0].toUpperCase()+s.slice(1) : s;
 
 function tinta(hex, f){ // f>0 schiarisce verso il bianco, f<0 scurisce verso il nero
@@ -1497,7 +1499,7 @@ function disegnaSegnalazioni(){
         <div class="main">
           <div class="sg-tit">${esc(s.titolo)}</div>
           <div class="sg-meta">${esc(t.label)}${s.gravita && SEGN_GRAVITA[s.gravita] ? ' · '+SEGN_GRAVITA[s.gravita].label : ''} ·
-            ${esc(nomeDi(s.autore))} · ${esc(String(s.creato || '').slice(0,10))}${s.contesto ? ' · in '+esc(s.contesto) : ''}${s.versione ? ' · v'+esc(s.versione) : ''}</div>
+            ${esc(nomeDi(s.autore))} · ${esc(dataBreve(s.creato))}${s.contesto ? ' · in '+esc(s.contesto) : ''}${s.versione ? ' · v'+esc(s.versione) : ''}</div>
         </div>
         ${pr ? `<span class="sg-chip pr-${pr}">${SEGN_PRIORITA[pr].label}</span>` : ''}
         <span class="sg-chip st-${st}">${(SEGN_STATI[st] || {}).label}</span>
@@ -2013,7 +2015,7 @@ function editorRecensione(recOrig, opts={}){
            <div class="etich sotto">Fisico</div>
            <div class="re-dove-chips" id="re-dove-fis">${DOVE_FISICO.map(x=>doveChip(x,'fisico', (bozza.doveVederlo.fisico||[]).includes(x))).join('')}</div>
            <div class="re-dove-file"><input type="text" id="re-dove-perc" value="${esc(bozza.doveVederlo.percorso||'')}" placeholder="file o cartella sul PC (es. D:\\Film\\...)…"><button class="bottone piccolo secondario" id="re-dove-apri" title="Apri sul PC (solo app desktop)">📂 Apri</button></div>`
-        : `<div class="m-meta">${bozza.ultimaVisione?'👁 '+esc(bozza.ultimaVisione)+'   ':''}${doveTesto(bozza.doveVederlo)}</div>`}
+        : `<div class="m-meta">${bozza.ultimaVisione?'👁 '+esc(dataBreve(bozza.ultimaVisione))+'   ':''}${doveTesto(bozza.doveVederlo)}</div>`}
       ${editabile ? `<div style="margin:2px 0 10px">${bozza.tmdbId==null?'<span style="color:var(--rosso2);font-size:12px">⚠ nessun film TMDB collegato (niente locandina) · </span>':''}<button class="testo-link" id="re-collega">🔗 ${bozza.tmdbId!=null?'Cambia film collegato':'Collega a TMDB'}</button></div>` : ''}
       ${editabile ? `<div class="re-toolbar" id="re-toolbar">
         <button type="button" data-cmd="bold" title="Grassetto"><b>B</b></button>

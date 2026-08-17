@@ -17,6 +17,10 @@ const REPO_OWNER = 'marcomartinellione-create';
 const REPO_NAME = 'Movienaitor';
 const REPO_RELEASES = `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases`;
 
+// Locale italiana: senza, Chromium può mostrare i selettori <input type="date"> in
+// formato americano (mm/dd/aaaa). Va impostata PRIMA che l'app sia pronta.
+app.commandLine.appendSwitch('lang', 'it-IT');
+
 // ── cartella condivisa (persistita in userData/mvn-config.json) ──────────────
 const CFG = () => path.join(app.getPath('userData'), 'mvn-config.json');
 let cartella = null;

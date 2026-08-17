@@ -395,6 +395,8 @@ function chiudiModale(){ $('#backdrop').classList.remove('on'); }
 $('#backdrop').addEventListener('click', e=>{ if(e.target.id==='backdrop') chiudiModale(); });
 
 const fmtMin = m => m ? Math.floor(m/60)+'h'+String(m%60).padStart(2,'0') : '—';
+// data breve in formato europeo gg/mm/aaaa (deterministico)
+const dataBreve = d => { d = String(d||'').slice(0,10); const m = d.match(/^(\d{4})-(\d\d)-(\d\d)$/); return m ? `${m[3]}/${m[2]}/${m[1]}` : d; };
 const stelle = n => '★★★★★☆☆☆☆☆'.slice(5-(n||0), 10-(n||0));
 
 /* password profilo (come su PC: evita di entrare per sbaglio nel profilo altrui) */
@@ -838,7 +840,7 @@ function disegnaMiaLista(){
         <div class="tit">${esc(v.titolo)}</div>
         <div class="meta">${esc(v.anno||'')}${v.durata?' · '+fmtMin(v.durata):''}</div>
         <div class="stelle">${sonoVisti
-          ? `<span class="visto-tag">👁 visto${vis ? ' il '+esc(vis.split('-').reverse().join('/')) : ''}</span>`
+          ? `<span class="visto-tag">👁 visto${vis ? ' il '+esc(dataBreve(vis)) : ''}</span>`
           : stelle(v.desiderio)}${comp?` <span style="color:var(--dim)">· ${esc(comp)}</span>`:''}</div>
       </div>
       <div class="chevron">›</div>
@@ -1513,7 +1515,7 @@ function editorRecMobile(recOrig, opts={}){
           <div class="etich sotto">Fisico</div>
           <div class="compagnia" id="m-re-fis">${DOVE_FISICO.map(x=>doveChipM(x,'fisico',(bozza.doveVederlo.fisico||[]).includes(x))).join('')}</div>
           <div class="re-dove-file"><input type="text" id="m-re-perc" value="${esc(bozza.doveVederlo.percorso||'')}" placeholder="percorso file sul PC (nota)"></div>`
-        :`<div class="meta">${bozza.ultimaVisione?'👁 '+esc(bozza.ultimaVisione)+'  ':''}${doveTestoM(bozza.doveVederlo)}</div>`}
+        :`<div class="meta">${bozza.ultimaVisione?'👁 '+esc(dataBreve(bozza.ultimaVisione))+'  ':''}${doveTestoM(bozza.doveVederlo)}</div>`}
       ${ed?`<div style="margin:4px 0 8px">${bozza.tmdbId==null?'<span style="color:var(--rosso2);font-size:12px">⚠ nessun film collegato · </span>':''}<button class="linkbtn" id="m-re-collega" style="padding:2px 0">🔗 ${bozza.tmdbId!=null?'Cambia film':'Collega a TMDB'}</button></div>`:''}
       ${ed?`<div class="re-toolbar" id="m-re-toolbar">
         <button type="button" data-cmd="bold"><b>B</b></button>
