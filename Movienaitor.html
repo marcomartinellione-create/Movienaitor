@@ -377,6 +377,11 @@ header .spazio{flex:1; min-width:0}
 .re-incorso input{accent-color:var(--oro); width:16px; height:16px; margin:0}
 
 /* ---------- segnalazioni (bug / idee) ---------- */
+.aiuto-p{color:var(--dim); line-height:1.6}
+.su-oro{color:var(--oro2)}
+.play-ep{display:flex; flex-wrap:wrap; gap:14px; align-items:center}
+.play-ep label{display:flex; align-items:center; gap:6px; color:var(--dim); font-size:13.5px}
+.play-ep select,.play-ep input{width:auto; min-width:64px}
 .bug-btn{position:fixed; left:18px; bottom:18px; z-index:80; display:flex; align-items:center; gap:8px;
   padding:9px 16px; border-radius:22px; font-size:13.5px; letter-spacing:.03em;
   background:linear-gradient(180deg,var(--velluto3),var(--velluto2)); border:1px solid var(--oro-dim);
@@ -805,7 +810,8 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const slugify = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 const oggiISO = () => new Date().toISOString().slice(0,10);
 const giorniDa = iso => Math.max(0, (Date.now() - new Date(iso+'T12:00:00').getTime()) / 864e5);
-const fmtMin = m => m ? `${Math.floor(m/60)}h ${String(m%60).padStart(2,'0')}'` : 'durata n.d.';
+// sotto l'ora niente "0h": con gli episodi delle serie è il caso normale, non l'eccezione
+const fmtMin = m => m ? (m < 60 ? `${m}'` : `${Math.floor(m/60)}h ${String(m%60).padStart(2,'0')}'`) : 'durata n.d.';
 const fmtNum = (n,d=2) => n.toLocaleString('it-IT',{minimumFractionDigits:d, maximumFractionDigits:d});
 const fmtData = iso => new Date(iso+'T12:00:00').toLocaleDateString('it-IT',{day:'numeric', month:'long', year:'numeric'});
 // data breve in formato europeo gg/mm/aaaa (deterministico, non dipende dalla locale)
@@ -1258,16 +1264,70 @@ function visioneRecensione(tmdbId, slug){
   return String(r.ultimaVisione || r.creato || r.modificato || '').slice(0, 10) || null;
 }
 
+/* ── serie: il segnalibro (CONCEPT-serie §5c) ─────────────────────────────────
+   A che punto è arrivata una persona con una serie NON si salva: si ricalcola dallo
+   storico, come lo stato "visto" dei film e l'indice di soddisfazione. Contano solo le
+   serate successive all'aggiunta in lista, così «rimettila in lista» riparte da capo. */
+function segnalibro(voce, slug){
+  const aggiunto = voce.aggiunto || '0000-01-01';
+  let s = 0, e = 0;
+  for (const v of S.storico){
+    if (v.tmdbId !== voce.tmdbId || !(v.partecipanti || []).includes(slug)) continue;
+    if ((v.ts || v.data + 'T23:59:59') < aggiunto) continue;
+    const st = v.stagione || 1, ep = Math.max(0, ...(v.episodi || []));
+    if (st > s || (st === s && ep > e)){ s = st; e = ep; }
+  }
+  return {stagione:s, episodio:e};        // {0,0} = non ancora cominciata
+}
+// Ultimo episodio esistente. Se non conosciamo le stagioni (voce vecchia, o TMDB che non
+// le dà) la serie non si considera mai finita: meglio proporla in più che perderla.
+function fineSerie(voce){
+  const st = voce.stagioni || [];
+  if (!st.length) return null;
+  const ultima = st[st.length - 1];
+  return {stagione:ultima.n, episodio:ultima.episodi};
+}
+function serieFinita(voce, slug){
+  const fine = fineSerie(voce); if (!fine) return false;
+  const b = segnalibro(voce, slug);
+  return b.stagione > fine.stagione || (b.stagione === fine.stagione && b.episodio >= fine.episodio);
+}
+// Il prossimo episodio da guardare per quella persona (null se è finita).
+function prossimoEpisodio(voce, slug){
+  const b = segnalibro(voce, slug), st = voce.stagioni || [];
+  let s = b.stagione || 1, e = (b.episodio || 0) + 1;
+  if (!st.length) return {stagione:s, episodio:e};
+  const trova = n => st.find(x => x.n === n);
+  if (!trova(s)) return null;
+  if (e > trova(s).episodi){ s += 1; e = 1; if (!trova(s)) return null; }
+  return {stagione:s, episodio:e};
+}
+// Da dove riprende il gruppo: il punto più indietro fra i presenti che hanno la serie in
+// lista, così nessuno in sala si perde un episodio.
+function prossimoGruppo(voce){
+  let min = null;
+  for (const slug of S.presenti){
+    const p = profiloDi(slug); if (!p) continue;
+    const sua = listaDi(p).find(v => v.tmdbId === voce.tmdbId); if (!sua) continue;
+    const pr = prossimoEpisodio(sua, slug); if (!pr) continue;
+    if (!min || pr.stagione < min.stagione || (pr.stagione === min.stagione && pr.episodio < min.episodio)) min = pr;
+  }
+  return min || prossimoEpisodio(voce, S.me);
+}
+const etichettaEp = p => p ? `S${p.stagione} E${p.episodio}` : '';
+
 function entryAttiva(voce, slug){
   // confronto a data-ora: una visione "spegne" la voce solo se posteriore all'aggiunta,
   // così «rimettilo in lista» funziona anche la sera stessa della visione
   const aggiunto = voce.aggiunto || '0000-01-01';
-  if (S.storico.some(v => v.tmdbId === voce.tmdbId && v.partecipanti.includes(slug)
-    && (v.ts || v.data + 'T23:59:59') >= aggiunto)) return false;
-  // anche la recensione spegne la voce, con la stessa regola sulla data: una recensione
-  // vecchia non deve spegnere un film rimesso in lista adesso per rivederlo
+  // la recensione vale come "visto" per un film e come "finita" per una serie: spegne
   const rec = visioneRecensione(voce.tmdbId, slug);
-  return !(rec && rec + 'T23:59:59' >= aggiunto);
+  if (rec && rec + 'T23:59:59' >= aggiunto) return false;
+  // una serie NON si spegne dopo una serata: la serata sposta soltanto il segnalibro, e
+  // la voce resta in lista finché non si arriva in fondo all'ultima stagione uscita
+  if (inSerie()) return !serieFinita(voce, slug);
+  return !S.storico.some(v => v.tmdbId === voce.tmdbId && v.partecipanti.includes(slug)
+    && (v.ts || v.data + 'T23:59:59') >= aggiunto);
 }
 // Indice di Soddisfazione (sostituisce la vecchia "attesa"): moltiplicatore 0,5 ↔ 1,5,
 // neutro 1,0. Si ricalcola replaying lo storico (nessuno stato salvato). Per ogni serata
@@ -2984,7 +3044,7 @@ async function disegnaSala(){
       <button class="schermo-clic" title="Scheda film"></button>
       <div class="info">
         <h2>${esc(f.titolo)}</h2>
-        <div class="meta">${esc(f.anno || '')} · ${fmtMin(f.durata)} · ${esc((f.generi || []).join(', ') || '—')}
+        <div class="meta">${esc(f.anno || '')} · ${fmtMin(f.durata)}${inSerie() ? ' a episodio' : ''} · ${esc((f.generi || []).join(', ') || '—')}${inSerie() ? ' · riprendete da <b>'+esc(etichettaEp(prossimoGruppo(f)))+'</b>' : ''}
           ${f.voto ? ` · <b>★ ${fmtNum(f.voto,1)}</b> ${f.votoFonte === 'imdb' ? 'IMDb' : 'TMDB'}` : ''}<br>
           🎟 ${scelto.prop.length} ${scelto.prop.length === 1 ? 'proponente' : 'proponenti'} ·
           <span title="Desiderio ${fmtNum(scelto.D)} × Coralità ${fmtNum(scelto.B)} × Soddisfazione ${fmtNum(scelto.W)} × Coppia ${fmtNum(scelto.M)}${scelto.G ? ' · spareggio genere '+(scelto.G>0?'+':'')+scelto.G : ''}">🏆 ${fmtNum(scelto.S)}</span>
@@ -3476,26 +3536,56 @@ function modaleScheda(r){
 function modalePlay(r){
   const f = r.film;
   const nomi = [...S.presenti].map(nomeDi).join(', ');
+  const serie = inSerie();
+  // Una serata di serie non la "consuma": sposta il segnalibro. Quindi invece di
+  // confermare e basta si chiede fin dove siete arrivati, già compilato sul punto giusto.
+  const da = serie ? (prossimoGruppo(f) || {stagione:1, episodio:1}) : null;
+  const stagioni = serie ? (f.stagioni || []) : [];
   apriModale(`
     <h3>Si spengono le luci…</h3>
-    <p style="color:var(--dim); line-height:1.6">Il film della serata è <b style="color:var(--oro2)">«${esc(f.titolo)}»</b>.<br>
+    ${serie ? `
+    <p class="aiuto-p">Stasera guardate <b class="su-oro">«${esc(f.titolo)}»</b> con: ${esc(nomi)}.</p>
+    <div class="m-blocco"><label>DOVE SIETE ARRIVATI</label>
+      <div class="play-ep">
+        <label>Stagione <select id="pl-stag">${
+          (stagioni.length ? stagioni.map(s => s.n) : [da.stagione]).map(n =>
+            `<option value="${n}"${n === da.stagione ? ' selected' : ''}>${n}</option>`).join('')
+        }</select></label>
+        <label>dall'episodio <input type="number" id="pl-da" min="1" value="${da.episodio}"></label>
+        <label>al <input type="number" id="pl-a" min="1" value="${da.episodio}"></label>
+      </div>
+      <div class="aiuto">La serie resta in lista: si sposta solo il segnalibro. Sparisce da sé
+        quando arrivate in fondo all'ultima stagione uscita.</div>
+    </div>` : `
+    <p class="aiuto-p">Il film della serata è <b class="su-oro">«${esc(f.titolo)}»</b>.<br>
     Lo registro come <b>visto</b> per: ${esc(nomi)}.<br>
-    <span style="color:var(--dim2); font-size:13px">Per i proponenti riparte il timer dell'attesa; il film esce dalle loro liste.</span></p>
+    <span class="aiuto">Per i proponenti riparte il timer dell'attesa; il film esce dalle loro liste.</span></p>`}
     <div class="m-azioni">
       <button class="bottone piccolo secondario" id="m-annulla">Non ancora</button>
       <button class="bottone piccolo" id="m-conferma">▶ Buona visione</button>
     </div>`);
   $('#m-annulla').onclick = chiudiModale;
   $('#m-conferma').onclick = async () => {
+    let stagione = null, episodi = null;
+    if (serie){
+      stagione = parseInt($('#pl-stag').value, 10) || 1;
+      const a = Math.max(1, parseInt($('#pl-da').value, 10) || 1);
+      const b = Math.max(a, parseInt($('#pl-a').value, 10) || a);
+      episodi = [a, b];
+    }
     chiudiModale();
     const voce = {
       id:`${Date.now().toString(36)}-${S.me}`, data:oggiISO(), ts:new Date().toISOString(),
       tmdbId:f.tmdbId, titolo:f.titolo,
       partecipanti:[...S.presenti], proponenti:r.prop.map(p => p.slug)
     };
+    if (serie){ voce.stagione = stagione; voce.episodi = episodi; }
     try { await registraVisione(voce); }
     catch(e){ return toast('Registrazione non riuscita: '+e.message, true); }
-    $('#luci-titolo').textContent = `${f.titolo} — registrato per ${voce.partecipanti.length} spettatori`;
+    const quanti = serie ? `S${stagione} E${episodi[0]}${episodi[1] > episodi[0] ? '-'+episodi[1] : ''}` : '';
+    $('#luci-titolo').textContent = serie
+      ? `${f.titolo} ${quanti} — registrato per ${voce.partecipanti.length} spettatori`
+      : `${f.titolo} — registrato per ${voce.partecipanti.length} spettatori`;
     $('#luci').classList.add('giu');
     setTimeout(() => { $('#luci').classList.remove('giu'); }, 2300);
     S.proiettato = null;
