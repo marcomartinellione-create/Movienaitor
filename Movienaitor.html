@@ -15,9 +15,39 @@
   --bordo:#4a2c33; --bordo2:#3a2229;
   --stella-off:#584a3a;                /* stella non assegnata, unica per tutta l'app */
   --velo-badge:rgba(18,10,13,.85);     /* fondo dei badge sopra le locandine */
+  --su-oro:#241610;                    /* testo sopra l'oro: bottoni, badge, spunte */
+  --poltrona-scura:#4a2228;            /* struttura della poltrona vuota (SVG della platea) */
+  --posto-vuoto:#5a2830;               /* cuscino di un posto libero */
+  --posto-bordo:#201114;               /* contorno dei posti e sagoma della testa */
+  --vuoto-righe:#1c1013;               /* righe della casella "coming soon" nella rosa */
   --ombra:0 10px 30px rgba(0,0,0,.45);
   --rapida:.12s; --media:.2s;          /* durate transizioni */
   --serif:Georgia,'Times New Roman',serif;
+}
+
+/* ═══ Modalità SERIE TV: stessa app, salotto di casa invece del cinema ═══
+   Cambiano soltanto i token: nessuna regola duplicata, nessun selettore in più.
+   Il velluto rosso diventa il tessuto blu del divano, il fondo la penombra di una
+   stanza la sera. Vedi CONCEPT-serie.md §8. */
+:root[data-modo="serie"]{
+  --bg:#0f1620; --bg2:#151f2c; --velluto:#1e2b3d; --velluto2:#182333; --velluto3:#2a3b52;
+  --rosso:#3f6d93; --rosso2:#5a8cb5;
+  --crema:#e9eff7; --dim:#a8b7c9; --dim2:#6e8094; --verde:#76a08f;
+  --bordo:#2c3e55; --bordo2:#223041;
+  --stella-off:#3c4a5c;
+  --velo-badge:rgba(8,13,20,.85);
+  --poltrona-scura:#28384c;
+  --posto-vuoto:#22354a;
+  --posto-bordo:#0a1119;
+  --vuoto-righe:#101a26;
+  --ombra:0 10px 30px rgba(0,0,0,.55);
+}
+/* L'accento, in due varianti (CONCEPT-serie §12.4). CALDO è il valore predefinito: l'oro
+   dell'app resta, e in una stanza blu legge come la lampada accesa. FREDDO vira ad
+   acciaio, perché "toni di blu" sia davvero tale. Si commuta da ⚙ Impostazioni. */
+:root[data-modo="serie"]{ --oro:#c9a45c; --oro2:#e0c07d; --oro-dim:#8a7347; --su-oro:#101a26; }
+:root[data-modo="serie"][data-oro="freddo"]{
+  --oro:#8fb0cc; --oro2:#c6dcf0; --oro-dim:#5c7690; --su-oro:#0d141d;
 }
 *{box-sizing:border-box; margin:0}
 html,body{height:100%}
@@ -35,7 +65,7 @@ input[type=checkbox]{appearance:none; -webkit-appearance:none; width:17px; heigh
   display:inline-grid; place-content:center; margin:0; transition:var(--rapida)}
 input[type=checkbox]:hover{border-color:var(--oro2)}
 input[type=checkbox]:checked{background:var(--oro); border-color:var(--oro)}
-input[type=checkbox]:checked::after{content:'✓'; color:#241610; font-size:12px; font-weight:700; line-height:1}
+input[type=checkbox]:checked::after{content:'✓'; color:var(--su-oro); font-size:12px; font-weight:700; line-height:1}
 /* testo di aiuto: c'era solo dentro .campo, altrove restava grande e chiaro */
 .aiuto{color:var(--dim2); font-size:12px; line-height:1.5}
 ::-webkit-scrollbar{width:10px;height:10px}
@@ -50,7 +80,7 @@ input[type=checkbox]:checked::after{content:'✓'; color:#241610; font-size:12px
 #gate .cartello{background:linear-gradient(180deg,var(--velluto),var(--velluto2)); border:1px solid var(--oro-dim);
   border-radius:14px; padding:30px 34px; max-width:520px; box-shadow:var(--ombra)}
 #gate .cartello p{color:var(--dim); margin:8px 0 18px}
-.bottone{display:inline-block; background:linear-gradient(180deg,var(--oro2),var(--oro)); color:#241610;
+.bottone{display:inline-block; background:linear-gradient(180deg,var(--oro2),var(--oro)); color:var(--su-oro);
   font-weight:600; padding:11px 22px; border-radius:10px; box-shadow:0 4px 14px rgba(201,164,92,.25)}
 .bottone:hover{filter:brightness(1.06)}
 .bottone.secondario{background:none; border:1px solid var(--oro-dim); color:var(--oro2); box-shadow:none}
@@ -125,9 +155,40 @@ header .spazio{flex:1; min-width:0}
 .tenda.dx{right:-4px; box-shadow:inset 22px 0 34px rgba(0,0,0,.55)}
 .schermo.aperto .tenda.sx{transform:translateX(calc(-100% + 30px))}
 .schermo.aperto .tenda.dx{transform:translateX(calc(100% - 30px))}
+/* ---------- modalità serie: il salotto ----------
+   Tre cambi soli (CONCEPT-serie §8): i posti diventano un divano (nel disegno SVG), lo
+   schermo del proiettore diventa una TV e il sipario lascia il posto all'accensione.
+   Aspect ratio, griglia e posizioni restano quelle del cinema. */
+.tv-spenta{display:none}
+:root[data-modo="serie"] .tenda{display:none}          /* niente sipario in salotto */
+:root[data-modo="serie"] .schermo{border:6px solid var(--posto-bordo); border-radius:8px;
+  box-shadow:0 0 0 1px var(--bordo), 0 18px 42px rgba(0,0,0,.6), 0 0 70px rgba(90,140,181,.10)}
+/* il riflesso del vetro: sopra l'immagine ma trasparente ai clic */
+:root[data-modo="serie"] .schermo::after{content:''; position:absolute; inset:0; z-index:3;
+  pointer-events:none; background:linear-gradient(115deg,rgba(255,255,255,.05) 0 20%,transparent 40%)}
+/* il piedino sotto lo schermo */
+:root[data-modo="serie"] .schermo-wrap::after{content:''; flex:none; width:130px; height:9px; margin:0 auto;
+  background:linear-gradient(180deg,var(--velluto3),var(--velluto2));
+  border:1px solid var(--bordo); border-top:none; border-radius:0 0 9px 9px}
+/* accensione e spegnimento: il pannello collassa sulla riga di luce e sparisce (e al
+   contrario quando si spegne). Stesso aggancio del sipario: la classe .aperto. */
+:root[data-modo="serie"] .tv-spenta{display:block; position:absolute; inset:0; z-index:4; pointer-events:none;
+  transform-origin:center; border-radius:3px;
+  background:radial-gradient(62% 62% at 50% 50%,rgba(90,140,181,.07),transparent 70%),var(--vuoto-righe);
+  transition:transform .42s cubic-bezier(.6,0,.25,1), opacity .18s .34s}
+:root[data-modo="serie"] .schermo.aperto .tv-spenta{transform:scaleY(.005); opacity:0}
+:root[data-modo="serie"] .tv-spenta::after{content:''; position:absolute; left:5%; right:5%; top:50%;
+  height:2px; margin-top:-1px; border-radius:2px; background:var(--oro2); box-shadow:0 0 14px var(--oro2);
+  opacity:0; transition:opacity .18s}
+:root[data-modo="serie"] .schermo.aperto .tv-spenta::after{opacity:1; transition:opacity .1s .16s}
+/* i cuscini si toccano (è un divano, non poltrone), i due divani restano staccati */
+:root[data-modo="serie"] .fila{gap:0}
+:root[data-modo="serie"] .fila+.fila{margin-top:18px}
+:root[data-modo="serie"] #platea{background:radial-gradient(60% 90% at 50% 0%,rgba(42,59,82,.38),transparent 70%)}
+
 #btn-play{position:absolute; right:26px; bottom:20px; z-index:5; width:74px; height:74px; border-radius:50%;
   background:radial-gradient(circle at 35% 30%,var(--oro2),var(--oro) 65%,var(--oro-dim));
-  color:#241610; font-size:30px; box-shadow:0 6px 22px rgba(201,164,92,.4); transition:transform var(--rapida)}
+  color:var(--su-oro); font-size:30px; box-shadow:0 6px 22px rgba(201,164,92,.4); transition:transform var(--rapida)}
 #btn-play:hover{transform:scale(1.07)}
 #btn-play:disabled{filter:grayscale(.7) brightness(.6); cursor:default; transform:none}
 .schermo-clic{position:absolute; inset:0; z-index:2; cursor:pointer}
@@ -151,7 +212,7 @@ header .spazio{flex:1; min-width:0}
    la didascalia in basso lo ripeterebbe due volte */
 .rosa .posto:has(.segnaposto) .r-titolo,
 .rosa .posto:has(.segnaposto) .r-velo{display:none}
-.rosa .posto.vuoto{cursor:default; display:flex; align-items:center; justify-content:center; background:repeating-linear-gradient(135deg,var(--bg2),var(--bg2) 10px,#1c1013 10px,#1c1013 20px)}
+.rosa .posto.vuoto{cursor:default; display:flex; align-items:center; justify-content:center; background:repeating-linear-gradient(135deg,var(--bg2),var(--bg2) 10px,var(--vuoto-righe) 10px,var(--vuoto-righe) 20px)}
 .rosa .posto.vuoto:hover{transform:none; border-color:var(--bordo)}
 .rosa .posto.vuoto .cs{font-family:var(--serif); letter-spacing:.14em; font-size:12px; color:var(--oro-dim); text-transform:uppercase; text-align:center; opacity:.85}
 .rosa .posto.proiettato{outline:2px solid var(--oro); outline-offset:-2px}
@@ -356,7 +417,7 @@ header .spazio{flex:1; min-width:0}
 .cg-card{position:relative}
 .cg-fascia{position:absolute; top:8px; left:8px; z-index:2; font-size:10.5px; font-weight:700; letter-spacing:.03em;
   padding:3px 9px; border-radius:20px; border:1px solid transparent; white-space:nowrap}
-.cg-fascia.alta{background:var(--oro); color:#241610}
+.cg-fascia.alta{background:var(--oro); color:var(--su-oro)}
 .cg-fascia.media{background:rgba(201,164,92,.16); color:var(--oro2); border-color:var(--oro-dim)}
 .cg-fascia.bassa{background:var(--velo-badge); color:var(--dim); border-color:var(--velluto3)}
 .cg-perche{color:var(--dim2); font-size:11px; margin-top:4px; line-height:1.35;
@@ -382,11 +443,23 @@ header .spazio{flex:1; min-width:0}
 .play-ep{display:flex; flex-wrap:wrap; gap:14px; align-items:center}
 .play-ep label{display:flex; align-items:center; gap:6px; color:var(--dim); font-size:13.5px}
 .play-ep select,.play-ep input{width:auto; min-width:64px}
-.bug-btn{position:fixed; left:18px; bottom:18px; z-index:80; display:flex; align-items:center; gap:8px;
+.bug-btn,.modo-btn{position:fixed; bottom:18px; z-index:80; display:flex; align-items:center; gap:8px;
   padding:9px 16px; border-radius:22px; font-size:13.5px; letter-spacing:.03em;
   background:linear-gradient(180deg,var(--velluto3),var(--velluto2)); border:1px solid var(--oro-dim);
   color:var(--oro2); box-shadow:var(--ombra); transition:var(--rapida)}
-.bug-btn:hover{border-color:var(--oro2); transform:translateY(-1px)}
+.bug-btn{left:18px}
+.modo-btn{right:18px}            /* speculare al 🐞, dall'altra parte */
+.modo-btn[hidden]{display:none}
+.bug-btn:hover,.modo-btn:hover{border-color:var(--oro2); transform:translateY(-1px)}
+/* la scelta della modalità: schede affiancate, pronte per una terza domani */
+.modo-scelta{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:4px 0 10px}
+.modo-card{display:flex; flex-direction:column; gap:4px; text-align:left; padding:14px 15px; border-radius:12px;
+  border:1px solid var(--velluto3); background:var(--bg2); cursor:pointer; transition:var(--rapida)}
+.modo-card:hover{border-color:var(--oro-dim)}
+.modo-card.on{border-color:var(--oro); box-shadow:0 0 0 2px rgba(201,164,92,.16)}
+.modo-card .mc-ic{font-size:22px}
+.modo-card .mc-nome{color:var(--oro2); font-size:15px}
+.modo-card .mc-desc{color:var(--dim2); font-size:12px; line-height:1.45}
 .bug-btn .pallino-n{background:var(--rosso2); color:var(--crema); border-radius:11px; padding:0 6px; font-size:11.5px; font-weight:600}
 .sg-tipi{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:6px 0 4px}
 .sg-tipo{display:flex; flex-direction:column; gap:3px; text-align:left; padding:11px 12px; border-radius:10px;
@@ -585,13 +658,13 @@ header .spazio{flex:1; min-width:0}
       <div class="schermo-wrap">
         <div class="schermo" id="schermo">
           <div class="schermo-inner" id="schermo-inner"></div>
-          <div class="tenda sx"></div><div class="tenda dx"></div>
+          <div class="tenda sx"></div><div class="tenda dx"></div><div class="tv-spenta"></div>
         </div>
       </div>
 
       <div class="rosa-col">
         <div class="rosa" id="rosa"></div>
-        <button id="btn-lista-completa" title="Tutti i film che passano i filtri di stasera, in ordine di pertinenza">📋 Lista completa</button>
+        <button id="btn-lista-completa" data-dove="titolo" data-film="Tutti i film che passano i filtri di stasera, in ordine di pertinenza" data-serie="Tutte le serie che passano i filtri di stasera, in ordine di pertinenza" title="Tutti i film che passano i filtri di stasera, in ordine di pertinenza">📋 Lista completa</button>
       </div>
     </div>
 
@@ -602,12 +675,12 @@ header .spazio{flex:1; min-width:0}
   <!-- ───── CATALOGO ───── -->
   <main id="vista-catalogo" hidden>
     <div class="catalogo-testa">
-      <input type="text" id="cerca" placeholder="Cerca un film da aggiungere alla tua lista…" autocomplete="off">
-      <span class="aiuto-q" tabindex="0">?<span class="tip">Scrivi il titolo di un film: dai risultati che compaiono scegli quello da aggiungere alla tua lista. Serve la chiave TMDB (in ⚙ Impostazioni) e una connessione a internet.</span></span>
+      <input type="text" id="cerca" data-dove="segnaposto" data-film="Cerca un film da aggiungere alla tua lista…" data-serie="Cerca una serie da aggiungere alla tua lista…" placeholder="Cerca un film da aggiungere alla tua lista…" autocomplete="off">
+      <span class="aiuto-q" tabindex="0">?<span class="tip" data-film="Scrivi il titolo di un film: dai risultati che compaiono scegli quello da aggiungere alla tua lista. Serve la chiave TMDB (in ⚙ Impostazioni)." data-serie="Scrivi il titolo di una serie: dai risultati che compaiono scegli quella da aggiungere alla tua lista. Serve la chiave TMDB (in ⚙ Impostazioni).">Scrivi il titolo di un film: dai risultati che compaiono scegli quello da aggiungere alla tua lista. Serve la chiave TMDB (in ⚙ Impostazioni) e una connessione a internet.</span></span>
       <div id="risultati" hidden></div>
     </div>
     <div id="generi-catalogo"></div>
-    <div class="sezione-titolo">LA MIA LISTA — DA VEDERE<span class="aiuto-q" tabindex="0">?<span class="tip">I film che vuoi vedere. Le stelle (1–5) dicono quanto ti va di vederlo; i nomi ✓/✗ scelgono con chi vederlo o con chi no. Sono i dati che la Sala usa per comporre la Top 5 della serata.</span></span></div>
+    <div class="sezione-titolo">LA MIA LISTA — DA VEDERE<span class="aiuto-q" tabindex="0">?<span class="tip" data-film="I film che vuoi vedere. Le stelle (1–5) dicono quanto ti va di vederlo." data-serie="Le serie che vuoi vedere. Le stelle (1–5) dicono quanto ti va di guardarle. Una serie resta qui finché non arrivate in fondo all'ultima stagione uscita.">I film che vuoi vedere. Le stelle (1–5) dicono quanto ti va di vederlo; i nomi ✓/✗ scelgono con chi vederlo o con chi no. Sono i dati che la Sala usa per comporre la Top 5 della serata.</span></span></div>
     <div class="cat-filtri" id="cat-filtri">
       <input type="search" id="cat-q" placeholder="🔎 filtra per titolo…" autocomplete="off">
       <label>Ordina
@@ -627,13 +700,13 @@ header .spazio{flex:1; min-width:0}
       <span class="cat-conta" id="cat-conta"></span>
     </div>
     <div class="griglia" id="lista-da-vedere"></div>
-    <div class="sezione-titolo">GIÀ VISTI<span class="aiuto-q" tabindex="0">?<span class="tip">I film che hai già guardato: le serate confermate col Play e quelli di cui hai scritto una recensione (recensire un film vale come averlo visto). Restano qui come storico; puoi rimetterne uno in lista se lo vuoi rivedere.</span></span></div>
+    <div class="sezione-titolo">GIÀ VISTI<span class="aiuto-q" tabindex="0">?<span class="tip" data-film="I film che hai già guardato: le serate confermate col Play e quelli di cui hai scritto una recensione (recensire un film vale come averlo visto). Restano qui come storico; puoi rimetterne uno in lista se lo vuoi rivedere." data-serie="Le serie che avete finito, e quelle di cui hai scritto una recensione (recensire vale come averla finita). Restano qui come storico; puoi rimetterne una in lista se la vuoi rivedere.">I film che hai già guardato: le serate confermate col Play e quelli di cui hai scritto una recensione (recensire un film vale come averlo visto). Restano qui come storico; puoi rimetterne uno in lista se lo vuoi rivedere.</span></span></div>
     <div class="griglia" id="lista-visti"></div>
   </main>
 
   <!-- ───── PRONTI ALLA VISIONE (solo host) ───── -->
   <main id="vista-archivio" hidden>
-    <div class="sezione-titolo prima">PRONTI ALLA VISIONE<span class="aiuto-q" tabindex="0">?<span class="tip">Tutti i film che qualcuno vuole ancora vedere, senza doppioni: la scorta da procurare. La bandierina segna quelli già pronti. Con i nomi in alto restringi l'elenco a chi vuoi: puoi sceglierne più di uno.</span></span></div>
+    <div class="sezione-titolo prima">PRONTI ALLA VISIONE<span class="aiuto-q" tabindex="0">?<span class="tip" data-film="Tutti i film che qualcuno vuole ancora vedere, senza doppioni: la scorta da procurarsi." data-serie="Tutte le serie che qualcuno sta ancora guardando o vuole cominciare, senza doppioni: la scorta da procurarsi.">Tutti i film che qualcuno vuole ancora vedere, senza doppioni: la scorta da procurare. La bandierina segna quelli già pronti. Con i nomi in alto restringi l'elenco a chi vuoi: puoi sceglierne più di uno.</span></span></div>
     <div class="arch-chi" id="arch-chi"></div>
     <div class="arch-filtro" id="arch-filtro">
       <input type="search" id="arch-q" placeholder="🔎 cerca per titolo…" autocomplete="off">
@@ -690,7 +763,7 @@ header .spazio{flex:1; min-width:0}
 
   <!-- ───── CONSIGLI «PER TE» ───── -->
   <main id="vista-consigli" hidden>
-    <div class="sezione-titolo prima">CONSIGLIATI PER TE<span class="aiuto-q" tabindex="0">?<span class="tip">Film che non hai mai visto, scelti confrontando i tuoi voti con quelli del catalogo: contano i temi, i generi, i registi e gli attori che voti alto — non quelli che guardi di più. Le recensioni recenti pesano più delle vecchie.</span></span></div>
+    <div class="sezione-titolo prima">CONSIGLIATI PER TE<span class="aiuto-q" tabindex="0">?<span class="tip" data-film="Film che non hai mai visto, scelti confrontando i tuoi voti con quelli del catalogo." data-serie="Serie che non hai mai visto, scelte confrontando i tuoi voti con quelli del catalogo.">Film che non hai mai visto, scelti confrontando i tuoi voti con quelli del catalogo: contano i temi, i generi, i registi e gli attori che voti alto — non quelli che guardi di più. Le recensioni recenti pesano più delle vecchie.</span></span></div>
     <div class="cg-testa">
       <div class="cg-info" id="cg-info"></div>
       <div class="cg-barra" id="cg-barra">
@@ -759,6 +832,12 @@ header .spazio{flex:1; min-width:0}
           <button class="bottone piccolo secondario" id="imp-scartati">🚫 Gestisci esclusi</button>
         </div>
         <div class="campo"><label class="campo-check"><input type="checkbox" id="imp-host"> <span>Modalità host</span></label></div>
+        <div class="campo"><label class="campo-check"><input type="checkbox" id="imp-modo-box"> <span>Casella «film / serie TV» in basso a destra</span></label>
+          <div class="aiuto">Spenta, l'app torna esattamente com'era: solo film, nessuna traccia delle serie.</div></div>
+        <div class="campo" id="campo-oro" hidden><label>Accento della modalità serie</label>
+          <div class="compagnia" id="imp-oro"></div>
+          <div class="aiuto">Provvisorio, serve a scegliere: «caldo» tiene l'oro dell'app (una lampada
+            accesa nella stanza blu), «freddo» vira ad acciaio.</div></div>
         <div class="campo"><label>Cartella collegata</label><div class="aiuto" id="imp-cartella">—</div></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px">
           <button class="bottone piccolo secondario" id="imp-cambia-cartella">Cambia cartella</button>
@@ -771,6 +850,7 @@ header .spazio{flex:1; min-width:0}
   </main>
 
   <button class="bug-btn" id="btn-segnala" title="Segnala un bug o proponi un'idea">🐞 <span>Segnala</span></button>
+  <button class="modo-btn" id="btn-modo" title="Cambia modalità: film o serie TV"><span id="modo-ic">🎬</span> <span id="modo-nome">Film</span></button>
 </div>
 
 <div id="modale-fondo" hidden><div class="modale" id="modale"></div></div>
@@ -817,6 +897,11 @@ const fmtData = iso => new Date(iso+'T12:00:00').toLocaleDateString('it-IT',{day
 // data breve in formato europeo gg/mm/aaaa (deterministico, non dipende dalla locale)
 const dataBreve = d => { d = String(d||'').slice(0,10); const m = d.match(/^(\d{4})-(\d\d)-(\d\d)$/); return m ? `${m[3]}/${m[2]}/${m[1]}` : d; };
 const maiuscola = s => s ? s[0].toUpperCase()+s.slice(1) : s;
+
+// valore corrente di un token: gli SVG scrivono i colori nell'attributo, non in CSS,
+// quindi devono chiederlo al foglio di stile per seguire la modalità
+const tema = (nome, ripiego = '#000') =>
+  (getComputedStyle(document.documentElement).getPropertyValue(nome) || ripiego).trim() || ripiego;
 
 function tinta(hex, f){ // f>0 schiarisce verso il bianco, f<0 scurisce verso il nero
   const n = parseInt(hex.slice(1), 16);
@@ -1009,8 +1094,68 @@ async function ricordaModo(m){
   try { localStorage.setItem('mvn_modo', m); } catch(e){}
 }
 // il vestito: i token colore e la scenografia della Sala guardano questo attributo
+// Le parole della modalità. I testi fissi portano le due varianti addosso
+// (data-film / data-serie, con data-dove per dire se è testo, titolo o segnaposto):
+// così non c'è un dizionario da tenere allineato a parte, e chi legge l'HTML le vede.
+function applicaParole(){
+  for (const el of $$('[data-film]')){
+    const testo = inSerie() ? (el.dataset.serie || el.dataset.film) : el.dataset.film;
+    const dove = el.dataset.dove || 'testo';
+    if (dove === 'segnaposto') el.placeholder = testo;
+    else if (dove === 'titolo') el.title = testo;
+    else el.textContent = testo;
+  }
+}
+
 function applicaModo(){
   document.documentElement.dataset.modo = S.modo;
+  document.documentElement.dataset.oro = S.oroSerie;
+  applicaParole();
+}
+// Cambio di modalità: si rileggono i dati dell'altro spazio e si ridisegna. Nient'altro:
+// le formule e le viste sono le stesse, cambiano solo i dati sotto e il vestito sopra.
+async function cambiaModo(m){
+  if (m === S.modo) return;
+  S.modo = (m === 'serie') ? 'serie' : 'film';
+  await ricordaModo(S.modo);
+  applicaModo();
+  S.proiettato = null;
+  S.cgPool = []; S.cgLista = []; S.cgProfilo = null; S.cgFirma = '';   // i consigli sono per modalità
+  S.providersCache = new Map();
+  S.archivioChi = new Set(); S.recUtente = null;
+  await caricaTutto();
+  await caricaConsigli();
+  aggiornaModoUI();
+  disegnaTutto();
+  toast(inSerie() ? 'Modalità serie TV 📺' : 'Modalità film 🎬');
+}
+function aggiornaModoUI(){
+  if (!$('#btn-modo')) return;
+  $('#btn-modo').hidden = !S.modoVisibile;
+  $('#modo-ic').textContent = inSerie() ? '📺' : '🎬';
+  $('#modo-nome').textContent = inSerie() ? 'Serie TV' : 'Film';
+}
+function modaleModo(){
+  const scheda = (m, ic, nome, desc) => `<button class="modo-card${S.modo===m?' on':''}" data-m="${m}">
+      <div class="mc-ic">${ic}</div><div class="mc-nome">${nome}</div><div class="mc-desc">${desc}</div></button>`;
+  apriModale(`<h3>Cosa si guarda</h3>
+    <div class="modo-scelta">
+      ${scheda('film','🎬','Film','La sala: poltrone, sipario e il film della serata')}
+      ${scheda('serie','📺','Serie TV','Il salotto: divano, TV, e si riprende da dove eravate')}
+    </div>
+    <div class="aiuto">Ogni modalità ha le sue liste, il suo storico, le sue recensioni e i suoi
+      consigli. Si cambia quando vuoi: i dati dell'altra restano dove sono.</div>
+    <div class="m-azioni"><button class="bottone piccolo secondario" id="m-annulla">Chiudi</button></div>`);
+  $('#m-annulla').onclick = chiudiModale;
+  $$('.modo-card').forEach(b => b.onclick = () => { chiudiModale(); cambiaModo(b.dataset.m); });
+}
+// variante dell'accento in modalità serie: 'caldo' (l'oro di sempre, come una lampada
+// accesa nella stanza blu) o 'freddo' (acciaio). Provvisoria: serve a scegliere a video.
+function cambiaOro(v){
+  S.oroSerie = (v === 'freddo') ? 'freddo' : 'caldo';
+  try { localStorage.setItem('mvn_oro', S.oroSerie); } catch(e){}
+  applicaModo();
+  disegnaSala();   // le poltrone sono SVG: i loro colori si ridisegnano, non ereditano
 }
 
 function applicaHost(){
@@ -1030,6 +1175,8 @@ const VISTE = ['sala','catalogo','recensioni','consigli','archivio','segnalazion
 const S = {
   demo:false,
   modo:'film',           // 'film' | 'serie' — vedi CONCEPT-serie.md
+  oroSerie:'caldo',      // variante dell'accento in modalità serie: 'caldo' | 'freddo'
+  modoVisibile:true,     // casella delle modalità a video: spenta, l'app è quella di prima
   host:false,            // questo dispositivo è l'host (tab Archivio)
   me:null,               // slug
   profili:[],            // [{nome, slug, creato, colore, lista:[…]}]
@@ -1124,6 +1271,18 @@ const DEMO_DB = [
   {tmdbId:27205, titolo:'Inception', anno:'2010', durata:148, regista:'Christopher Nolan', generi:['Fantascienza','Azione','Thriller'], voto:8.8, votoFonte:'imdb', trama:'Un ladro che ruba segreti dai sogni riceve l\'incarico inverso: impiantare un\'idea.'}
 ];
 const demoFilm = id => DEMO_DB.find(f => f.tmdbId === id);
+// Serie di prova per la modalità serie TV. Stessa forma di un film più le stagioni:
+// è tutto quello che serve al segnalibro.
+const DEMO_SERIE = [
+  {tmdbId:95396, titolo:'Scissione', anno:'2022', durata:50, regista:'Dan Erickson', generi:['Dramma','Mistero','Sci-Fi & Fantasy'], voto:8.7, votoFonte:'imdb', stagioni:[{n:1,episodi:9},{n:2,episodi:10}], stato:'Returning Series', trama:'Dipendenti che accettano di separare chirurgicamente i ricordi del lavoro da quelli della vita privata.'},
+  {tmdbId:1396, titolo:'Breaking Bad', anno:'2008', durata:47, regista:'Vince Gilligan', generi:['Dramma','Crime'], voto:9.5, votoFonte:'imdb', stagioni:[{n:1,episodi:7},{n:2,episodi:13},{n:3,episodi:13},{n:4,episodi:13},{n:5,episodi:16}], stato:'Ended', trama:'Un professore di chimica malato comincia a produrre metanfetamina per lasciare qualcosa alla famiglia.'},
+  {tmdbId:66732, titolo:'Stranger Things', anno:'2016', durata:51, regista:'The Duffer Brothers', generi:['Dramma','Sci-Fi & Fantasy','Mistero'], voto:8.6, votoFonte:'imdb', stagioni:[{n:1,episodi:8},{n:2,episodi:9},{n:3,episodi:8},{n:4,episodi:9}], stato:'Returning Series', trama:'In una cittadina dell\'Indiana scompare un ragazzino e affiorano esperimenti segreti e creature da un altro mondo.'},
+  {tmdbId:1399, titolo:'Il Trono di Spade', anno:'2011', durata:57, regista:'David Benioff, D. B. Weiss', generi:['Dramma','Sci-Fi & Fantasy','Action & Adventure'], voto:9.2, votoFonte:'imdb', stagioni:[{n:1,episodi:10},{n:2,episodi:10},{n:3,episodi:10},{n:4,episodi:10},{n:5,episodi:10},{n:6,episodi:10},{n:7,episodi:7},{n:8,episodi:6}], stato:'Ended', trama:'Nove famiglie nobili si contendono il controllo dei Sette Regni mentre a nord un nemico antico si risveglia.'},
+  {tmdbId:60059, titolo:'Better Call Saul', anno:'2015', durata:46, regista:'Vince Gilligan, Peter Gould', generi:['Dramma','Crime'], voto:9.0, votoFonte:'imdb', stagioni:[{n:1,episodi:10},{n:2,episodi:10},{n:3,episodi:10},{n:4,episodi:10},{n:5,episodi:10},{n:6,episodi:13}], stato:'Ended', trama:'Come un avvocato di provincia pieno di buone intenzioni diventa Saul Goodman.'},
+  {tmdbId:87108, titolo:'Chernobyl', anno:'2019', durata:65, regista:'Craig Mazin', generi:['Dramma'], voto:9.3, votoFonte:'imdb', stagioni:[{n:1,episodi:5}], stato:'Ended', trama:'Il disastro del 1986 e le persone che si sacrificarono per limitarne le conseguenze.'},
+  {tmdbId:82856, titolo:'The Mandalorian', anno:'2019', durata:40, regista:'Jon Favreau', generi:['Sci-Fi & Fantasy','Action & Adventure','Dramma'], voto:8.6, votoFonte:'imdb', stagioni:[{n:1,episodi:8},{n:2,episodi:8},{n:3,episodi:8}], stato:'Returning Series', trama:'Un cacciatore di taglie solitario ai margini della galassia si ritrova a proteggere un bambino della stessa specie di Yoda.'}
+];
+const demoSerie = id => DEMO_SERIE.find(s => s.tmdbId === id);
 
 function semina(){
   const g = giorni => new Date(Date.now() - giorni*864e5).toISOString().slice(0,10);
@@ -1134,13 +1293,27 @@ function semina(){
       collezione:f.collezione || null, collezioneNome:f.collezioneNome || null, uscita:f.anno ? f.anno+'-01-01' : null,
       desiderio:des, conChi:[], nonCon:[], aggiunto:g(aggiuntoGiorni), ...extra};
   };
+  // le serie hanno la stessa forma dei film, con le stagioni in più
+  const vs = (id, des, extra={}, aggiuntoGiorni=30) => {
+    const s = demoSerie(id);
+    return {tmdbId:s.tmdbId, titolo:s.titolo, anno:s.anno, durata:s.durata, regista:s.regista,
+      generi:s.generi, voto:s.voto, votoFonte:s.votoFonte, trama:s.trama, stagioni:s.stagioni,
+      stato:s.stato, collezione:null, collezioneNome:null, uscita:s.anno+'-01-01',
+      desiderio:des, conChi:[], nonCon:[], aggiunto:g(aggiuntoGiorni), ...extra};
+  };
   const profili = [
-    {nome:'Marco', slug:'marco', creato:g(90), colore:'#c9a45c', lista:[voce(438631,5), voce(693134,5), voce(335984,4), voce(27205,3)]},
-    {nome:'Elena', slug:'elena', creato:g(80), colore:'#9b7da8', lista:[voce(194,5,{conChi:['marco']}), voce(496243,4), voce(313369,3)]},
-    {nome:'Simone', slug:'simone', creato:g(70), colore:'#6f8fae', lista:[voce(157336,5), voce(680,4,{},60)]},
-    {nome:'Stefano', slug:'stefano', creato:g(85), colore:'#7d9b76', lista:[voce(238,5,{nonCon:['simone']}), voce(120467,3)]},
-    {nome:'Francesco', slug:'francesco', creato:g(60), colore:'#b0805a', lista:[voce(354912,4,{},55), voce(244786,4), voce(438631,3)]},
-    {nome:'Cristina', slug:'cristina', creato:g(75), colore:'#a85454', lista:[voce(637,5), voce(597,2)]}
+    {nome:'Marco', slug:'marco', creato:g(90), colore:'#c9a45c', lista:[voce(438631,5), voce(693134,5), voce(335984,4), voce(27205,3)],
+      listaSerie:[vs(95396,5), vs(1396,4), vs(87108,5), vs(60059,3)]},
+    {nome:'Elena', slug:'elena', creato:g(80), colore:'#9b7da8', lista:[voce(194,5,{conChi:['marco']}), voce(496243,4), voce(313369,3)],
+      listaSerie:[vs(95396,4), vs(66732,5), vs(1399,3)]},
+    {nome:'Simone', slug:'simone', creato:g(70), colore:'#6f8fae', lista:[voce(157336,5), voce(680,4,{},60)],
+      listaSerie:[vs(1396,5), vs(1399,5), vs(82856,3)]},
+    {nome:'Stefano', slug:'stefano', creato:g(85), colore:'#7d9b76', lista:[voce(238,5,{nonCon:['simone']}), voce(120467,3)],
+      listaSerie:[vs(87108,4), vs(60059,4)]},
+    {nome:'Francesco', slug:'francesco', creato:g(60), colore:'#b0805a', lista:[voce(354912,4,{},55), voce(244786,4), voce(438631,3)],
+      listaSerie:[vs(66732,4), vs(82856,5)]},
+    {nome:'Cristina', slug:'cristina', creato:g(75), colore:'#a85454', lista:[voce(637,5), voce(597,2)],
+      listaSerie:[vs(95396,3), vs(1399,4)]}
   ];
   const storico = [
     {id:'demo-1', data:g(40), ts:g(40)+'T21:30:00', tmdbId:354912, titolo:'Coco', partecipanti:['marco','francesco','simone','cristina'], proponenti:['francesco']},
@@ -1149,6 +1322,15 @@ function semina(){
   demoFS.files.clear();
   for (const p of profili) demoFS.files.set('profili/'+p.slug+'.json', JSON.stringify(p));
   demoFS.files.set('storico.json', JSON.stringify({visioni:storico}));
+  // storico delle serie: qualche serata già fatta, così il segnalibro ha da lavorare
+  demoFS.files.set('serie/storico.json', JSON.stringify({visioni:[
+    {id:'demo-s1', data:g(21), ts:g(21)+'T21:30:00', tmdbId:95396, titolo:'Scissione', stagione:1, episodi:[1,3],
+     partecipanti:['marco','elena','cristina'], proponenti:['marco','elena']},
+    {id:'demo-s2', data:g(14), ts:g(14)+'T21:30:00', tmdbId:95396, titolo:'Scissione', stagione:1, episodi:[4,6],
+     partecipanti:['marco','elena'], proponenti:['marco','elena']},
+    {id:'demo-s3', data:g(5), ts:g(5)+'T21:30:00', tmdbId:1396, titolo:'Breaking Bad', stagione:1, episodi:[1,2],
+     partecipanti:['marco','simone'], proponenti:['simone']}
+  ]}));
   demoFS.files.set('config.json', JSON.stringify({...CONFIG_DEFAULT}));
   demoFS.files.set('segnalazioni/elena.json', JSON.stringify({segnalazioni:[
     {id:'demo-sg-1', tipo:'bug', titolo:'La locandina non si vede nella scheda', descrizione:'Apro la scheda di un film dalla Watch List e al posto della copertina resta il rettangolo col titolo.',
@@ -1162,7 +1344,7 @@ function semina(){
 async function cercaFilm(q){
   if (S.demo){
     const t = q.toLowerCase();
-    return DEMO_DB.filter(f => f.titolo.toLowerCase().includes(t))
+    return (inSerie() ? DEMO_SERIE : DEMO_DB).filter(f => f.titolo.toLowerCase().includes(t))
       .map(f => ({id:f.tmdbId, title:f.titolo, release_date:f.anno+'-01-01', poster_path:null}));
   }
   if (!S.config.tmdbKey) throw new Error('nokey');
@@ -1174,7 +1356,7 @@ async function cercaFilm(q){
 }
 
 async function dettagliFilm(id){
-  if (S.demo) return {...demoFilm(id)};
+  if (S.demo) return {...(inSerie() ? demoSerie(id) : demoFilm(id))};
   const k = S.config.tmdbKey;
   // le keyword arrivano nella stessa chiamata (append_to_response, fino a 20 endpoint):
   // costano zero richieste in più e sono il tratto più specifico per i consigli
@@ -2373,6 +2555,8 @@ function gateNome(conIndietro){
 }
 
 async function entra(){
+  try { S.oroSerie = localStorage.getItem('mvn_oro') === 'freddo' ? 'freddo' : 'caldo'; } catch(e){}
+  try { S.modoVisibile = localStorage.getItem('mvn_modo_box') !== '0'; } catch(e){}
   S.modo = await leggiModo();   // prima di caricare: i percorsi dipendono dalla modalità
   applicaModo();
   await caricaTutto();
@@ -2390,6 +2574,7 @@ async function avviaApp(){
   $('#io-nome').textContent = nomeDi(S.me);
   $('#io-colore').style.background = coloreDi(S.me);
   applicaHost();
+  aggiornaModoUI();
   disegnaTutto();
 }
 
@@ -2948,9 +3133,10 @@ function disegnaFiltri(){
 let poltronaUid = 0;
 function poltronaSVG(colore, presente){
   const uid = ++poltronaUid;
-  const cuscino = presente ? colore : '#5a2830';
-  const schienale = presente ? tinta(colore, -0.42) : '#4a2228';
-  const braccioli = '#4a2228';
+  const cuscino = presente ? colore : tema('--posto-vuoto');
+  const scuro = tema('--poltrona-scura');
+  const schienale = presente ? tinta(colore, -0.42) : scuro;
+  const braccioli = scuro;
   return `<svg viewBox="0 0 100 88">
     <defs>
       <radialGradient id="mvnc${uid}" cx="50%" cy="32%" r="80%">
@@ -2962,19 +3148,60 @@ function poltronaSVG(colore, presente){
         <stop offset="100%" stop-color="${tinta(schienale, -0.2)}"/>
       </linearGradient>
     </defs>
-    <g stroke="#201114" stroke-width="2.5" stroke-linejoin="round"${presente ? '' : ' opacity=".85"'}>
+    <g stroke="${tema('--posto-bordo')}" stroke-width="2.5" stroke-linejoin="round"${presente ? '' : ' opacity=".85"'}>
       <rect x="3" y="16" width="15" height="60" rx="7.5" fill="${braccioli}"/>
       <rect x="82" y="16" width="15" height="60" rx="7.5" fill="${braccioli}"/>
       <rect x="17" y="6" width="66" height="60" rx="14" fill="url(#mvnc${uid})"/>
       <rect x="24" y="13" width="52" height="46" rx="9" fill="none" stroke="${tinta(cuscino, -0.28)}" stroke-width="1.6" stroke-dasharray="3 4" opacity=".9"/>
       <rect x="13" y="58" width="74" height="24" rx="12" fill="url(#mvns${uid})"/>
     </g>
-    ${presente ? `<g fill="#1b1013" stroke="${colore}" stroke-width="2.2" stroke-linejoin="round">
+    ${presente ? `<g fill="${tema('--posto-bordo')}" stroke="${colore}" stroke-width="2.2" stroke-linejoin="round">
       <ellipse cx="50" cy="56" rx="24" ry="10.5"/>
       <circle cx="50" cy="48" r="11.5"/>
     </g>` : ''}
   </svg>`;
 }
+
+// Il posto del salotto: cuscini affiancati sotto un unico schienale. Solo le estremità
+// hanno il bracciolo e lo schienale sborda ai lati, così i posti accanto si saldano e la
+// fila legge come un divano invece che come poltrone separate. Stessa firma di
+// poltronaSVG più la posizione nella fila: 'sx' | 'mid' | 'dx' | 'solo'.
+function postoDivanoSVG(colore, presente, pos){
+  const uid = ++poltronaUid;
+  const cuscino = presente ? colore : tema('--posto-vuoto');
+  const scuro = tema('--poltrona-scura');
+  const schienale = presente ? tinta(colore, -0.42) : scuro;
+  const capoSx = pos === 'sx' || pos === 'solo', capoDx = pos === 'dx' || pos === 'solo';
+  const sx = capoSx ? 18 : 0, dx = capoDx ? 82 : 100;      // spazio per il bracciolo solo ai capi
+  const bSx = capoSx ? 2 : -4, bDx = capoDx ? 98 : 104;    // lo schienale sborda dove continua
+  return `<svg viewBox="0 0 100 88">
+    <defs>
+      <radialGradient id="mvnd${uid}" cx="50%" cy="32%" r="80%">
+        <stop offset="0%" stop-color="${tinta(cuscino, 0.16)}"/>
+        <stop offset="100%" stop-color="${tinta(cuscino, -0.14)}"/>
+      </radialGradient>
+      <linearGradient id="mvne${uid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${tinta(schienale, 0.14)}"/>
+        <stop offset="100%" stop-color="${tinta(schienale, -0.2)}"/>
+      </linearGradient>
+    </defs>
+    <g stroke="${tema('--posto-bordo')}" stroke-width="2.5" stroke-linejoin="round"${presente ? '' : ' opacity=".85"'}>
+      ${capoSx ? '<rect x="2" y="14" width="16" height="64" rx="8" fill="'+scuro+'"/>' : ''}
+      ${capoDx ? '<rect x="82" y="14" width="16" height="64" rx="8" fill="'+scuro+'"/>' : ''}
+      <rect x="${sx + 1}" y="6" width="${dx - sx - 2}" height="58" rx="10" fill="url(#mvnd${uid})"/>
+      <rect x="${sx + 6}" y="12" width="${dx - sx - 12}" height="45" rx="7" fill="none"
+            stroke="${tinta(cuscino, -0.28)}" stroke-width="1.4" stroke-dasharray="3 4" opacity=".85"/>
+      <rect x="${bSx}" y="56" width="${bDx - bSx}" height="26" rx="9" fill="url(#mvne${uid})"/>
+    </g>
+    ${presente ? `<g fill="${tema('--posto-bordo')}" stroke="${colore}" stroke-width="2.2" stroke-linejoin="round">
+      <ellipse cx="50" cy="54" rx="23" ry="10"/>
+      <circle cx="50" cy="46" r="11"/>
+    </g>` : ''}
+  </svg>`;
+}
+// la platea non sa quale disegno sta usando: cambia solo chi disegna il singolo posto
+const postoSVG = (colore, presente, pos) =>
+  inSerie() ? postoDivanoSVG(colore, presente, pos) : poltronaSVG(colore, presente);
 
 function disegnaPlatea(){
   const utenti = S.profili.map(p => p.slug);
@@ -2985,14 +3212,19 @@ function disegnaPlatea(){
   const inizioDietro = Math.floor((FILA_DIETRO - dietroN) / 2);
   for (let i = 0; i < FILA_DAVANTI; i++) posti.push({fila:0, slug:(i >= inizioDavanti && i < inizioDavanti + davanti) ? utenti[i - inizioDavanti] : null});
   for (let i = 0; i < FILA_DIETRO; i++) posti.push({fila:1, slug:(i >= inizioDietro && i < inizioDietro + dietroN) ? utenti[FILA_DAVANTI + i - inizioDietro] : null});
-  const fila = n => posti.filter(p => p.fila === n).map(p => {
-    if (!p.slug) return `<div class="poltrona">${poltronaSVG('#000', false)}<div class="nome">&nbsp;</div></div>`;
-    const presente = S.presenti.has(p.slug);
-    return `<div class="poltrona assegnata${presente?' presente':''}" data-slug="${esc(p.slug)}" title="${presente?'Presente — clic per togliere':'Assente — clic per aggiungere'}">
-      ${poltronaSVG(coloreDi(p.slug), presente)}
-      <div class="nome">${esc(nomeDi(p.slug))}</div>
-    </div>`;
-  }).join('');
+  const fila = n => {
+    const dellaFila = posti.filter(p => p.fila === n);
+    return dellaFila.map((p, i) => {
+      // posizione nella fila: serve solo al divano, per sapere dove mettere i braccioli
+      const pos = dellaFila.length === 1 ? 'solo' : i === 0 ? 'sx' : i === dellaFila.length - 1 ? 'dx' : 'mid';
+      if (!p.slug) return `<div class="poltrona">${postoSVG('#000', false, pos)}<div class="nome">&nbsp;</div></div>`;
+      const presente = S.presenti.has(p.slug);
+      return `<div class="poltrona assegnata${presente?' presente':''}" data-slug="${esc(p.slug)}" title="${presente?'Presente — clic per togliere':'Assente — clic per aggiungere'}">
+        ${postoSVG(coloreDi(p.slug), presente, pos)}
+        <div class="nome">${esc(nomeDi(p.slug))}</div>
+      </div>`;
+    }).join('');
+  };
   $('#platea').innerHTML = `<div class="fila">${fila(0)}</div><div class="fila">${fila(1)}</div>`;
   $$('#platea .poltrona.assegnata').forEach(el => el.onclick = () => {
     const s = el.dataset.slug;
@@ -3220,7 +3452,7 @@ function disegnaCatalogo(){
     ? `${daVedereTot.length} film` : `${daVedere.length} di ${daVedereTot.length}`;
 
   $('#lista-da-vedere').innerHTML = daVedere.map(v => cardFilm(v)).join('') ||
-    `<div class="vuoto-msg">${daVedereTot.length ? 'Nessun film corrisponde ai filtri.' : 'La tua lista è vuota: cerca un film qui sopra 🍿'}</div>`;
+    `<div class="vuoto-msg">${daVedereTot.length ? `Nessun${inSerie() ? 'a serie corrisponde' : ' film corrisponde'} ai filtri.` : `La tua lista è vuota: cerca ${inSerie() ? 'una serie' : 'un film'} qui sopra 🍿`}</div>`;
   daVedere.forEach(v => agganciaCard(v));
 
   // visti: le mie visioni dallo storico + i film che ho recensito (una recensione vale
@@ -3253,7 +3485,7 @@ function disegnaCatalogo(){
         <h4>${esc(voce.titolo)}</h4>
         <div class="azioni"><button class="testo-link btn-riguarda" data-id="${id}" style="color:var(--verde)">↺ rimettilo in lista</button></div>
       </div>
-    </div>`).join('') || `<div class="vuoto-msg">Ancora nessun film visto: né serate registrate né recensioni.</div>`;
+    </div>`).join('') || `<div class="vuoto-msg">Ancora nessun${inSerie() ? 'a serie finita' : ' film visto'}: né serate registrate né recensioni.</div>`;
   const vociViste = new Map(visti.map(x => [x.id, x.voce]));
   $$('#lista-visti .scheda-film').forEach(el => {
     const voce = vociViste.get(parseInt(el.dataset.visto, 10));
@@ -3606,6 +3838,10 @@ function disegnaImpostazioni(){
   const mio = mioProfilo();
   if (mio){ $('#imp-chip').style.background = mio.colore; $('#imp-pw').value = mio.password || ''; }
   $('#imp-host').checked = S.host;
+  $('#imp-modo-box').checked = S.modoVisibile;
+  $('#campo-oro').hidden = !inSerie();
+  if (inSerie()) $('#imp-oro').innerHTML = [['caldo','Caldo (oro)'],['freddo','Freddo (acciaio)']]
+    .map(([v,n]) => `<button class="pchip${S.oroSerie===v?' on':''}" data-oro="${v}">${n}</button>`).join('');
   $('#imp-scegli-colore').onclick = () => {
     const p = mioProfilo(); if (!p) return;
     apriColorPicker(p.colore, async c => {
@@ -3693,6 +3929,13 @@ function agganciaImpostazioni(){
     if (val) p.password = val; else delete p.password;
     await salvaMioProfilo();
     toast(val ? 'Password impostata 🔒' : 'Password rimossa');
+  };
+  $('#imp-modo-box').onchange = async e => {
+    S.modoVisibile = e.target.checked;
+    try { localStorage.setItem('mvn_modo_box', S.modoVisibile ? '1' : '0'); } catch(e2){}
+    // spegnendola si torna ai film: se no si resterebbe chiusi nelle serie senza l'interruttore
+    if (!S.modoVisibile && inSerie()) await cambiaModo('film');
+    aggiornaModoUI(); disegnaImpostazioni();
   };
   $('#imp-host').onchange = async e => {
     S.host = e.target.checked;
@@ -3796,6 +4039,11 @@ function agganciaGlobali(){
   $('#arch-q').oninput = e => { S.archivioQ = e.target.value; disegnaArchivio(); };
   // ── Segnalazioni ──
   $('#btn-segnala').onclick = modaleSegnala;
+  $('#btn-modo').onclick = modaleModo;
+  document.addEventListener('click', e => {
+    const c = e.target.closest('#imp-oro [data-oro]');
+    if (c) cambiaOro(c.dataset.oro);
+  });
   $('#btn-lista-completa').onclick = modaleListaCompleta;
   $('#sg-strumenti').onclick = e => {
     const b = e.target.closest('button[data-f]'); if (!b) return;

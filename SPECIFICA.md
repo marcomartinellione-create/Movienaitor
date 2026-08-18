@@ -514,3 +514,75 @@ Ispirata al pulsante "Segnala" della SustEner App, ma con lo stile della sala.
 1. Conferma sul campo della palette §9 e delle costanti §8.4 (tarabili da ⚙ Impostazioni).
 2. Prima prova reale: cartella su Drive, chiave TMDB (+ OMDb) da incollare in Impostazioni.
 3. v1.x possibili: statistiche di gruppo, serie TV, decomposizione `src/` se il file cresce.
+
+## 14. Modalità Serie TV (2026-08-18, desktop)
+
+Seconda modalità dell'app — non una seconda app. Si preme la casella in basso a destra
+(speculare al 🐞), si sceglie **🎬 Film** o **📺 Serie TV**, e la stessa identica app cambia
+tre cose e solo quelle: **da dove legge i dati**, **quale endpoint TMDB** interroga e
+**che vestito** indossa. Formule della Sala, classifica, indice di soddisfazione, consigli
+e recensioni non cambiano di una riga. Concept e decisioni: `CONCEPT-serie.md`.
+
+### 14.1 Dati — spazi separati
+
+I file dei film restano dove sono sempre stati; le serie vivono sotto `serie/`:
+
+```
+storico.json  archivio.json  recensioni/<slug>/  consigli/<slug>.json     ← film
+serie/storico.json  serie/archivio.json  serie/recensioni/<slug>/
+serie/consigli/<slug>.json                                                ← serie TV
+```
+
+Il **profilo resta un file solo** per persona (nome, colore, password e servizi streaming
+sono comuni): dentro convivono `lista` e `listaSerie`, e `generiPositivi/Negativi` più
+`generiPositiviSerie/NegativiSerie` — le due tassonomie TMDB sono diverse (*Fantascienza*
+contro *Sci-Fi & Fantasy*) e non sono trasferibili.
+
+Perché separati e non un campo `tipo`: su TMDB gli id di film e serie sono **sequenze
+indipendenti** (l'id 1399 è un film *e* una serie diversa), quindi con file condivisi ogni
+struttura indicizzata per `tmdbId` andrebbe convertita a chiave composta — comprese le
+recensioni, che si sovrascriverebbero. Così invece `tmdbId` resta la chiave e tutta la
+logica funziona parola per parola. In più è **additivo**: le versioni vecchie dell'app non
+vedono `serie/`, e cancellare quella cartella cancella ogni traccia.
+
+### 14.2 L'unità di una serie: il segnalibro
+
+Un film si vede una sera e finisce; una serie no. Perciò **Play non consuma una serie**:
+sposta il segnalibro. Dove siete arrivati **non si salva** — si ricalcola dallo storico,
+come lo stato «visto» dei film e l'indice di soddisfazione:
+
+```jsonc
+// serie/storico.json — una riga per serata
+{"visioni":[{"id":"…","data":"2026-08-18","ts":"…","tmdbId":95396,"titolo":"Severance",
+  "stagione":2,"episodi":[3,4],"partecipanti":["marco","elena"],"proponenti":["marco"]}]}
+```
+
+- **segnalibro** = il punto più avanti raggiunto da quella persona, contando solo le serate
+  successive ad `aggiunto` (così «rimettila in lista» riparte da capo);
+- **voce attiva** finché il segnalibro non arriva in fondo all'ultima stagione uscita. Se
+  le stagioni non si conoscono, la serie non si considera mai finita;
+- in Sala si riprende dal punto **più indietro fra i presenti**, così nessuno si perde un
+  episodio; Play chiede «dove siete arrivati», già compilato lì;
+- una **recensione** vale come «l'ho finita», come per i film vale «l'ho visto» (§3.3).
+
+### 14.3 Campi TMDB
+
+`name`, `first_air_date`, `created_by` (al posto del regista: per le serie `crew.Director`
+è vuoto), `episode_run_time` con ripiego su `last_episode_to_air.runtime` — spesso è vuoto
+— e le stagioni da `seasons`, scartando gli speciali (S0) e quelle annunciate a 0 episodi.
+Le **keyword stanno in `keywords.results`** e non in `keywords.keywords` come per i film.
+Il filtro «durata massima» della serata diventa la **durata di un episodio**.
+
+### 14.4 L'aspetto
+
+Tutto per token: `:root[data-modo="serie"]` ridichiara la palette (blu), e la scenografia
+cambia in **tre punti soli** — i posti diventano un **divano** (cuscini affiancati sotto un
+unico schienale, braccioli solo ai capi), lo schermo diventa una **TV** a parità di aspect
+ratio, e al posto del sipario c'è l'**accensione/spegnimento della TV**. Layout, griglia e
+posizioni restano quelli del cinema. L'accento ha due varianti (**caldo**, l'oro dell'app,
+e **freddo**, acciaio) commutabili da ⚙ Impostazioni finché non si sceglie.
+
+### 14.5 Reversibilità
+
+La casella si può **nascondere** da ⚙ Impostazioni: spenta, si torna ai film e l'app è
+indistinguibile da quella di prima. I dati dei film non vengono mai toccati.

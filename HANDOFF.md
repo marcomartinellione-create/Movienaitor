@@ -294,6 +294,38 @@ della recensione (`ultimaVisione`, o il giorno in cui è stata scritta) e il seg
 gioco per gli altri, §6.2). Fra i visti finiscono anche i film recensiti che non sono mai
 passati dalla watch list. Vedi SPECIFICA §3.3 e §5.2 C5.
 
+## Modalità Serie TV (ramo `serie-tv`, solo desktop per ora)
+
+Seconda modalità, non una seconda app: casella in basso a destra (speculare al 🐞) →
+🎬 Film / 📺 Serie TV. Concept e decisioni in **CONCEPT-serie.md**, regole in SPECIFICA §14.
+
+- **`S.modo`** ('film'|'serie'), ricordato per dispositivo: bridge Electron
+  `getModo/setModo` nel config di sistema (su `app://mvn` il localStorage non persiste),
+  localStorage nel browser. `cambiaModo()` rilegge i dati e ridisegna, nient'altro.
+- **`P(...parti)`** prefissa i percorsi con `serie/`: storico, archivio, recensioni,
+  consigli. Config, profili e segnalazioni restano comuni.
+- **`listaDi(profilo)`** al posto di `p.lista`: il profilo resta UN file con `lista` e
+  `listaSerie` dentro. Stessa cosa per i generi ✓/✗ (`generiPos/generiNeg`), che sono
+  sdoppiati perché le due tassonomie TMDB sono diverse.
+- **Segnalibro** (`segnalibro`, `prossimoEpisodio`, `prossimoGruppo`, `serieFinita`):
+  ricavato dallo storico, mai salvato. `entryAttiva` per una serie = non ancora finita.
+  Play chiede «dove siete arrivati» e scrive `stagione`/`episodi` nella voce.
+- **Vestito**: `:root[data-modo="serie"]` ridichiara i token; `postoDivanoSVG` disegna il
+  divano; `.tv-spenta` fa l'accensione al posto delle `.tenda`. `tema('--token')` legge un
+  token dal foglio di stile — serve agli SVG, che i colori li scrivono nell'attributo.
+- **Parole**: i testi fissi portano le due varianti addosso (`data-film`/`data-serie`, con
+  `data-dove` per testo/titolo/segnaposto), `applicaParole()` sceglie. Non tutti i testi
+  sono stati marcati: si aggiungono man mano che danno fastidio.
+- **Reversibilità**: ramo `serie-tv` (master fermo, tag `pre-serie`), dati additivi
+  (`serie/` si cancella in blocco), e la casella si nasconde da ⚙ Impostazioni.
+- **Da fare**: portare tutto sul mobile (deciso: prima il desktop), e scegliere la
+  variante dell'accento fra caldo e freddo.
+
+⚠️ **Gotcha trovato scrivendo queste patch**: nelle stringhe di sostituzione di
+`String.replace` la sequenza `$$` significa «un $ letterale» e si mangia un carattere.
+Se una patch inserisce codice che contiene `$$('…')`, usare una funzione di sostituzione
+o `split/join`, altrimenti diventa `$('…')` e si rompe a runtime.
+
 ## App mobile (`app-mobile/`)
 
 APK Capacitor, web in `www/index.html` (file unico, come il desktop), plugin nativo SAF in
