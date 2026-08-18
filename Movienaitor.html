@@ -42,13 +42,10 @@
   --vuoto-righe:#101a26;
   --ombra:0 10px 30px rgba(0,0,0,.55);
 }
-/* L'accento, in due varianti (CONCEPT-serie §12.4). CALDO è il valore predefinito: l'oro
-   dell'app resta, e in una stanza blu legge come la lampada accesa. FREDDO vira ad
-   acciaio, perché "toni di blu" sia davvero tale. Si commuta da ⚙ Impostazioni. */
-:root[data-modo="serie"]{ --oro:#c9a45c; --oro2:#e0c07d; --oro-dim:#8a7347; --su-oro:#101a26; }
-:root[data-modo="serie"][data-oro="freddo"]{
-  --oro:#8fb0cc; --oro2:#c6dcf0; --oro-dim:#5c7690; --su-oro:#0d141d;
-}
+/* L'accento resta l'oro dell'app anche in salotto (scelta di Marco, 2026-08-18): in una
+   stanza blu legge come la lampada accesa, e tiene l'identità di Movienaitor. Cambia solo
+   il testo che ci sta sopra, che va scurito sul blu. */
+:root[data-modo="serie"]{ --su-oro:#101a26; }
 *{box-sizing:border-box; margin:0}
 html,body{height:100%}
 body{background:radial-gradient(1200px 700px at 50% -10%, #241118 0%, var(--bg) 55%) fixed var(--bg);
@@ -134,7 +131,7 @@ header .spazio{flex:1; min-width:0}
 
 /* schermo */
 .schermo-wrap{position:relative; padding:0 24px; display:flex; flex-direction:column}
-.schermo{position:relative; flex:1; min-height:240px; border:3px double var(--oro-dim); border-radius:10px;
+.schermo{position:relative; flex:none; aspect-ratio:1.42; min-height:240px; border:3px double var(--oro-dim); border-radius:10px;
   background:#120a0d; overflow:hidden; box-shadow:0 0 60px rgba(201,164,92,.10), var(--ombra)}
 .schermo .sfondo{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.85}
 .schermo .velo{position:absolute; inset:0; background:linear-gradient(180deg,rgba(18,10,13,.15) 30%,rgba(18,10,13,.88) 82%)}
@@ -581,7 +578,8 @@ header .spazio{flex:1; min-width:0}
   flex-direction:column; gap:14px; color:var(--oro2); font-family:var(--serif); font-size:34px; opacity:0; pointer-events:none; transition:opacity .5s}
 #luci.giu{opacity:1; pointer-events:auto}
 #luci small{font-size:15px; color:var(--dim); font-family:system-ui,sans-serif; letter-spacing:.2em}
-#toasts{position:fixed; right:18px; bottom:18px; z-index:130; display:flex; flex-direction:column; gap:8px}
+#toasts{position:fixed; right:18px; bottom:72px; z-index:130; display:flex; flex-direction:column; gap:8px;
+  pointer-events:none}   /* sopra la casella delle modalità, e trasparente ai clic */
 .toast{background:var(--bg2); border:1px solid var(--oro-dim); color:var(--crema); padding:10px 16px; border-radius:10px;
   box-shadow:var(--ombra); font-size:14px; animation:sale .25s ease-out}
 .toast.errore{border-color:var(--rosso2)}
@@ -834,10 +832,6 @@ header .spazio{flex:1; min-width:0}
         <div class="campo"><label class="campo-check"><input type="checkbox" id="imp-host"> <span>Modalità host</span></label></div>
         <div class="campo"><label class="campo-check"><input type="checkbox" id="imp-modo-box"> <span>Casella «film / serie TV» in basso a destra</span></label>
           <div class="aiuto">Spenta, l'app torna esattamente com'era: solo film, nessuna traccia delle serie.</div></div>
-        <div class="campo" id="campo-oro" hidden><label>Accento della modalità serie</label>
-          <div class="compagnia" id="imp-oro"></div>
-          <div class="aiuto">Provvisorio, serve a scegliere: «caldo» tiene l'oro dell'app (una lampada
-            accesa nella stanza blu), «freddo» vira ad acciaio.</div></div>
         <div class="campo"><label>Cartella collegata</label><div class="aiuto" id="imp-cartella">—</div></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px">
           <button class="bottone piccolo secondario" id="imp-cambia-cartella">Cambia cartella</button>
@@ -1109,7 +1103,6 @@ function applicaParole(){
 
 function applicaModo(){
   document.documentElement.dataset.modo = S.modo;
-  document.documentElement.dataset.oro = S.oroSerie;
   applicaParole();
 }
 // Cambio di modalità: si rileggono i dati dell'altro spazio e si ridisegna. Nient'altro:
@@ -1149,14 +1142,6 @@ function modaleModo(){
   $('#m-annulla').onclick = chiudiModale;
   $$('.modo-card').forEach(b => b.onclick = () => { chiudiModale(); cambiaModo(b.dataset.m); });
 }
-// variante dell'accento in modalità serie: 'caldo' (l'oro di sempre, come una lampada
-// accesa nella stanza blu) o 'freddo' (acciaio). Provvisoria: serve a scegliere a video.
-function cambiaOro(v){
-  S.oroSerie = (v === 'freddo') ? 'freddo' : 'caldo';
-  try { localStorage.setItem('mvn_oro', S.oroSerie); } catch(e){}
-  applicaModo();
-  disegnaSala();   // le poltrone sono SVG: i loro colori si ridisegnano, non ereditano
-}
 
 function applicaHost(){
   $('#tab-archivio').hidden = !S.host;
@@ -1175,7 +1160,6 @@ const VISTE = ['sala','catalogo','recensioni','consigli','archivio','segnalazion
 const S = {
   demo:false,
   modo:'film',           // 'film' | 'serie' — vedi CONCEPT-serie.md
-  oroSerie:'caldo',      // variante dell'accento in modalità serie: 'caldo' | 'freddo'
   modoVisibile:true,     // casella delle modalità a video: spenta, l'app è quella di prima
   host:false,            // questo dispositivo è l'host (tab Archivio)
   me:null,               // slug
@@ -2555,7 +2539,6 @@ function gateNome(conIndietro){
 }
 
 async function entra(){
-  try { S.oroSerie = localStorage.getItem('mvn_oro') === 'freddo' ? 'freddo' : 'caldo'; } catch(e){}
   try { S.modoVisibile = localStorage.getItem('mvn_modo_box') !== '0'; } catch(e){}
   S.modo = await leggiModo();   // prima di caricare: i percorsi dipendono dalla modalità
   applicaModo();
@@ -3839,9 +3822,6 @@ function disegnaImpostazioni(){
   if (mio){ $('#imp-chip').style.background = mio.colore; $('#imp-pw').value = mio.password || ''; }
   $('#imp-host').checked = S.host;
   $('#imp-modo-box').checked = S.modoVisibile;
-  $('#campo-oro').hidden = !inSerie();
-  if (inSerie()) $('#imp-oro').innerHTML = [['caldo','Caldo (oro)'],['freddo','Freddo (acciaio)']]
-    .map(([v,n]) => `<button class="pchip${S.oroSerie===v?' on':''}" data-oro="${v}">${n}</button>`).join('');
   $('#imp-scegli-colore').onclick = () => {
     const p = mioProfilo(); if (!p) return;
     apriColorPicker(p.colore, async c => {
@@ -4040,10 +4020,6 @@ function agganciaGlobali(){
   // ── Segnalazioni ──
   $('#btn-segnala').onclick = modaleSegnala;
   $('#btn-modo').onclick = modaleModo;
-  document.addEventListener('click', e => {
-    const c = e.target.closest('#imp-oro [data-oro]');
-    if (c) cambiaOro(c.dataset.oro);
-  });
   $('#btn-lista-completa').onclick = modaleListaCompleta;
   $('#sg-strumenti').onclick = e => {
     const b = e.target.closest('button[data-f]'); if (!b) return;

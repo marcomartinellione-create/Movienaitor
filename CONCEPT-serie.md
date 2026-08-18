@@ -6,8 +6,8 @@
 >
 > **Deciso con Marco:** unità = **segnalibro a episodio** (§5c) · dati = **cartella
 > `serie/` separata** (§4B) · salotto = **solo tre cambi** (§8) · **prima il desktop**,
-> il mobile dopo · palette: **si costruiscono entrambe le varianti dell'oro** e si sceglie
-> a video. Resta aperto solo l'**indice di soddisfazione** (§12.3).
+> il mobile dopo · **due contabilità separate** per l'indice di soddisfazione · l'accento
+> **resta l'oro** anche in salotto (provate entrambe, scelta a video).
 > Tutto deve essere **reversibile** (§13).
 
 ## 1. L'idea in una riga
@@ -311,7 +311,8 @@ flottante speculare al 🐞, da decidere quando ci si mette mano.
 
 1. **Unità della serie** — ✅ **(c) segnalibro a episodio ricavato dallo storico**.
 2. **Dati** — ✅ **(B) cartella `serie/` separata**.
-3. **Equità fra le due modalità** — ⏳ **aperta**. L'indice di soddisfazione (§8.1
+3. **Equità fra le due modalità** — ✅ **due contabilità separate**, una per modalità (è anche
+   ciò che viene gratis con §4B). Per capirsi, la domanda era questa. L'indice di soddisfazione (§8.1
    SPECIFICA) è il meccanismo che risponde a «di chi è il turno?»: sale per chi c'era e
    non ha visto vincere niente di suo, scende per chi ha appena scelto.
    - **Due contabilità** (è ciò che viene gratis con §4B): il tuo numero «film» si muove
@@ -328,8 +329,9 @@ flottante speculare al 🐞, da decidere quando ci si mette mano.
    due contabilità lunedì non conta e Marco arriva a venerdì a peso pieno.
    **Proposta: una sola contabilità** — la domanda «chi non sceglie da un po'?» riguarda
    le serate passate insieme, non il formato di ciò che si è guardato.
-4. **L'oro** — ✅ si costruiscono **entrambe le varianti** (accento caldo su blu / ottone
-   freddo), commutabili, e si sceglie guardandole nell'app vera.
+4. **L'oro** — ✅ **resta l'oro** anche in salotto (scelto a video il 2026-08-18): in una stanza
+   blu legge come la lampada accesa e tiene l'identità dell'app. La variante fredda è stata
+   provata e scartata; il selettore provvisorio è stato tolto.
 5. **Il salotto** — ✅ **tre cambi soli** (§8): divano, TV al posto del proiettore a
    **parità di aspect ratio**, accensione/spegnimento TV al posto del sipario.
 6. **Ordine di lavoro** — ✅ **prima tutto il desktop**, il mobile dopo.
