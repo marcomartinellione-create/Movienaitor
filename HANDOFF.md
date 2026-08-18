@@ -111,6 +111,18 @@ Stato "da vedere/visto" e i valori derivati NON si salvano: si ricalcolano dallo
   — la watch list di un utente in sola lettura, scelto dai chip `disegnaChiArchivio`;
   stato `S.archivioChi`), `disegnaSegnalazioni` (host), `disegnaImpostazioni`,
   `disegnaFiltri`, `poltronaSVG`.
+- **Consigli «Per te»** (v1.7.0, desktop): `profiloGusto(slug)` costruisce il profilo dalle
+  recensioni (peso per età `pesoRecensione`, media bayesiana `cgK`, normalizzazione su
+  media e σ **ricalcolate ogni volta** → segue il gusto che cambia); `compatibilita()` dà
+  l'indice coi pesi che si **ridistribuiscono** sui soli tratti noti; `fasciaConsiglio()`
+  assegna le fasce per posizione + soglia; `generaConsigli()` pesca da `discover` +
+  `recommendations`. Scartati in `consigli/<slug>.json` (solo il proprio file).
+  **Attenzione**: `caricaConsigli()` va chiamata in `avviaApp()` e non in `caricaTutto()`,
+  perché lì `S.me` non è ancora noto. Costanti in `CONFIG_DEFAULT.cgPesi`, non in
+  Impostazioni (affollerebbero il pannello della Sala). Vedi CONCEPT-consigli.md.
+- **Keyword TMDB**: arrivano gratis con `append_to_response=credits,external_ids,keywords`
+  e vengono salvate in `meta.keywords` delle recensioni. Le recensioni vecchie si
+  arricchiscono col tasto in «Per te» (`arricchisciKeyword`). Restano in inglese.
 - **Modale protetto** (v1.2.1): `modaleProtetta()` = il modale ha classe `editor-grande`
   (solo l'editor recensioni). Clic sul backdrop ed Esc **non** lo chiudono (si perderebbe
   il lavoro): si chiude solo con Salva/Chiudi. Gli altri modali si chiudono normalmente.

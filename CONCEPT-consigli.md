@@ -1,8 +1,22 @@
 # Concept — Consigli personalizzati («Per te»)
 
-> **Stato: idea, non implementata.** Documento di lavoro.
+> **Stato: implementato sul desktop** (v1.7.0) — sezione «✨ Per te».
+> Mobile ancora da portare. Questo resta il documento di riferimento delle scelte.
 > Formule tarate sui dati reali della cartella del gruppo (agosto 2026).
 > Decisioni prese con Marco già recepite (§0).
+
+## 0-bis. Tarature emerse dall'implementazione
+
+Due cose sono venute fuori solo provando, e sono finite nel codice:
+
+- **Il voto pubblico va compresso**: normalizzato come gli altri tratti arrivava a ±1
+  mentre generi e registi stanno in ±0,3, e schiacciava tutto — i consigli diventavano
+  la classifica IMDb. Ora è `(voto − 7)/4`, in scala con il resto.
+- **Le soglie 60 / 52 sono giuste**, verificate simulando sui 75 voti reali:
+  film ideale **70,3** · buono **67,7** · neutro **53,4** · scarso **37,8**.
+
+Nota: le keyword TMDB restano **in inglese** anche chiedendo `language=it-IT` (TMDB non le
+traduce). Vanno benissimo per il confronto; si vedono in inglese nella scheda.
 
 ## 0. Decisioni prese
 

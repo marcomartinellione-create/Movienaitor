@@ -412,6 +412,28 @@ l'**Archivio** dell'host mostra invece tutti gli episodi (serve la scorta comple
 - Serie TV: solo film in v1 (TMDB le supporterebbe: estensione futura naturale).
 - Statistiche di gruppo (chi propone di più, generi più visti…): idea per v1.x.
 
+## 11d. Consigli «Per te» (v1.7.0, desktop)
+
+Sezione **✨ Per te**: film **mai visti** proposti in base alle proprie recensioni.
+
+- **Profilo del gusto**, ricalcolato a ogni generazione (non è un preset da configurare):
+  per genere, keyword, regista, cast ed epoca si calcola una media **pesata per età**
+  (dimezzamento a 18 mesi: le recensioni recenti contano di più), con **smoothing
+  bayesiano** dei tratti rari e normalizzazione su **media e deviazione standard
+  personali ricalcolate ogni volta** — così il profilo segue il gusto quando cambia e
+  resta confrontabile fra persone che votano con scale diverse.
+- **Indice di compatibilità** `C = 50 + 50·Σ(wᵢaᵢ)/Σwᵢ`, dove i pesi si **ridistribuiscono
+  sui soli tratti conosciuti**: un tratto assente non diluisce il punteggio. Il voto
+  pubblico pesa in proporzione a quanto quella persona è **d'accordo con la critica**.
+- **Fasce** (non percentuali): *Molto in linea* / *Da provare* / *Forse*, assegnate per
+  posizione relativa nel lotto **più** una soglia minima assoluta.
+- Ogni consiglio mostra **il perché** in italiano; «non mi interessa» viene ricordato in
+  `consigli/<slug>.json` (scrive solo il proprietario, §3.2).
+- Filtri: genere, regista/attore, anno, durata, voto minimo, **solo dove posso vederlo**
+  (incrocia i servizi del profilo coi provider TMDB), escludi i generi ✗.
+- Servono almeno **3 recensioni**; le keyword delle recensioni già scritte si recuperano
+  una tantum dal tasto nella sezione.
+
 ## 11c. Segnalazioni — bug e idee (v1.2.0)
 
 Ispirata al pulsante "Segnala" della SustEner App, ma con lo stile della sala.
