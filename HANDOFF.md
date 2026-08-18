@@ -2,7 +2,7 @@
 
 > Manuale operativo per continuare a lavorare sul progetto. Contesto rapido +
 > convenzioni + workflow. Per le regole di prodotto e le formule vedi **SPECIFICA.md**.
-> **Stato: v1.7.0** (pubblicata). Cartella progetto: `D:\4 - Programmi\Movienaitor`.
+> **Stato: v1.7.0** (pubblicata su desktop e mobile). Cartella progetto: `D:\4 - Programmi\Movienaitor`.
 
 ## Cos'è
 
@@ -23,6 +23,9 @@ server, dati come JSON in una **cartella Google Drive condivisa**.
 3. **Proporre prima, implementare dopo** per scelte di prodotto non ovvie. Se una richiesta
    è ambigua (es. "simmetria verticale") **chiedi** invece di indovinare: sul layout Sala
    ho sprecato giri per non averlo fatto.
+4. **Versioning: solo la terza cifra.** Ai bump incremento solo la patch (1.6.9 → 1.6.10),
+   mai il minor/major — quello lo decide Marco e lo dice esplicitamente. (Regola dal
+   2026-08-18, dopo aver alzato 1.6.0 → 1.7.0 di testa mia per i consigli «Per te».)
 
 ## Architettura
 
@@ -39,7 +42,10 @@ server, dati come JSON in una **cartella Google Drive condivisa**.
 
 ```
 Movienaitor.html          l'app (fonte unica)
+Movienaitor.bat           avvio rapido dell'app PC (doppio clic): copia l'HTML nel
+                          renderer e lancia Electron, installa le dipendenze la prima volta
 SPECIFICA.md              regole di prodotto, formule, decisioni
+CONCEPT-consigli.md       concept + tarature dei consigli «Per te» (§8.4-bis SPECIFICA)
 HANDOFF.md                questo file
 esempio-profilo.json      modello di un profilo (il roster reale NON è nel repo)
 Stile home.dxf            CAD di stile della Sala (idea, non geometria)
@@ -68,6 +74,7 @@ segnalazioni-stato.json   {stato:{id:{stato,priorita,aggiornato}}, eliminate:[id
 posters/<id>.jpg          locandine in cache (e <id>_b.jpg per gli sfondi)
 profili/<slug>.json       un file per persona
 recensioni/<slug>/<tmdbId>.json   recensioni personali (una cartella per utente, un file per film)
+consigli/<slug>.json      {scartati:[{tmdbId,titolo}], aggiornato}  «non mi interessa» dei consigli (scrive solo il proprietario)
 ```
 
 **Recensione** `{tmdbId, autore, creato, modificato, ultimaVisione?, inCorso?, votoPersonale(1–10, mezze stelle),
@@ -111,15 +118,29 @@ Stato "da vedere/visto" e i valori derivati NON si salvano: si ricalcolano dallo
   — la watch list di un utente in sola lettura, scelto dai chip `disegnaChiArchivio`;
   stato `S.archivioChi`), `disegnaSegnalazioni` (host), `disegnaImpostazioni`,
   `disegnaFiltri`, `poltronaSVG`.
-- **Consigli «Per te»** (v1.7.0, desktop): `profiloGusto(slug)` costruisce il profilo dalle
-  recensioni (peso per età `pesoRecensione`, media bayesiana `cgK`, normalizzazione su
-  media e σ **ricalcolate ogni volta** → segue il gusto che cambia); `compatibilita()` dà
-  l'indice coi pesi che si **ridistribuiscono** sui soli tratti noti; `fasciaConsiglio()`
-  assegna le fasce per posizione + soglia; `generaConsigli()` pesca da `discover` +
-  `recommendations`. Scartati in `consigli/<slug>.json` (solo il proprio file).
+- **Consigli «Per te»** (v1.7.0, desktop **e** mobile): `profiloGusto(slug)` costruisce il
+  profilo dalle recensioni (peso per età `pesoRecensione`, media bayesiana `cgK`,
+  normalizzazione su media e σ **ricalcolate ogni volta** → segue il gusto che cambia);
+  `compatibilita()` dà l'indice coi pesi che si **ridistribuiscono** sui soli tratti noti;
+  `fasciaConsiglio()` assegna le fasce per posizione + soglia; `generaConsigli()` pesca da
+  `discover` + `recommendations` e riempie `S.cgPool` (candidati valutati, non filtrati).
+  Scartati in `consigli/<slug>.json` (solo il proprio file), col **titolo** oltre all'id.
   **Attenzione**: `caricaConsigli()` va chiamata in `avviaApp()` e non in `caricaTutto()`,
   perché lì `S.me` non è ancora noto. Costanti in `CONFIG_DEFAULT.cgPesi`, non in
   Impostazioni (affollerebbero il pannello della Sala). Vedi CONCEPT-consigli.md.
+  - **Niente tasto "Aggiorna"**: la sezione si rigenera da sé alla prima apertura e ogni
+    volta che le recensioni sono cambiate da quando i consigli sono stati calcolati.
+    Confronto tramite `firmaRecensioni()` (numero + voti + date di modifica) vs `S.cgFirma`.
+  - **Filtri in tempo reale**: `consigliFiltrati()` rifiltra **all'istante** `S.cgPool`
+    (nessuna rete) a ogni modifica; una ricerca TMDB vera parte dopo ~900ms di pausa
+    (`cgTocca`/`cgTimer` desktop, `programmaConsigli` mobile) — rigenerare a ogni tasto
+    costerebbe decine di chiamate per battuta.
+  - **Gestione esclusi**: ⚙ Impostazioni → «Gestisci esclusi» (`modaleScartati` desktop,
+    `modaleScartatiM` mobile) elenca `S.cgScartati` (Map id→titolo) con ripristino
+    singolo o svuotamento. `salvaConsigli()` rilegge il file e fonde prima di scrivere
+    (due sessioni aperte insieme non si cancellano i rifiuti a vicenda), ma **non
+    rimette dentro** ciò che è stato tolto a mano nella sessione corrente — tracciato in
+    `S.cgRipristinati`, altrimenti la fusione lo riproporrebbe (bug trovato testando).
 - **Keyword TMDB**: arrivano gratis con `append_to_response=credits,external_ids,keywords`
   e vengono salvate in `meta.keywords` delle recensioni. Le recensioni vecchie si
   arricchiscono col tasto in «Per te» (`arricchisciKeyword`). Restano in inglese.
@@ -168,8 +189,9 @@ Stato "da vedere/visto" e i valori derivati NON si salvano: si ricalcolano dallo
 2. **Testa in demo** nel browser (vedi sotto). Verifica sempre in prima persona.
 3. **Commit locale** con messaggio descrittivo. Aggiorna SPECIFICA.md se cambiano regole/funzioni.
 4. **Pubblica SOLO su comando esplicito di Marco** (vedi Regole d'oro). Al comando:
-   bump `APP_VERSION` in `Movienaitor.html` + `version` in `electron/package.json`
-   (stessa cifra), build, push, release.
+   bump della **sola patch** in `APP_VERSION` (`Movienaitor.html`) + `version`
+   (`electron/package.json`), stessa cifra fra i due file; build, push, release.
+   Minor/major solo se Marco lo dice esplicitamente (regola d'oro #4).
 
 ## Build & release
 
@@ -265,13 +287,27 @@ visione, **🐞 Segnalazioni** (bug/idee da tutti, gestione dell'host).
 ## App mobile (`app-mobile/`)
 
 APK Capacitor, web in `www/index.html` (file unico, come il desktop), plugin nativo SAF in
-`native/MvnSafPlugin.java`. Build in cloud: GitHub Actions → "Build APK". Dalla v1.2.0 ha
-**Sala** (stessa `classifica()` del desktop, schermo 16/9 col sipario animato, poltrone in
-velluto `poltronaSVG`/`disegnaPlateaM`; niente mensola 2-5, solo lo schermo + "lista
-completa"; **tasto ▶ Play** = `modalePlayM`/`registraVisioneM`, che rilegge `storico.json`
-fresco e fonde per `id` — così più dispositivi possono registrare senza perdere voci), **Lista** divisa in *Da vedere*/*Già visti* via
-`entryAttiva` (con "rimetti in lista" che azzera `aggiunto`), login che **ricorda l'ultimo
-profilo sbloccato** (`LS 'sbloccato'`; password richiesta solo al cambio) e **🐞 Segnala**. Per file arbitrari nella cartella il plugin espone
+`native/MvnSafPlugin.java`. Build in cloud: GitHub Actions → "Build APK". Cinque sezioni:
+
+- **Sala** (dalla v1.2.0): stessa `classifica()` del desktop, schermo 16/9 col sipario
+  animato, poltrone in velluto `poltronaSVG`/`disegnaPlateaM`; niente mensola 2-5, solo lo
+  schermo + "lista completa"; **tasto ▶ Play** = `modalePlayM`/`registraVisioneM`, che
+  rilegge `storico.json` fresco e fonde per `id` (più dispositivi possono registrare senza
+  perdere voci).
+- **Lista** divisa in *Da vedere*/*Già visti* via `entryAttiva` ("rimetti in lista" azzera
+  `aggiunto`).
+- **Recensioni** con lo stesso editor a sezioni del desktop; rileva i servizi streaming da
+  TMDB (§5.3 SPECIFICA).
+- **✨ Per te** (v1.7.0): stessa logica dei consigli del desktop, riscritta per questo file
+  (`profiloGusto`/`compatibilita`/`fasciaConsiglio`/`perche` duplicate qui, `S.me` è un
+  oggetto non uno slug). Pannello filtri a bottom sheet (`apriFiltriConsigli`), esclusi
+  gestiti da ⚙ → «Gestisci» (`modaleScartatiM`). Stessa auto-rigenerazione del desktop
+  (`firmaRecensioni` + `S.cgFirma`), stesso `S.cgRipristinati` per non vanificare i
+  ripristini alla fusione di `salvaConsigliM()`.
+- **🐞 Segnala**.
+
+Login: **ricorda l'ultimo profilo sbloccato** (`LS 'sbloccato'`; password richiesta solo
+al cambio utente). Per file arbitrari nella cartella il plugin espone
 `leggiPercorso`/`scriviPercorso`/`elencaJson` (JS: `fsLeggiPercorso`/`fsScriviPercorso`/
 `fsElencaJson`). Per provare la UI nel browser serve un finto `window.Capacitor.Plugins.MvnSaf`
 (niente SAF fuori dall'APK): si stubba, si chiama `caricaCartella('fake')` e `entra(slug)`.
@@ -290,7 +326,7 @@ scarica l'artifact e copia `Movienaitor-<v>.apk` + `versione.json` nella cartell
 - Attesa: oggi conta **tutte** le serate dall'ultima "vittoria" (anche assenti) — Marco
   può volerla ristretta alle sole serate presenti.
 - Possibili v1.x: statistiche di gruppo, serie TV, decomposizione `src/` se il file cresce.
-- **Consigli personalizzati** («Per te»): indice di compatibilità dalle recensioni +
-  filtri. Concept scritto e tarato sui dati veri in **CONCEPT-consigli.md** — non
-  implementato, da decidere.
+- **Consigli «Per te», appendice A** (CONCEPT-consigli.md): usare il testo delle
+  recensioni (lessico personale calcolato in locale) come tratto in più nell'indice di
+  compatibilità — idea rimandata, non implementata.
 - Prima prova reale col gruppo: cartella Drive condivisa + chiave TMDB (+ OMDb) in Impostazioni.
