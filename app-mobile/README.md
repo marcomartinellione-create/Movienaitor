@@ -4,9 +4,9 @@ App Android minimale: **entra → scegli profilo → cerca su TMDB → aggiungi/
 alla tua lista. Legge e scrive i JSON di una **cartella locale del telefono** tenuta
 sincronizzata con la cartella Google Drive del gruppo (via un'app di sync, es. Autosync
 o FolderSync). Scrive **solo** il tuo `profili/<slug>.json`, la tua `recensioni/<slug>/`
-e il tuo `segnalazioni/<slug>.json` (regola anti-conflitto).
+il tuo `segnalazioni/<slug>.json` e il tuo `consigli/<slug>.json` (regola anti-conflitto).
 
-Tre sezioni: **🎬 Sala**, **🔖 Lista**, **📝 Recensioni**, più il pulsante **🐞 Segnala**.
+Quattro sezioni: **🎬 Sala**, **🔖 Lista**, **📝 Recensioni**, **✨ Per te**, più il pulsante **🐞 Segnala**.
 
 - **Sala** — stessa logica del desktop: uno **schermo cinema** (proporzione 16/9 come il
   desktop) con il **sipario animato** che si apre sul film, il rango e il punteggio; sotto,
@@ -23,6 +23,11 @@ Tre sezioni: **🎬 Sala**, **🔖 Lista**, **📝 Recensioni**, più il pulsant
 - **📝 Recensioni** — nell'editor, «dove vederlo» rileva i **servizi streaming** da TMDB
   (Italia): all'apertura si spuntano da soli se il campo è vuoto, o col tasto **🔄 rileva**.
   Serve la chiave TMDB in `config.json` (impostata dal PC).
+- **✨ Per te** — consigli dai tuoi voti: profilo del gusto ricalcolato ogni volta dalle
+  recensioni (le recenti pesano di più), indice di compatibilità con le fasce «Molto in
+  linea / Da provare / Forse» e il perché. Filtri nel pannello ≡ (genere, anno, durata,
+  voto, «solo dove posso vederlo»), aggiornamento automatico. Gli esclusi si gestiscono da
+  ⚙ → «Gestisci». Serve la chiave TMDB e almeno 3 recensioni. Vedi CONCEPT-consigli.md.
 - **🐞 Segnala** — bug / suggerimenti / idee: finiscono in `segnalazioni/<slug>.json`,
   l'host li gestisce dal PC. Ognuno rivede lo stato delle proprie e può ritirarle.
 

@@ -138,6 +138,23 @@
   .rec-incorso-b{position:absolute; top:4px; left:4px; background:var(--oro); color:var(--su-oro); font-size:11px; font-weight:700; padding:1px 6px; border-radius:6px}
   .re-incorso2{display:inline-flex; align-items:center; gap:6px; color:var(--oro2); font-size:12.5px; border:1px solid var(--oro); border-radius:9px; padding:6px 10px}
   .re-incorso2 input{accent-color:var(--oro); width:15px; height:15px}
+
+  /* ── Consigli «Per te» ── */
+  .cg-card2{position:relative}
+  .cg-fascia{position:absolute; top:4px; left:4px; z-index:2; font-size:9.5px; font-weight:700;
+    padding:2px 7px; border-radius:999px; border:1px solid transparent; white-space:nowrap}
+  .cg-fascia.alta{background:var(--oro); color:var(--su-oro)}
+  .cg-fascia.media{background:#2a1b16; color:var(--oro2); border-color:var(--oro)}
+  .cg-fascia.bassa{background:var(--velo-badge); color:var(--dim); border-color:var(--linea)}
+  .cg-perche{color:var(--dim); font-size:10px; margin-top:3px; line-height:1.3;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+  .cg-motivi{margin:6px 0 0 16px; color:var(--dim); font-size:12.5px; line-height:1.55}
+  .cg-spia{color:var(--oro2); font-size:11px; letter-spacing:.04em; animation:pulsa 1.1s ease-in-out infinite}
+  @keyframes pulsa{50%{opacity:.35}}
+  #m-cg-info{font-size:11px; letter-spacing:0; text-transform:none; color:var(--dim)}
+  #m-cg-info b{color:var(--oro2)}
+  .sc-riga{display:flex; align-items:center; gap:10px; padding:8px 2px; border-bottom:1px solid var(--linea)}
+  .sc-riga .t{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px}
   .rec-card2 .corpo{padding:6px 7px}
   .rec-card2 h5{margin:0; font-size:12px; line-height:1.15; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .rec-card2 .sub2{color:var(--dim); font-size:10.5px; margin-top:1px}
@@ -301,6 +318,7 @@
         <button class="seg" data-pan="sala">🎬 Sala</button>
         <button class="seg on" data-pan="lista">🔖 Lista</button>
         <button class="seg" data-pan="recensioni">📝 Recensioni</button>
+        <button class="seg" data-pan="consigli">✨ Per te</button>
       </div>
 
       <div id="pan-sala" hidden>
@@ -326,6 +344,13 @@
           <button class="smtab" data-vista="visti">Già visti <span class="n" id="m-conta-vis"></span></button>
         </div>
         <div id="mia-lista"></div>
+      </div>
+
+      <div id="pan-consigli" hidden>
+        <div class="sezione"><span class="grow" id="m-cg-info"></span>
+          <span class="cg-spia" id="m-cg-spia" hidden>cerco…</span>
+          <button class="f-btn" id="m-cg-filtri">≡ filtri</button></div>
+        <div class="rec-galleria" id="m-cg-galleria"></div>
       </div>
 
       <div id="pan-recensioni" hidden>
@@ -365,7 +390,12 @@ const S = { treeUri:null, config:{}, profili:[], me:null, storico:[],
   listaVista:'daVedere',
   presenti:new Set(), fSala:{ durata:null, genere:[], regista:'' }, proiettato:null, tuttiSala:[],
   segnalazioni:[], segnStato:{}, segnEliminate:[], aggiornamento:null,
-  providersCache:new Map() };   // tmdbId → [servizi streaming] da TMDB (sessione)
+  providersCache:new Map(),   // tmdbId → [servizi streaming] da TMDB (sessione)
+  // consigli «Per te»
+  cgPool:[], cgLista:[], cgProfilo:null, cgCaricamento:false, cgFirma:'',
+  cgScartati:new Map(), cgRipristinati:new Set(),
+  cgFiltri:{ generi:[], keyword:[], annoDa:null, annoA:null, durata:null, votoMin:null,
+             soloMiei:false, escludiNegativi:true } };
 const SEZIONI_DEFAULT = ['Introduzione', 'Che ne penso', 'Momento preferito', 'Messaggio', 'A chi lo consiglio'];
 const stelleLetterbox = v => { v = v||0; const p = Math.floor(v/2), m = (v%2)===1; return ('★'.repeat(p) + (m?'½':'')) || '—'; };
 const GENERI_TMDB = ['Azione','Avventura','Animazione','Commedia','Crime','Documentario','Dramma','Famiglia','Fantasy','Storia','Horror','Musica','Mistero','Romance','Fantascienza','Film TV','Thriller','Guerra','Western'];
@@ -611,6 +641,7 @@ function entra(slug){
   if (!S.me) return;
   LS.set('me', slug);
   LS.set('sbloccato', slug);   // d'ora in poi si entra diretto; la password si richiede solo al cambio
+  caricaConsigliM();          // qui S.me e' noto: prima non si puo' leggere il suo file
   S.listaVista = 'daVedere';
   if (!S.config.tmdbKey) toast('Manca la chiave TMDB in config.json (si imposta dal PC).', true);
   $('#hdr').style.display = 'flex';
@@ -631,7 +662,7 @@ async function cercaFilm(q){
 }
 async function dettagliFilm(id){
   const k = S.config.tmdbKey;
-  const r = await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${k}&language=it-IT&append_to_response=credits,external_ids`);
+  const r = await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${k}&language=it-IT&append_to_response=credits,external_ids,keywords`);
   if (!r.ok) throw new Error('tmdb '+r.status);
   const j = await r.json();
   const regista = ((j.credits||{}).crew||[]).filter(c=>c.job==='Director').map(c=>c.name).join(', ');
@@ -649,6 +680,7 @@ async function dettagliFilm(id){
     durata:j.runtime || null, regista, generi:(j.genres||[]).map(x=>x.name),
     paese:(j.production_countries||[]).map(c=>c.name).join(', '),
     cast:((j.credits||{}).cast||[]).slice(0,6).map(c=>c.name),
+    keywords:((j.keywords||{}).keywords||[]).slice(0,12).map(x=>x.name),
     voto, votoFonte, trama:j.overview || '',
     posterUrl:j.poster_path ? 'https://image.tmdb.org/t/p/w500'+j.poster_path : null,
     sfondoUrl:j.backdrop_path ? 'https://image.tmdb.org/t/p/w780'+j.backdrop_path : null,
@@ -1393,11 +1425,14 @@ async function apriImpostazioni(){
     <div class="etich">BONUS GENERE <span style="color:var(--dim);letter-spacing:0">— a parità di priorità sposta la scelta verso i generi che ti piacciono e via da quelli che eviti. Solo spareggio, non cambia la priorità.</span></div>
     <div class="etich" style="margin-top:6px">Tocca per ciclare: <b style="color:#9bbf90">verde ✓ mi piace</b> · <b style="color:#e08a86">rosso ✗ evita</b></div>
     <div class="compagnia" id="i-gen"></div>
+    <div class="etich" style="margin-top:16px">CONSIGLI</div>
+    <div class="campo-r"><label>Film esclusi</label><button class="inp" id="i-esclusi">🚫 Gestisci</button></div>
     <div class="etich" style="margin-top:16px">VERSIONE</div>
     <div class="campo-r"><label id="i-ver">Movienaitor mobile v${esc(APP_VERSION)}</label>
       <button class="inp" id="i-agg">Cerca aggiornamenti</button></div>
     <div class="m-az"><button class="primario" id="i-chiudi">Fatto</button></div>`);
   versioneInstallata().then(v => { const el = $('#i-ver'); if (el) el.textContent = 'Movienaitor mobile v'+v; });
+  $('#i-esclusi').onclick = modaleScartatiM;
   $('#i-agg').onclick = async () => {
     const b = $('#i-agg'); b.disabled = true; b.innerHTML = '<span class="spin"></span>';
     await controllaAggiornamento();
@@ -1419,6 +1454,383 @@ async function apriImpostazioni(){
   $('#i-chiudi').onclick = chiudiModale;
 }
 
+/* ══════════════════ CONSIGLI «PER TE» ══════════════════ */
+// Stessa logica del desktop (CONCEPT-consigli.md): profilo del gusto ricalcolato ogni
+// volta dalle recensioni, mai un preset. Qui S.me è un oggetto, non uno slug.
+const CG = { decayMesi:18, k:3,
+  pesi:{ keyword:0.25, generi:0.25, regista:0.15, pubblico:0.15, cast:0.08, epoca:0.07, dichiarati:0.05 } };
+
+function firmaRecensioni(){
+  const mie = S.recensioni.filter(r => r.autore === S.me.slug);
+  return mie.length + '|' + mie.map(r => r.tmdbId+':'+r.votoPersonale+':'+(r.modificato||'')).sort().join(',');
+}
+function pesoRecensione(rec){
+  const q = rec.modificato || rec.creato || rec.ultimaVisione;
+  if (!q) return 1;
+  const mesi = Math.max(0, (Date.now() - new Date(q).getTime()) / (30.44*864e5));
+  return Math.pow(0.5, mesi / CG.decayMesi);
+}
+function trattiFilm(f){
+  const t = [];
+  for (const g of (f.generi||[])) t.push(['generi', g]);
+  for (const k of (f.keywords||[])) t.push(['keyword', String(k).toLowerCase()]);
+  for (const r of String(f.regista||'').split(',').map(x=>x.trim()).filter(Boolean)) t.push(['regista', r]);
+  for (const a of (f.cast||[]).slice(0,3)) t.push(['cast', a]);
+  const anno = parseInt(f.anno,10);
+  if (anno) t.push(['epoca', Math.floor(anno/10)*10+'s']);
+  return t;
+}
+function profiloGusto(){
+  const recs = S.recensioni.filter(r => r.autore === S.me.slug && r.votoPersonale > 0);
+  const prof = {n:recs.length, M:0, sigma:1, allineamento:0.5, aff:{}, top:{}};
+  if (!recs.length) return prof;
+  const pesi = recs.map(pesoRecensione);
+  const somma = pesi.reduce((s,p)=>s+p,0) || 1;
+  prof.M = recs.reduce((s,r,i)=>s+r.votoPersonale*pesi[i],0)/somma;
+  const varianza = recs.reduce((s,r,i)=>s+pesi[i]*Math.pow(r.votoPersonale-prof.M,2),0)/somma;
+  prof.sigma = Math.max(0.5, Math.sqrt(varianza));
+  const conPub = recs.filter(r => (r.meta||{}).voto);
+  if (conPub.length){
+    const scarto = conPub.reduce((s,r)=>s+Math.abs(r.votoPersonale-r.meta.voto),0)/conPub.length;
+    prof.allineamento = Math.max(0, Math.min(1, 1-scarto/4));
+  }
+  const acc = {};
+  recs.forEach((r,i) => {
+    for (const [tipo,val] of trattiFilm(r.meta||{})){
+      const key = tipo+':'+val;
+      const a = acc[key] || (acc[key] = {tipo,val,w:0,wv:0,c:0});
+      a.w += pesi[i]; a.wv += pesi[i]*r.votoPersonale; a.c++;
+    }
+  });
+  for (const a of Object.values(acc)){
+    const A = (a.wv + CG.k*prof.M)/(a.w + CG.k);
+    const val = Math.max(-1, Math.min(1, (A-prof.M)/(2*prof.sigma)));
+    (prof.aff[a.tipo] = prof.aff[a.tipo] || {})[a.val] = {a:val, n:a.c, A};
+  }
+  const forti = (tipo,n,min) => Object.entries(prof.aff[tipo]||{})
+    .filter(([,v]) => v.n >= (min||1) && v.a > 0).sort((x,y)=>y[1].a-x[1].a).slice(0,n).map(([k])=>k);
+  prof.top = {generi:forti('generi',3,2), keyword:forti('keyword',6,2), regista:forti('regista',3,2)};
+  return prof;
+}
+function compatibilita(film, prof){
+  const P = CG.pesi, parti = [];
+  const medio = (tipo, valori) => {
+    const a = (valori||[]).map(v => (prof.aff[tipo]||{})[tipo==='keyword'?String(v).toLowerCase():v]).filter(Boolean);
+    return a.length ? a.reduce((s,x)=>s+x.a,0)/a.length : null;
+  };
+  const agg = (chiave, peso, valore) => { if (valore==null || !peso) return; parti.push({chiave,peso,a:valore}); };
+  agg('keyword', P.keyword, medio('keyword', film.keywords));
+  agg('generi',  P.generi,  medio('generi',  film.generi));
+  agg('regista', P.regista, medio('regista', String(film.regista||'').split(',').map(x=>x.trim()).filter(Boolean)));
+  agg('cast',    P.cast,    medio('cast',    (film.cast||[]).slice(0,3)));
+  const anno = parseInt(film.anno,10);
+  agg('epoca',   P.epoca,   anno ? medio('epoca',[Math.floor(anno/10)*10+'s']) : null);
+  // /4 e non /2: gli altri tratti stanno in ±0,3 e il voto pubblico li schiaccerebbe
+  if (film.voto) agg('pubblico', P.pubblico*prof.allineamento, Math.max(-1, Math.min(1, (film.voto-7)/4)));
+  const g = bonusGeneri(S.me, film);
+  if (g) agg('dichiarati', P.dichiarati, Math.max(-1, Math.min(1, g/2)));
+  const pesoTot = parti.reduce((s,x)=>s+x.peso,0);
+  if (!pesoTot) return {C:50, parti:[], noto:false};
+  const C = 50 + 50*parti.reduce((s,x)=>s+x.peso*x.a,0)/pesoTot;
+  parti.sort((a,b)=>Math.abs(b.peso*b.a)-Math.abs(a.peso*a.a));
+  return {C:Math.max(0,Math.min(100,C)), parti, noto:true};
+}
+function perche(film, ris, prof){
+  const dett = x => {
+    if (x.chiave==='keyword'){
+      const b=(film.keywords||[]).filter(k=>((prof.aff.keyword||{})[String(k).toLowerCase()]||{}).a>0.1).slice(0,2);
+      return b.length ? 'temi che ti piacciono: '+b.join(', ') : 'temi in linea coi tuoi';
+    }
+    if (x.chiave==='generi'){
+      const b=(film.generi||[]).filter(g=>((prof.aff.generi||{})[g]||{}).a>0.1);
+      return b.length ? `${b.join(' e ')} ${b.length>1?'sono generi':'è un genere'} che voti alto` : 'generi in linea';
+    }
+    if (x.chiave==='regista'){
+      const r=String(film.regista||'').split(',')[0].trim(), v=(prof.aff.regista||{})[r];
+      return v ? `di ${r}, che voti ${(v.A).toFixed(1)} di media` : 'regista in linea';
+    }
+    if (x.chiave==='cast'){
+      const a=(film.cast||[]).slice(0,3).find(n=>((prof.aff.cast||{})[n]||{}).a>0.1);
+      return a ? `c'è ${a}, che ti piace` : 'cast in linea';
+    }
+    if (x.chiave==='pubblico') return x.a>0 ? 'voto pubblico alto, e di solito sei d\'accordo con la critica' : 'voto pubblico basso';
+    if (x.chiave==='epoca') return `epoca che apprezzi (${Math.floor(parseInt(film.anno,10)/10)*10}s)`;
+    return '';
+  };
+  return ris.parti.filter(x=>x.a>0.05).slice(0,2).map(dett).filter(Boolean);
+}
+function fasciaConsiglio(i, tot, C){
+  if (i < Math.max(1, Math.ceil(tot*0.15)) && C >= 60) return {cl:'alta', txt:'Molto in linea'};
+  if (i < Math.ceil(tot*0.50) && C >= 52) return {cl:'media', txt:'Da provare'};
+  if (C >= 50) return {cl:'bassa', txt:'Forse'};
+  return null;
+}
+
+/* ── persistenza: consigli/<slug>.json (solo il proprio file) ── */
+async function caricaConsigliM(){
+  S.cgScartati = new Map();
+  const txt = await fsLeggiPercorso('consigli/' + S.me.slug + '.json');
+  if (!txt) return;
+  try {
+    const d = JSON.parse(txt);
+    for (const x of ((d && Array.isArray(d.scartati)) ? d.scartati : [])){
+      if (typeof x === 'number') S.cgScartati.set(x, 'Film #'+x);
+      else if (x && x.tmdbId != null) S.cgScartati.set(x.tmdbId, x.titolo || 'Film #'+x.tmdbId);
+    }
+  } catch(e){}
+}
+async function salvaConsigliM(){
+  // rilegge e fonde, ma senza rimettere ciò che ho tolto a mano (cgRipristinati)
+  const txt = await fsLeggiPercorso('consigli/' + S.me.slug + '.json');
+  if (txt){ try {
+    const d = JSON.parse(txt);
+    for (const x of ((d && Array.isArray(d.scartati)) ? d.scartati : [])){
+      const id = (typeof x === 'number') ? x : (x && x.tmdbId);
+      if (id != null && !S.cgScartati.has(id) && !S.cgRipristinati.has(id))
+        S.cgScartati.set(id, (x && x.titolo) || 'Film #'+id);
+    }
+  } catch(e){} }
+  const scartati = [...S.cgScartati.entries()].map(([tmdbId,titolo]) => ({tmdbId,titolo}));
+  await fsScriviPercorso('consigli/' + S.me.slug + '.json',
+    JSON.stringify({scartati, aggiornato:new Date().toISOString()}));
+}
+
+/* ── arricchimento keyword delle recensioni già scritte (una tantum) ── */
+async function arricchisciKeywordM(){
+  const mie = S.recensioni.filter(r => r.autore === S.me.slug && r.tmdbId != null && !((r.meta||{}).keywords||[]).length);
+  if (!mie.length){ toast('Le tue recensioni hanno già i temi ✓'); return; }
+  let fatte = 0;
+  const stato = $('#cg-stato');
+  for (const r of mie){
+    if (stato) stato.textContent = `Recupero i temi… ${fatte+1} di ${mie.length}`;
+    try { const d = await dettagliFilm(r.tmdbId); r.meta = r.meta||{}; r.meta.keywords = d.keywords||[]; await salvaRecensioneMobile(r); fatte++; }
+    catch(e){}
+  }
+  if (stato) stato.textContent = '';
+  toast(`Temi recuperati per ${fatte} recensioni ✓`);
+}
+
+/* ── candidati da TMDB ── */
+const GENERI_ID = {Azione:28, Avventura:12, Animazione:16, Commedia:35, Crime:80, Documentario:99,
+  Dramma:18, Famiglia:10751, Fantasy:14, Storia:36, Horror:27, Musica:10402, Mistero:9648,
+  Romance:10749, Fantascienza:878, 'Film TV':10770, Thriller:53, Guerra:10752, Western:37};
+const PROVIDER_ID = {'Netflix':8,'Prime Video':119,'Disney+':337,'NOW':39,'Sky':29,'RaiPlay':222,
+  'Mediaset Infinity':359,'Apple TV+':350,'YouTube':192,'Crunchyroll':283,'Paramount+':531,'Mubi':11,'TIMVISION':109};
+
+async function tmdbJSON(url){ const r = await fetch(url); if (!r.ok) throw new Error('tmdb '+r.status); return r.json(); }
+async function idKeyword(nomi){
+  const k = S.config.tmdbKey, out = [];
+  for (const n of nomi.slice(0,4)){
+    try { const j = await tmdbJSON(`https://api.themoviedb.org/3/search/keyword?api_key=${k}&query=${encodeURIComponent(n)}`);
+      const p = (j.results||[])[0]; if (p) out.push(p.id); } catch(e){}
+  }
+  return out;
+}
+
+async function generaConsigliM(){
+  const prof = S.cgProfilo = profiloGusto();
+  if (!S.config.tmdbKey){ toast('Manca la chiave TMDB (si imposta dal PC)', true); return; }
+  if (prof.n < 3){ S.cgPool = []; disegnaConsigliM(); return; }
+  S.cgCaricamento = true; disegnaConsigliM();
+  const stato = () => $('#cg-stato');
+  const avanz = t => { const e = stato(); if (e) e.textContent = t; };
+  try {
+    const f = S.cgFiltri, k = S.config.tmdbKey;
+    const visti = new Set(S.storico.filter(v => (v.partecipanti||[]).includes(S.me.slug)).map(v => v.tmdbId));
+    const inLista = new Set((S.me.lista||[]).map(v => v.tmdbId));
+    const recensiti = new Set(S.recensioni.filter(r => r.autore === S.me.slug).map(r => r.tmdbId));
+    const escludi = id => visti.has(id) || inLista.has(id) || recensiti.has(id) || S.cgScartati.has(id);
+    const grezzi = new Map();
+
+    avanz('Cerco film che potrebbero piacerti…');
+    const p = new URLSearchParams({api_key:k, language:'it-IT', include_adult:'false',
+      sort_by:'popularity.desc', 'vote_count.gte':'150', page:'1'});
+    const generi = (f.generi.length ? f.generi : prof.top.generi).map(g => GENERI_ID[g]).filter(Boolean);
+    if (generi.length) p.set('with_genres', generi.join('|'));
+    if (f.escludiNegativi){
+      const neg = (S.me.generiNegativi||[]).map(g => GENERI_ID[g]).filter(Boolean);
+      if (neg.length) p.set('without_genres', neg.join(','));
+    }
+    if (f.annoDa) p.set('primary_release_date.gte', f.annoDa+'-01-01');
+    if (f.annoA)  p.set('primary_release_date.lte', f.annoA+'-12-31');
+    if (f.durata) p.set('with_runtime.lte', String(f.durata));
+    if (f.votoMin) p.set('vote_average.gte', String(f.votoMin));
+    if (f.soloMiei){
+      const miei = (S.me.serviziStreaming||[]).map(s => PROVIDER_ID[s]).filter(Boolean);
+      if (miei.length){ p.set('with_watch_providers', miei.join('|')); p.set('watch_region','IT'); }
+    }
+    const kw = await idKeyword(f.keyword.length ? f.keyword : prof.top.keyword);
+    if (kw.length) p.set('with_keywords', kw.join('|'));
+    for (const pag of ['1','2']){
+      p.set('page', pag);
+      try { const j = await tmdbJSON('https://api.themoviedb.org/3/discover/movie?'+p);
+        for (const m of (j.results||[])) if (!escludi(m.id) && !grezzi.has(m.id)) grezzi.set(m.id, 1);
+      } catch(e){}
+    }
+    avanz('Guardo cosa somiglia ai film che hai amato…');
+    const amati = S.recensioni.filter(r => r.autore === S.me.slug && r.tmdbId != null)
+      .sort((a,b) => (b.votoPersonale||0)-(a.votoPersonale||0)).slice(0,5);
+    for (const r of amati){
+      try { const j = await tmdbJSON(`https://api.themoviedb.org/3/movie/${r.tmdbId}/recommendations?api_key=${k}&language=it-IT&page=1`);
+        for (const m of (j.results||[]).slice(0,10)) if (!escludi(m.id) && !grezzi.has(m.id)) grezzi.set(m.id, 1);
+      } catch(e){}
+    }
+    const ids = [...grezzi.keys()].slice(0, 40);
+    const film = [];
+    for (let i = 0; i < ids.length; i++){
+      avanz(`Leggo le schede… ${i+1} di ${ids.length}`);
+      try { film.push(await dettagliFilm(ids[i])); } catch(e){}
+    }
+    S.cgPool = film.map(x => ({film:x, ...compatibilita(x, prof)})).filter(x => x.noto);
+    S.cgFirma = firmaRecensioni();
+  } catch(e){
+    toast('Consigli non riusciti: '+e.message, true);
+  } finally {
+    S.cgCaricamento = false;
+    disegnaConsigliM();
+  }
+}
+
+// filtro immediato sui candidati già scaricati (niente rete: reattivo come una ricerca)
+function consigliFiltrati(){
+  const f = S.cgFiltri, prof = S.cgProfilo;
+  const out = (S.cgPool||[]).filter(x => {
+    const m = x.film;
+    if (S.cgScartati.has(m.tmdbId)) return false;
+    if (f.generi.length && !(m.generi||[]).some(g => f.generi.includes(g))) return false;
+    const anno = parseInt(m.anno,10)||0;
+    if (f.annoDa && anno && anno < f.annoDa) return false;
+    if (f.annoA  && anno && anno > f.annoA)  return false;
+    if (f.durata && m.durata && m.durata > f.durata) return false;
+    if (f.votoMin && (m.voto||0) < f.votoMin) return false;
+    if (f.escludiNegativi){
+      const neg = (S.me.generiNegativi||[]);
+      if (neg.length && (m.generi||[]).some(g => neg.includes(g))) return false;
+    }
+    return true;
+  }).sort((a,b) => b.C - a.C);
+  out.forEach((x,i) => { x.fascia = fasciaConsiglio(i, out.length, x.C); if (prof) x.perche = perche(x.film, x, prof); });
+  return out.filter(x => x.fascia).slice(0, 24);
+}
+
+function disegnaConsigliM(){
+  const g = $('#m-cg-galleria'); if (!g) return;
+  const prof = S.cgProfilo || profiloGusto();
+  S.cgLista = consigliFiltrati();
+  const senzaKw = S.recensioni.filter(r => r.autore === S.me.slug && r.tmdbId != null && !((r.meta||{}).keywords||[]).length).length;
+  const info = $('#m-cg-info');
+  if (info){
+    info.innerHTML = prof.n
+      ? `Su <b>${prof.n}</b> ${prof.n===1?'recensione':'recensioni'} — le recenti pesano di più.
+         ${senzaKw ? `<button class="linkbtn" id="m-cg-arricchisci" style="padding:2px 4px">recupera i temi (${senzaKw})</button>` : ''}`
+      : 'Nessuna recensione: scrivine qualcuna.';
+    const b = $('#m-cg-arricchisci');
+    if (b) b.onclick = async () => { b.disabled = true; await arricchisciKeywordM(); await generaConsigliM(); };
+  }
+  const spia = $('#m-cg-spia'); if (spia) spia.hidden = !S.cgCaricamento;
+  const fb = $('#m-cg-filtri'); if (fb) fb.classList.toggle('attivo', cgFiltriAttivi());
+  if (prof.n < 3){
+    g.innerHTML = `<div class="rec-vuoto">Servono almeno <b>3 recensioni</b> per capire i tuoi gusti.<br>Ne hai ${prof.n}.</div>`;
+    return;
+  }
+  if (!S.cgLista.length){
+    g.innerHTML = S.cgCaricamento
+      ? `<div class="rec-vuoto"><span class="spin"></span> cerco i film…<br><span id="cg-stato" style="font-size:12px"></span></div>`
+      : ((S.cgPool||[]).length ? `<div class="rec-vuoto">Nessun film con questi filtri.<br>Allargali un po'.</div>`
+                               : `<div class="rec-vuoto">Nessun consiglio trovato.</div>`);
+    return;
+  }
+  g.innerHTML = S.cgLista.map((x,i) => {
+    const f = x.film, pst = f.posterUrl || '';
+    return `<div class="rec-card2 cg-card2" data-i="${i}">
+      <div class="rec-poster2">${pst?`<img src="${esc(pst)}" loading="lazy" alt="">`:`<div class="seg2">${esc(f.titolo)}</div>`}
+        <div class="cg-fascia ${x.fascia.cl}">${x.fascia.txt}</div></div>
+      <div class="corpo"><h5>${esc(f.titolo)}</h5><div class="sub2">${esc(f.anno||'')}</div>
+        ${x.perche.length?`<div class="cg-perche">${esc(x.perche[0])}</div>`:''}</div>
+    </div>`;
+  }).join('');
+  g.querySelectorAll('.cg-card2').forEach((el,i) => el.onclick = () => modaleConsiglioM(S.cgLista[i]));
+}
+const cgFiltriAttivi = () => { const f = S.cgFiltri;
+  return !!(f.generi.length || f.annoDa || f.annoA || f.durata || f.votoMin || f.soloMiei || !f.escludiNegativi); };
+
+function modaleConsiglioM(x){
+  const f = x.film;
+  apriModale(`
+    <h3>${esc(f.titolo)}</h3>
+    <div class="re-head">
+      <div class="re-poster">${f.posterUrl?`<img src="${esc(f.posterUrl)}" alt="">`:''}</div>
+      <div style="flex:1;min-width:0">
+        <div class="meta">${esc(f.anno||'')}${f.durata?' · '+fmtMin(f.durata):''}${f.regista?'<br>'+esc(f.regista):''}<br>
+          ${esc((f.generi||[]).join(', ')||'—')}${f.voto?` · ★ ${f.voto}`:''}</div>
+        <div class="cg-fascia ${x.fascia.cl}" style="position:static; display:inline-block; margin:8px 0">${x.fascia.txt}</div>
+        ${x.perche.length?`<ul class="cg-motivi">${x.perche.map(p=>`<li>${esc(p)}</li>`).join('')}</ul>`:''}
+      </div>
+    </div>
+    ${(f.keywords||[]).length?`<div class="meta" style="font-size:11.5px">${esc(f.keywords.slice(0,6).join(' · '))}</div>`:''}
+    ${f.trama?`<div class="trama">${esc(f.trama)}</div>`:''}
+    <div class="m-az">
+      <button class="ghost" id="cg-no">Non mi interessa</button>
+      <button class="primario" id="cg-si">🎬 Aggiungi</button>
+    </div>`);
+  $('#cg-no').onclick = async () => {
+    S.cgScartati.set(f.tmdbId, f.titolo || ('Film #'+f.tmdbId));
+    S.cgRipristinati.delete(f.tmdbId);
+    try { await salvaConsigliM(); } catch(e){}
+    chiudiModale(); disegnaConsigliM(); toast('Non te lo propongo più');
+  };
+  $('#cg-si').onclick = () => { chiudiModale(); modaleAggiungi(f.tmdbId); };
+}
+
+// pannello filtri (bottom sheet, come quello della Watch List)
+function apriFiltriConsigli(){
+  const f = S.cgFiltri;
+  apriModale(`
+    <h3>Filtri dei consigli</h3>
+    <div class="campo-r"><label>Genere</label>
+      <select class="inp" id="cf-gen"><option value="">tutti</option>${GENERI_TMDB.map(g=>`<option${f.generi[0]===g?' selected':''}>${esc(g)}</option>`).join('')}</select></div>
+    <div class="campo-r"><label>Anno</label><span><input class="inp" id="cf-annoda" type="number" placeholder="da" style="width:76px" value="${f.annoDa||''}"> – <input class="inp" id="cf-annoa" type="number" placeholder="a" style="width:76px" value="${f.annoA||''}"></span></div>
+    <div class="campo-r"><label>Durata ≤</label><input class="inp" id="cf-durata" type="number" placeholder="min" style="width:90px" value="${f.durata||''}"></div>
+    <div class="campo-r"><label>Voto ≥</label><input class="inp" id="cf-voto" type="number" step="0.5" min="0" max="10" placeholder="0" style="width:90px" value="${f.votoMin||''}"></div>
+    <div class="campo-r"><label>Solo dove posso vederlo</label><input type="checkbox" id="cf-miei"${f.soloMiei?' checked':''}></div>
+    <div class="campo-r"><label>Escludi i generi ✗</label><input type="checkbox" id="cf-neg"${f.escludiNegativi?' checked':''}></div>
+    <div class="m-az"><button class="ghost" id="cf-azzera">Azzera</button><button class="primario" id="cf-ok">Fatto</button></div>`);
+  const tocca = () => { disegnaConsigliM(); programmaConsigli(); };
+  $('#cf-gen').onchange    = e => { f.generi = e.target.value ? [e.target.value] : []; tocca(); };
+  $('#cf-annoda').oninput  = e => { f.annoDa = parseInt(e.target.value,10)||null; tocca(); };
+  $('#cf-annoa').oninput   = e => { f.annoA  = parseInt(e.target.value,10)||null; tocca(); };
+  $('#cf-durata').oninput  = e => { f.durata = parseInt(e.target.value,10)||null; tocca(); };
+  $('#cf-voto').oninput    = e => { f.votoMin = parseFloat(e.target.value)||null; tocca(); };
+  $('#cf-miei').onchange   = e => { f.soloMiei = e.target.checked; tocca(); };
+  $('#cf-neg').onchange    = e => { f.escludiNegativi = e.target.checked; tocca(); };
+  $('#cf-azzera').onclick  = () => { S.cgFiltri = {generi:[], keyword:[], annoDa:null, annoA:null, durata:null, votoMin:null, soloMiei:false, escludiNegativi:true}; chiudiModale(); disegnaConsigliM(); programmaConsigli(); };
+  $('#cf-ok').onclick      = chiudiModale;
+}
+// ricerca vera su TMDB dopo una pausa: a ogni tocco sarebbero decine di chiamate
+let cgTimer = null;
+function programmaConsigli(){ clearTimeout(cgTimer); cgTimer = setTimeout(() => generaConsigliM(), 900); }
+
+// elenco dei film esclusi (dalle impostazioni)
+function modaleScartatiM(){
+  const righe = [...S.cgScartati.entries()];
+  apriModale(`
+    <h3>🚫 Film esclusi dai consigli</h3>
+    <p class="meta">${righe.length ? 'Tocca «rimetti» per riproporlo in «Per te».' : 'Non hai escluso nessun film.'}</p>
+    ${righe.map(([id,tit])=>`<div class="sc-riga"><span class="t">${esc(tit)}</span><button class="linkbtn" data-rip="${id}" style="padding:2px 6px">rimetti</button></div>`).join('')}
+    <div class="m-az">${righe.length?'<button class="ghost" id="sc-tutti" style="color:var(--rosso2)">Svuota</button>':''}<button class="primario" id="sc-ok">Chiudi</button></div>`);
+  $('#sc-ok').onclick = chiudiModale;
+  const salva = async () => { try { await salvaConsigliM(); } catch(e){} disegnaConsigliM(); modaleScartatiM(); };
+  $('#modale').querySelectorAll('[data-rip]').forEach(b => b.onclick = async () => {
+    const id = parseInt(b.dataset.rip,10);
+    S.cgScartati.delete(id); S.cgRipristinati.add(id);
+    await salva(); toast('Rimesso tra i consigli');
+  });
+  if ($('#sc-tutti')) $('#sc-tutti').onclick = async () => {
+    for (const id of S.cgScartati.keys()) S.cgRipristinati.add(id);
+    S.cgScartati.clear(); await salva(); toast('Elenco svuotato');
+  };
+}
+
 /* ══════════════════ RECENSIONI (mobile) ══════════════════ */
 const DOVE_STREAMING = ['Netflix','Prime Video','Disney+','NOW','Sky','RaiPlay','Mediaset Infinity','Apple TV+','YouTube','Crunchyroll','Paramount+','Mubi'];
 const DOVE_FISICO = ['DVD','Blu-ray','4K UHD'];
@@ -1432,10 +1844,18 @@ function setPan(pan){
   $('#pan-sala').hidden = pan!=='sala';
   $('#pan-lista').hidden = pan!=='lista';
   $('#pan-recensioni').hidden = pan!=='recensioni';
+  $('#pan-consigli').hidden = pan!=='consigli';
   document.querySelectorAll('#segmenti .seg').forEach(b=>b.classList.toggle('on', b.dataset.pan===pan));
   if (pan==='recensioni') disegnaRecMobile();
   if (pan==='sala') disegnaSalaM();
-  $('#hdr-sub').textContent = pan==='sala' ? 'la serata' : pan==='recensioni' ? 'le recensioni' : 'la tua lista';
+  // «Per te» si aggiorna da sé: prima apertura e ogni volta che le recensioni cambiano
+  if (pan==='consigli'){
+    disegnaConsigliM();
+    const cambiate = S.cgFirma !== firmaRecensioni();
+    if ((!S.cgPool.length || cambiate) && !S.cgCaricamento && profiloGusto().n >= 3) generaConsigliM();
+  }
+  $('#hdr-sub').textContent = pan==='sala' ? 'la serata' : pan==='recensioni' ? 'le recensioni'
+    : pan==='consigli' ? 'consigliati per te' : 'la tua lista';
 }
 function recFiltrateM(slug){
   const f=S.recFiltri; let out=S.recensioni.filter(r=>r.autore===slug);
@@ -1595,7 +2015,7 @@ async function avviaEditorDaTMDBM(id){
   apriModale('<h3>Un attimo…</h3><p class="meta"><span class="spin"></span> recupero il film</p>');
   let d; try{ d=await dettagliFilm(id); }catch(e){ return toast('Scheda non recuperata',true); }
   const rec={ tmdbId:d.tmdbId, votoPersonale:0, doveVederlo:{streaming:[],fisico:[],percorso:''}, ultimaVisione:ultimaVisioneMia(d.tmdbId)||new Date().toISOString().slice(0,10),
-    meta:{ titolo:d.titolo, anno:d.anno, generi:d.generi, regista:d.regista, durata:d.durata, paese:d.paese||'', cast:d.cast||[], voto:d.voto, votoFonte:d.votoFonte, locandina:d.locandina, posterUrl:d.posterUrl },
+    meta:{ titolo:d.titolo, anno:d.anno, generi:d.generi, regista:d.regista, durata:d.durata, paese:d.paese||'', cast:d.cast||[], keywords:d.keywords||[], voto:d.voto, votoFonte:d.votoFonte, locandina:d.locandina, posterUrl:d.posterUrl },
     sezioni: SEZIONI_DEFAULT.map(tt=>({titolo:tt,testo:''})), link:[] };
   editorRecMobile(rec,{nuova:true});
 }
@@ -1603,7 +2023,7 @@ async function collegaTMDBM(bozza,id){
   apriModale('<h3>Un attimo…</h3><p class="meta"><span class="spin"></span> recupero il film</p>');
   let d; try{ d=await dettagliFilm(id); }catch(e){ return toast('Scheda non recuperata',true); }
   bozza.tmdbId=d.tmdbId;
-  bozza.meta={ titolo:d.titolo, anno:d.anno, generi:d.generi, regista:d.regista, durata:d.durata, paese:d.paese||'', cast:d.cast||[], voto:d.voto, votoFonte:d.votoFonte, locandina:d.locandina, posterUrl:d.posterUrl };
+  bozza.meta={ titolo:d.titolo, anno:d.anno, generi:d.generi, regista:d.regista, durata:d.durata, paese:d.paese||'', cast:d.cast||[], keywords:d.keywords||[], voto:d.voto, votoFonte:d.votoFonte, locandina:d.locandina, posterUrl:d.posterUrl };
   editorRecMobile(bozza,{nuova:!bozza.creato}); toast('Film collegato 🎬');
 }
 
@@ -1641,6 +2061,7 @@ $('#m-lista-tabs').onclick = e => {
   S.listaVista = b.dataset.vista; disegnaMiaLista();
 };
 $('#m-segnala').onclick = modaleSegnalaM;
+$('#m-cg-filtri').onclick = apriFiltriConsigli;
 $('#m-upd').onclick = pannelloAggiornamento;
 // tornando in primo piano (dopo una sync del Drive) ricontrollo se c'è un APK nuovo
 document.addEventListener('visibilitychange', () => { if (!document.hidden && S.treeUri) controllaAggiornamento(); });

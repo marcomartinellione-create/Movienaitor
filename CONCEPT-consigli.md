@@ -1,7 +1,7 @@
 # Concept — Consigli personalizzati («Per te»)
 
-> **Stato: implementato sul desktop** (v1.7.0) — sezione «✨ Per te».
-> Mobile ancora da portare. Questo resta il documento di riferimento delle scelte.
+> **Stato: implementato su desktop e mobile** (desktop v1.7.0) — sezione «✨ Per te».
+> Questo resta il documento di riferimento delle scelte.
 > Formule tarate sui dati reali della cartella del gruppo (agosto 2026).
 > Decisioni prese con Marco già recepite (§0).
 
