@@ -109,7 +109,10 @@ Stato "da vedere/visto" e i valori derivati NON si salvano: si ricalcolano dallo
   browser via localStorage.
 - **API film**: `cercaFilm` (TMDB search), `dettagliFilm` (TMDB /movie + credits +
   external_ids → OMDb per voto IMDb; cattura `collezione`/`uscita`). `salvaImmagini`.
-- **Logica**: `entryAttiva` (da vedere?), `visioniDaUltimaScelta` (attesa a numero di
+- **Logica**: `entryAttiva` (da vedere?) — spegne la voce sia per una serata dello
+  storico sia per una **recensione** dell'utente (`visioneRecensione`: `ultimaVisione`,
+  o `creato` se manca), con la stessa regola sulla data, così «rimettilo in lista»
+  continua a funzionare; `visioniDaUltimaScelta` (attesa a numero di
   serate), `classifica()` (candidati → collasso saghe → filtri → punteggio
   D×B×W×M → Top 5). Vedi SPECIFICA §6–8.
 - **Render**: `disegnaSala` (schermo+sipario, rosa 2-5, platea, adatta poltrone),
@@ -284,6 +287,13 @@ Dalla **v1.2.0**: **Lista completa** in Sala (tutti i film filtrati, in ordine d
 pertinenza, proiettabili anche fuori Top 5), **ricerca per titolo** in Pronti alla
 visione, **🐞 Segnalazioni** (bug/idee da tutti, gestione dell'host).
 
+**Recensire = visto** (2026-08-18): una recensione vale come visione per il suo autore, su
+desktop e mobile. Il film sparisce da «da vedere», compare fra i «già visti» con la data
+della recensione (`ultimaVisione`, o il giorno in cui è stata scritta) e il segno
+«✍ recensito», e **non entra più nella rosa della Sala** per quella persona (resta in
+gioco per gli altri, §6.2). Fra i visti finiscono anche i film recensiti che non sono mai
+passati dalla watch list. Vedi SPECIFICA §3.3 e §5.2 C5.
+
 ## App mobile (`app-mobile/`)
 
 APK Capacitor, web in `www/index.html` (file unico, come il desktop), plugin nativo SAF in
@@ -295,7 +305,11 @@ APK Capacitor, web in `www/index.html` (file unico, come il desktop), plugin nat
   rilegge `storico.json` fresco e fonde per `id` (più dispositivi possono registrare senza
   perdere voci).
 - **Lista** divisa in *Da vedere*/*Già visti* via `entryAttiva` ("rimetti in lista" azzera
-  `aggiunto`).
+  `aggiunto`). Fra i visti ci sono anche i film **recensiti** e mai messi in lista: la
+  scheda si costruisce da `meta` della recensione, non è cliccabile (non c'è una voce da
+  modificare) e prende `aggiunto` dalla data di visione, altrimenti l'ordinamento
+  predefinito (per aggiunta) la manderebbe in fondo. `ultimaVisioneStorico` separa la
+  data della serata da quella della recensione: serve al segno «✍ recensito».
 - **Recensioni** con lo stesso editor a sezioni del desktop; rileva i servizi streaming da
   TMDB (§5.3 SPECIFICA).
 - **✨ Per te** (v1.7.0): stessa logica dei consigli del desktop, riscritta per questo file

@@ -114,10 +114,17 @@ Google Drive non fonde le modifiche: se due dispositivi scrivono lo stesso file 
   nella cartella (escluso se stesso). Vedi §7.
 - I metadati del film (durata, regista, generi, voto, locandina) si salvano **al momento
   dell'aggiunta**: la Home non deve mai chiamare internet.
-- Lo **stato** di una voce non si salva: è derivato. Una voce è **da vedere** se lo
-  storico non registra una visione di quel film con quella persona in data-ora pari o
-  successiva ad `aggiunto`; altrimenti è **vista** (spenta). Riaggiungere il film (C6)
-  rinnova `aggiunto` e la riaccende (rewatch).
+- Lo **stato** di una voce non si salva: è derivato. Una voce è **da vedere** se nessuna
+  delle due fonti registra una visione di quel film, con quella persona, in data-ora pari
+  o successiva ad `aggiunto`; altrimenti è **vista** (spenta). Le fonti sono due:
+  1. lo **storico** (una serata confermata col Play);
+  2. una **recensione** di quella persona su quel film — chi recensisce un film l'ha
+     visto (2026-08-18). La data è `ultimaVisione` e, se manca, il giorno in cui la
+     recensione è stata scritta (`creato`). Vale solo per il suo autore.
+
+  Riaggiungere il film (C6) rinnova `aggiunto` e la riaccende (rewatch): la stessa regola
+  sulla data vale per entrambe le fonti, così una recensione vecchia non spegne un film
+  rimesso in lista adesso per rivederlo.
 - `aggiunto` (e il campo `ts` dello storico) sono **data-ora complete**, non solo date:
   altrimenti «rimettilo in lista» la sera stessa della visione non funzionerebbe
   (la visione delle 22 spegnerebbe la voce riaggiunta alle 22:30).
@@ -210,7 +217,7 @@ durata, generi, regista. Per la **media voti IMDb** vera si aggiunge **OMDb API*
 | C2 | Aggiungi film | imposta: **desiderio 1–5** (stelle), **conChi** (chip ✓), **nonCon** (chip ✗) |
 | C3 | Modifica | cambia desiderio/conChi/nonCon di un film già in lista |
 | C4 | Rimuovi | togli dalla lista, **con conferma** (i visti restano nello storico) |
-| C5 | I miei visti | sezione derivata dallo storico: film, data, con chi |
+| C5 | I miei visti | sezione derivata: le serate dello storico (film, data, con chi) **e** i film che si sono recensiti (data della recensione, segno «✍ recensito»). Se un film ha entrambi vince la data più recente. Comprende anche i film mai passati dalla watch list: titolo e locandina si prendono dalla recensione |
 | C6 | Riaggiungi un visto | un film già visto può tornare in lista (rewatch consapevole) |
 | C7 | Generi | in cima al Catalogo, barre percentuali della distribuzione dei generi nella lista "da vedere" (un film può avere più generi) |
 

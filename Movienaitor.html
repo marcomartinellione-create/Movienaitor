@@ -622,7 +622,7 @@ header .spazio{flex:1; min-width:0}
       <span class="cat-conta" id="cat-conta"></span>
     </div>
     <div class="griglia" id="lista-da-vedere"></div>
-    <div class="sezione-titolo">GIÀ VISTI IN SALA<span class="aiuto-q" tabindex="0">?<span class="tip">I film già guardati nelle serate confermate col Play. Restano qui come storico; puoi rimetterne uno in lista se lo vuoi rivedere.</span></span></div>
+    <div class="sezione-titolo">GIÀ VISTI<span class="aiuto-q" tabindex="0">?<span class="tip">I film che hai già guardato: le serate confermate col Play e quelli di cui hai scritto una recensione (recensire un film vale come averlo visto). Restano qui come storico; puoi rimetterne uno in lista se lo vuoi rivedere.</span></span></div>
     <div class="griglia" id="lista-visti"></div>
   </main>
 
@@ -1187,12 +1187,26 @@ function mostraLocandina(box, film){
 }
 
 /* ════════════════════════ LOGICA (SPECIFICA §6-8) ════════════════════════ */
+// Data in cui una persona ha visto un film secondo la SUA recensione: quella dichiarata
+// nella recensione e, se manca, il giorno in cui l'ha scritta. Scrivere una recensione
+// vale come aver visto il film (§5.2 C5), esattamente come una serata nello storico.
+function visioneRecensione(tmdbId, slug){
+  if (tmdbId == null) return null;
+  const r = S.recensioni.find(x => x.autore === slug && x.tmdbId === tmdbId);
+  if (!r) return null;
+  return String(r.ultimaVisione || r.creato || r.modificato || '').slice(0, 10) || null;
+}
+
 function entryAttiva(voce, slug){
   // confronto a data-ora: una visione "spegne" la voce solo se posteriore all'aggiunta,
   // così «rimettilo in lista» funziona anche la sera stessa della visione
   const aggiunto = voce.aggiunto || '0000-01-01';
-  return !S.storico.some(v => v.tmdbId === voce.tmdbId && v.partecipanti.includes(slug)
-    && (v.ts || v.data + 'T23:59:59') >= aggiunto);
+  if (S.storico.some(v => v.tmdbId === voce.tmdbId && v.partecipanti.includes(slug)
+    && (v.ts || v.data + 'T23:59:59') >= aggiunto)) return false;
+  // anche la recensione spegne la voce, con la stessa regola sulla data: una recensione
+  // vecchia non deve spegnere un film rimesso in lista adesso per rivederlo
+  const rec = visioneRecensione(voce.tmdbId, slug);
+  return !(rec && rec + 'T23:59:59' >= aggiunto);
 }
 // Indice di Soddisfazione (sostituisce la vecchia "attesa"): moltiplicatore 0,5 ↔ 1,5,
 // neutro 1,0. Si ricalcola replaying lo storico (nessuno stato salvato). Per ogni serata
@@ -3070,7 +3084,6 @@ function disegnaCatalogo(){
   const mio = mioProfilo();
   const daVedereTot = (mio ? mio.lista : []).filter(v => entryAttiva(v, S.me));
   const daVedere = filtraCatalogo(daVedereTot);
-  const spente = (mio ? mio.lista : []).filter(v => !entryAttiva(v, S.me));
   disegnaGeneriCatalogo();
   const conta = $('#cat-conta');
   if (conta) conta.textContent = daVedere.length === daVedereTot.length
@@ -3080,28 +3093,40 @@ function disegnaCatalogo(){
     `<div class="vuoto-msg">${daVedereTot.length ? 'Nessun film corrisponde ai filtri.' : 'La tua lista è vuota: cerca un film qui sopra 🍿'}</div>`;
   daVedere.forEach(v => agganciaCard(v));
 
-  // visti: dallo storico (tutte le visioni a cui ho partecipato) + voci spente
+  // visti: le mie visioni dallo storico + i film che ho recensito (una recensione vale
+  // come visione, §5.2 C5). Se un film ha entrambi vince la data più recente: la serata
+  // porta con sé anche la compagnia, la recensione no.
   const vistiMap = new Map();
-  for (const vis of S.storico) if (vis.partecipanti.includes(S.me)) vistiMap.set(vis.tmdbId, vis);
-  const cards = [];
-  for (const [id, vis] of [...vistiMap.entries()].reverse()){
-    const voce = (mio ? mio.lista : []).find(v => v.tmdbId === id) || {tmdbId:id, titolo:vis.titolo};
-    cards.push(`<div class="scheda-film" data-visto="${id}">
+  for (const vis of S.storico) if (vis.partecipanti.includes(S.me))
+    vistiMap.set(vis.tmdbId, {data:vis.data, titolo:vis.titolo, con:vis.partecipanti.filter(s => s !== S.me)});
+  for (const r of S.recensioni){
+    if (r.autore !== S.me) continue;
+    const data = visioneRecensione(r.tmdbId, S.me);
+    if (!data) continue;
+    const prima = vistiMap.get(r.tmdbId);
+    if (!prima || data > prima.data)
+      vistiMap.set(r.tmdbId, {data, con:null, meta:r.meta,
+        titolo:(r.meta || {}).titolo || (prima || {}).titolo || 'Film'});
+  }
+  // le voci si costruiscono una volta sola: servono sia alle schede sia alle locandine.
+  // Un film recensito ma mai messo in lista prende titolo e locandina dalla recensione.
+  const visti = [...vistiMap.entries()]
+    .sort((a, b) => String(b[1].data).localeCompare(String(a[1].data)))
+    .map(([id, vis]) => ({id, vis, voce:(mio ? mio.lista : []).find(v => v.tmdbId === id)
+      || {tmdbId:id, ...(vis.meta || {}), titolo:vis.titolo}}));
+  $('#lista-visti').innerHTML = visti.map(({id, vis, voce}) => `<div class="scheda-film" data-visto="${id}">
       <div class="copertina">
         <img hidden><div class="segnaposto" style="background:url('${segnapostoSVG(voce.titolo, id)}') center/cover"></div>
-        <div class="visto-badge">visto ${fmtData(vis.data)} · con ${vis.partecipanti.filter(s => s !== S.me).map(nomeDi).join(', ') || 'me stesso'}</div>
+        <div class="visto-badge">visto ${fmtData(vis.data)} · ${vis.con ? 'con ' + (vis.con.map(nomeDi).join(', ') || 'me stesso') : '✍ recensito'}</div>
       </div>
       <div class="corpo">
         <h4>${esc(voce.titolo)}</h4>
         <div class="azioni"><button class="testo-link btn-riguarda" data-id="${id}" style="color:var(--verde)">↺ rimettilo in lista</button></div>
       </div>
-    </div>`);
-  }
-  for (const v of spente) if (!vistiMap.has(v.tmdbId)) cards.push(''); // voce spenta senza visione mia: non capita, tenuta per robustezza
-  $('#lista-visti').innerHTML = cards.join('') || `<div class="vuoto-msg">Ancora nessuna serata registrata.</div>`;
+    </div>`).join('') || `<div class="vuoto-msg">Ancora nessun film visto: né serate registrate né recensioni.</div>`;
+  const vociViste = new Map(visti.map(x => [x.id, x.voce]));
   $$('#lista-visti .scheda-film').forEach(el => {
-    const id = parseInt(el.dataset.visto, 10);
-    const voce = (mio ? mio.lista : []).find(v => v.tmdbId === id);
+    const voce = vociViste.get(parseInt(el.dataset.visto, 10));
     if (voce) urlImmagine(voce, 'locandina').then(u => { const img = el.querySelector('img'); if (u && img){ img.src = u; img.hidden = false; el.querySelector('.segnaposto').remove(); } });
   });
   $$('.btn-riguarda').forEach(b => b.onclick = () => riguarda(parseInt(b.dataset.id, 10)));

@@ -837,18 +837,37 @@ function filtraCatalogo(lista){
 }
 
 /* ══════════════════ LA MIA LISTA ══════════════════ */
-// data dell'ultima visione di un film per l'utente corrente (per la sezione "già visti")
-function ultimaVisioneMia(tmdbId){
+// data dell'ultima serata (storico) in cui l'utente corrente ha visto quel film
+function ultimaVisioneStorico(tmdbId){
   let d = '';
   for (const v of S.storico)
     if (v.tmdbId === tmdbId && (v.partecipanti||[]).includes(S.me.slug) && String(v.data||'') > d) d = v.data;
   return d;
+}
+// data dell'ultima visione per la sezione "già visti": vale sia una serata dello storico
+// sia la recensione (recensire vale come vedere), e si tiene la più recente
+function ultimaVisioneMia(tmdbId){
+  const d = ultimaVisioneStorico(tmdbId);
+  const rec = visioneRecensione(tmdbId, S.me.slug);
+  return (rec && rec > d) ? rec : d;
 }
 function disegnaMiaLista(){
   const tutte = (S.me.lista||[]).slice();
   // una voce è "da vedere" se non c'è una visione mia successiva all'aggiunta, altrimenti "già vista"
   const daVedere = tutte.filter(v => entryAttiva(v, S.me.slug));
   const visti = tutte.filter(v => !entryAttiva(v, S.me.slug));
+  // i film che ho recensito valgono come visti anche se non sono mai passati dalla lista:
+  // la scheda si costruisce con i dati salvati nella recensione
+  for (const r of S.recensioni){
+    if (r.autore !== S.me.slug || !visioneRecensione(r.tmdbId, S.me.slug)) continue;
+    if (tutte.some(v => v.tmdbId === r.tmdbId)) continue;
+    const m = r.meta || {};
+    // "aggiunto" prende la data della visione: senza, l'ordinamento predefinito (per
+    // aggiunta) manderebbe tutti i recensiti in fondo
+    visti.push({tmdbId:r.tmdbId, titolo:m.titolo || 'Film', anno:m.anno, durata:m.durata,
+      generi:m.generi || [], voto:m.voto, posterUrl:m.posterUrl,
+      aggiunto:ultimaVisioneMia(r.tmdbId), fuoriLista:true});
+  }
   if ($('#m-conta-dav')) $('#m-conta-dav').textContent = daVedere.length ? '('+daVedere.length+')' : '';
   if ($('#m-conta-vis')) $('#m-conta-vis').textContent = visti.length ? '('+visti.length+')' : '';
   $$('#m-lista-tabs .smtab').forEach(b => b.classList.toggle('on', b.dataset.vista === S.listaVista));
@@ -859,23 +878,25 @@ function disegnaMiaLista(){
   $('#conta-lista').textContent = base.length ? (lista.length===base.length ? '· '+base.length : '· '+lista.length+'/'+base.length) : '';
   const fb = $('#btn-filtri'); if (fb) fb.classList.toggle('attivo', filtriAttivi());
   const box = $('#mia-lista');
-  if (!tutte.length){ box.innerHTML = '<div class="vuoto">Ancora nessun film. Cerca qui sopra e aggiungi il primo 🎬</div>'; return; }
+  if (!tutte.length && !visti.length){ box.innerHTML = '<div class="vuoto">Ancora nessun film. Cerca qui sopra e aggiungi il primo 🎬</div>'; return; }
   if (!base.length){ box.innerHTML = `<div class="vuoto">${sonoVisti ? 'Ancora nessun film già visto in questa lista.' : 'Niente da vedere: sono già stati visti tutti 🎉'}</div>`; return; }
   if (!lista.length){ box.innerHTML = '<div class="vuoto">Nessun film corrisponde ai filtri.</div>'; return; }
   box.innerHTML = lista.map(v=>{
     const pst = v.posterUrl || '';
     const comp = [ ...(v.conChi||[]).map(s=>'✓'+nomeDi(s)), ...(v.nonCon||[]).map(s=>'✗'+nomeDi(s)) ].join(' · ');
     const vis = sonoVisti ? ultimaVisioneMia(v.tmdbId) : '';
-    return `<div class="film cliccabile" data-edit="${v.tmdbId}">
+    // «recensito» quando la data mostrata viene dalla recensione e non da una serata
+    const daRec = sonoVisti && vis && vis > ultimaVisioneStorico(v.tmdbId);
+    return `<div class="film${v.fuoriLista ? '' : ' cliccabile'}"${v.fuoriLista ? '' : ` data-edit="${v.tmdbId}"`}>
       ${pst ? `<img class="pst" src="${esc(pst)}" loading="lazy" alt="">` : '<div class="pst"></div>'}
       <div class="info">
         <div class="tit">${esc(v.titolo)}</div>
         <div class="meta">${esc(v.anno||'')}${v.durata?' · '+fmtMin(v.durata):''}</div>
         <div class="stelle">${sonoVisti
-          ? `<span class="visto-tag">👁 visto${vis ? ' il '+esc(dataBreve(vis)) : ''}</span>`
+          ? `<span class="visto-tag">👁 visto${vis ? ' il '+esc(dataBreve(vis)) : ''}${daRec ? ' · ✍ recensito' : ''}</span>`
           : stelle(v.desiderio)}${comp?` <span style="color:var(--dim)">· ${esc(comp)}</span>`:''}</div>
       </div>
-      <div class="chevron">›</div>
+      ${v.fuoriLista ? '' : '<div class="chevron">›</div>'}
     </div>`;
   }).join('');
   box.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => modaleModifica(parseInt(b.dataset.edit,10)));
@@ -947,12 +968,24 @@ function modaleModifica(id){
 /* ══════════════════ SALA — stessa logica del desktop (SPECIFICA §6-8) ══════════════════ */
 const cfgSala = () => ({ ...CONFIG_DEFAULT, ...(S.config||{}) });
 const ordineSaga = f => f.uscita || (f.anno ? f.anno + '-00-00' : '9999');
+// Data in cui una persona ha visto un film secondo la SUA recensione: quella dichiarata
+// nella recensione e, se manca, il giorno in cui l'ha scritta. Scrivere una recensione
+// vale come aver visto il film, esattamente come una serata nello storico.
+function visioneRecensione(tmdbId, slug){
+  if (tmdbId == null) return null;
+  const r = S.recensioni.find(x => x.autore === slug && x.tmdbId === tmdbId);
+  if (!r) return null;
+  return String(r.ultimaVisione || r.creato || r.modificato || '').slice(0,10) || null;
+}
 // una voce è ancora "da vedere" se non c'è una visione di quel film, con quella persona,
 // successiva al momento in cui l'ha aggiunta (così «rimettilo in lista» funziona subito)
 function entryAttiva(voce, slug){
   const aggiunto = voce.aggiunto || '0000-01-01';
-  return !S.storico.some(v => v.tmdbId === voce.tmdbId && (v.partecipanti||[]).includes(slug)
-    && (v.ts || v.data + 'T23:59:59') >= aggiunto);
+  if (S.storico.some(v => v.tmdbId === voce.tmdbId && (v.partecipanti||[]).includes(slug)
+    && (v.ts || v.data + 'T23:59:59') >= aggiunto)) return false;
+  // anche la recensione spegne la voce, con la stessa regola sulla data
+  const rec = visioneRecensione(voce.tmdbId, slug);
+  return !(rec && rec + 'T23:59:59' >= aggiunto);
 }
 function indiceSoddisfazione(slug){
   const passo = cfgSala().passoSoddisfazione;
