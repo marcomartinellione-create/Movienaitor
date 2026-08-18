@@ -275,4 +275,7 @@ scarica l'artifact e copia `Movienaitor-<v>.apk` + `versione.json` nella cartell
 - Attesa: oggi conta **tutte** le serate dall'ultima "vittoria" (anche assenti) — Marco
   può volerla ristretta alle sole serate presenti.
 - Possibili v1.x: statistiche di gruppo, serie TV, decomposizione `src/` se il file cresce.
+- **Consigli personalizzati** («Per te»): indice di compatibilità dalle recensioni +
+  filtri. Concept scritto e tarato sui dati veri in **CONCEPT-consigli.md** — non
+  implementato, da decidere.
 - Prima prova reale col gruppo: cartella Drive condivisa + chiave TMDB (+ OMDb) in Impostazioni.
