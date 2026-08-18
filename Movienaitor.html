@@ -793,6 +793,9 @@ const ETICHETTE_COSTANTI = {
 const PALETTE_UTENTI = ['#c9a45c','#a85454','#7d9b76','#6f8fae','#9b7da8','#b0805a','#8fa3a0','#b39a6b'];
 // Generi TMDB (it-IT): usati per la scelta manuale dei "generi preferiti" del profilo
 const GENERI_TMDB = ['Azione','Avventura','Animazione','Commedia','Crime','Documentario','Dramma','Famiglia','Fantasy','Storia','Horror','Musica','Mistero','Romance','Fantascienza','Film TV','Thriller','Guerra','Western'];
+// Le serie hanno una tassonomia loro: TMDB non traduce "Action & Adventure" né
+// "Sci-Fi & Fantasy" nemmeno in it-IT. Nomi verificati su /genre/tv/list.
+const GENERI_TMDB_SERIE = ['Action & Adventure','Animazione','Commedia','Crime','Documentario','Dramma','Famiglia','Kids','Mistero','News','Reality','Sci-Fi & Fantasy','Soap','Talk','War & Politics','Western'];
 const FILA_DAVANTI = 9, FILA_DIETRO = 10; // platea come nel CAD
 
 /* ════════════════════════ UTILITÀ ════════════════════════ */
@@ -988,6 +991,22 @@ async function ricordaHost(on){
   if (inElectron && window.mvnFS.ricordaHost){ try { await window.mvnFS.ricordaHost(!!on); } catch(e){} }
   try { if (on) localStorage.setItem('mvn_host', '1'); else localStorage.removeItem('mvn_host'); } catch(e){}
 }
+// modalità ricordata per dispositivo: chi guarda solo film non incontra mai le serie
+async function leggiModo(){
+  if (inElectron && window.mvnFS.modoRicordato){
+    try { return (await window.mvnFS.modoRicordato()) === 'serie' ? 'serie' : 'film'; } catch(e){}
+  }
+  try { return localStorage.getItem('mvn_modo') === 'serie' ? 'serie' : 'film'; } catch(e){ return 'film'; }
+}
+async function ricordaModo(m){
+  if (inElectron && window.mvnFS.ricordaModo){ try { await window.mvnFS.ricordaModo(m); } catch(e){} }
+  try { localStorage.setItem('mvn_modo', m); } catch(e){}
+}
+// il vestito: i token colore e la scenografia della Sala guardano questo attributo
+function applicaModo(){
+  document.documentElement.dataset.modo = S.modo;
+}
+
 function applicaHost(){
   $('#tab-archivio').hidden = !S.host;
   $('#sep-archivio').hidden = !S.host;
@@ -1004,6 +1023,7 @@ const VISTE = ['sala','catalogo','recensioni','consigli','archivio','segnalazion
 /* ════════════════════════ STATO ════════════════════════ */
 const S = {
   demo:false,
+  modo:'film',           // 'film' | 'serie' — vedi CONCEPT-serie.md
   host:false,            // questo dispositivo è l'host (tab Archivio)
   me:null,               // slug
   profili:[],            // [{nome, slug, creato, colore, lista:[…]}]
@@ -1043,6 +1063,31 @@ const S = {
   ultimaLettura:null,
   urlCache:new Map()     // percorso → objectURL
 };
+/* ════════════════════════ MODALITÀ (film / serie TV) ════════════════════════ */
+// La modalità governa tre cose e solo quelle: da dove si leggono e si scrivono i dati,
+// quale endpoint TMDB si interroga, che vestito indossa l'app. Le formule della Sala, la
+// classifica e i consigli non sanno nemmeno che esista. Vedi CONCEPT-serie.md.
+const inSerie = () => S.modo === 'serie';
+// Percorso dentro lo spazio della modalità: i film restano esattamente dove sono sempre
+// stati, le serie vivono sotto serie/. Così è tutto additivo e reversibile: la cartella si
+// cancella in blocco e le versioni vecchie dell'app non la vedono nemmeno.
+const P = (...parti) => inSerie() ? ['serie', ...parti] : parti;
+// La lista della modalità dentro il profilo. Il profilo resta UN file per persona: nome,
+// colore della poltrona, password e servizi streaming sono gli stessi nelle due modalità
+// e non devono poter divergere.
+function listaDi(p){
+  if (!p) return [];
+  return inSerie() ? (p.listaSerie = p.listaSerie || []) : (p.lista = p.lista || []);
+}
+// Generi ✓/✗ dichiarati: le due tassonomie non sono trasferibili (Fantascienza vs
+// Sci-Fi & Fantasy), quindi ogni modalità ha le sue liste nello stesso profilo.
+const chiaveGeneriPos = () => inSerie() ? 'generiPositiviSerie' : 'generiPositivi';
+const chiaveGeneriNeg = () => inSerie() ? 'generiNegativiSerie' : 'generiNegativi';
+const generiPos = p => (p && p[chiaveGeneriPos()]) || [];
+const generiNeg = p => (p && p[chiaveGeneriNeg()]) || [];
+// come si chiama, in questa modalità, la cosa che si guarda
+const COSA = () => inSerie() ? 'serie' : 'film';
+
 const mioProfilo = () => S.profili.find(p => p.slug === S.me);
 const profiloDi = slug => S.profili.find(p => p.slug === slug);
 const nomeDi = slug => (profiloDi(slug) || {nome:slug}).nome;
@@ -1115,9 +1160,11 @@ async function cercaFilm(q){
       .map(f => ({id:f.tmdbId, title:f.titolo, release_date:f.anno+'-01-01', poster_path:null}));
   }
   if (!S.config.tmdbKey) throw new Error('nokey');
-  const r = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${S.config.tmdbKey}&language=it-IT&include_adult=false&query=${encodeURIComponent(q)}`);
+  const r = await fetch(`https://api.themoviedb.org/3/search/${inSerie()?'tv':'movie'}?api_key=${S.config.tmdbKey}&language=it-IT&include_adult=false&query=${encodeURIComponent(q)}`);
   if (!r.ok) throw new Error('tmdb '+r.status);
-  return ((await r.json()).results || []).slice(0, 8);
+  // i campi delle serie si normalizzano qui su quelli dei film, così chi legge non cambia
+  return ((await r.json()).results || []).slice(0, 8)
+    .map(x => inSerie() ? {...x, title:x.name || x.original_name, release_date:x.first_air_date} : x);
 }
 
 async function dettagliFilm(id){
@@ -1125,10 +1172,22 @@ async function dettagliFilm(id){
   const k = S.config.tmdbKey;
   // le keyword arrivano nella stessa chiamata (append_to_response, fino a 20 endpoint):
   // costano zero richieste in più e sono il tratto più specifico per i consigli
-  const r = await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${k}&language=it-IT&append_to_response=credits,external_ids,keywords`);
+  const serie = inSerie();
+  const r = await fetch(`https://api.themoviedb.org/3/${serie?'tv':'movie'}/${id}?api_key=${k}&language=it-IT&append_to_response=credits,external_ids,keywords`);
   if (!r.ok) throw new Error('tmdb '+r.status);
   const j = await r.json();
-  const regista = ((j.credits || {}).crew || []).filter(c => c.job === 'Director').map(c => c.name).join(', ');
+  // una serie non ha un regista: il suo posto lo prende il creatore (crew.Director è vuoto)
+  const regista = serie
+    ? (j.created_by || []).map(c => c.name).join(', ')
+    : ((j.credits || {}).crew || []).filter(c => c.job === 'Director').map(c => c.name).join(', ');
+  // stagioni vere: via gli speciali (S0) e quelle annunciate ma ancora senza episodi
+  const stagioni = serie ? (j.seasons || [])
+    .filter(s => s.season_number > 0 && s.episode_count > 0)
+    .map(s => ({n:s.season_number, episodi:s.episode_count})) : null;
+  // molte serie lasciano episode_run_time vuoto: si ripiega sull'ultimo episodio uscito
+  const durata = serie
+    ? (((j.episode_run_time || [])[0]) || (j.last_episode_to_air || {}).runtime || null)
+    : (j.runtime || null);
   let voto = j.vote_average ? Math.round(j.vote_average*10)/10 : null, votoFonte = 'tmdb';
   const imdbId = (j.external_ids || {}).imdb_id || j.imdb_id;
   if (S.config.omdbKey && imdbId){
@@ -1139,14 +1198,16 @@ async function dettagliFilm(id){
     } catch(e){}
   }
   return {
-    tmdbId:j.id, titolo:j.title || j.original_title, anno:(j.release_date || '').slice(0,4),
-    uscita:j.release_date || null,
-    collezione:j.belongs_to_collection ? j.belongs_to_collection.id : null,
-    collezioneNome:j.belongs_to_collection ? j.belongs_to_collection.name : null,
-    durata:j.runtime || null, regista, generi:(j.genres || []).map(x => x.name),
+    tmdbId:j.id, titolo:(serie ? (j.name || j.original_name) : (j.title || j.original_title)),
+    anno:String((serie ? j.first_air_date : j.release_date) || '').slice(0,4),
+    uscita:(serie ? j.first_air_date : j.release_date) || null,
+    collezione:(!serie && j.belongs_to_collection) ? j.belongs_to_collection.id : null,
+    collezioneNome:(!serie && j.belongs_to_collection) ? j.belongs_to_collection.name : null,
+    stagioni, stato:serie ? (j.status || '') : null,
+    durata, regista, generi:(j.genres || []).map(x => x.name),
     paese:(j.production_countries || []).map(c => c.name).join(', '),
     cast:((j.credits || {}).cast || []).slice(0,6).map(c => c.name),
-    keywords:((j.keywords || {}).keywords || []).slice(0,12).map(x => x.name),
+    keywords:(((j.keywords || {}).results) || ((j.keywords || {}).keywords) || []).slice(0,12).map(x => x.name),
     voto, votoFonte, trama:j.overview || '',
     posterUrl:j.poster_path ? 'https://image.tmdb.org/t/p/w500'+j.poster_path : null,
     sfondoUrl:j.backdrop_path ? 'https://image.tmdb.org/t/p/w780'+j.backdrop_path : null,
@@ -1230,7 +1291,7 @@ function indiceSoddisfazione(slug){
 // Bonus Genere del profilo su un film: ogni genere del film vale +1 se marcato "positivo",
 // −1 se "negativo", 0 se neutro. Positivi e negativi convivono (non è un unico modo).
 function bonusGeneri(prof, film){
-  const pos = prof.generiPositivi || [], neg = prof.generiNegativi || [];
+  const pos = generiPos(prof), neg = generiNeg(prof);
   let g = 0;
   for (const gen of (film.generi || [])){
     if (pos.includes(gen)) g += 1;
@@ -1240,10 +1301,11 @@ function bonusGeneri(prof, film){
 }
 // Ciclo a tre stati di un genere: neutro → positivo (✓) → negativo (✗) → neutro.
 function cicloGenere(p, gen){
-  p.generiPositivi = p.generiPositivi || []; p.generiNegativi = p.generiNegativi || [];
-  if (p.generiPositivi.includes(gen)){ p.generiPositivi = p.generiPositivi.filter(x=>x!==gen); p.generiNegativi.push(gen); }
-  else if (p.generiNegativi.includes(gen)){ p.generiNegativi = p.generiNegativi.filter(x=>x!==gen); }
-  else p.generiPositivi.push(gen);
+  const kp = chiaveGeneriPos(), kn = chiaveGeneriNeg();
+  p[kp] = p[kp] || []; p[kn] = p[kn] || [];
+  if (p[kp].includes(gen)){ p[kp] = p[kp].filter(x=>x!==gen); p[kn].push(gen); }
+  else if (p[kn].includes(gen)){ p[kn] = p[kn].filter(x=>x!==gen); }
+  else p[kp].push(gen);
 }
 // Migrazione dal vecchio modello (bonusGenere + generiPreferiti) al nuovo (pos/neg per genere).
 function migraGeneri(p){
@@ -1260,7 +1322,7 @@ function classifica(){
   const candidati = new Map();
   for (const pr of S.profili){
     if (!setP.has(pr.slug)) continue;
-    for (const voce of (pr.lista || [])){
+    for (const voce of listaDi(pr)){
       if (!voce.tmdbId || !entryAttiva(voce, pr.slug)) continue;
       let c = candidati.get(voce.tmdbId);
       if (!c){ c = {film:{...voce}, prop:[]}; candidati.set(voce.tmdbId, c); }
@@ -1344,10 +1406,10 @@ async function caricaTutto(){
   }
   profili.sort((a,b) => (a.creato || '').localeCompare(b.creato || '') || a.slug.localeCompare(b.slug));
   S.profili = profili;
-  const st = await FS.readJSON(['storico.json']);
+  const st = await FS.readJSON(P('storico.json'));
   S.storico = (st && Array.isArray(st.visioni)) ? st.visioni : [];
   S.storico.sort((a,b) => a.data.localeCompare(b.data));
-  const arch = await FS.readJSON(['archivio.json']);
+  const arch = await FS.readJSON(P('archivio.json'));
   S.archivioPronti = new Set((arch && Array.isArray(arch.pronti)) ? arch.pronti : []);
   S.archivioDove = (arch && arch.dove && typeof arch.dove === 'object') ? arch.dove : {};
   await caricaRecensioni();
@@ -1404,15 +1466,15 @@ function htmlToMarkdown(html){
 // Legge tutte le recensioni di tutti gli utenti da recensioni/<slug>/<tmdbId>.json
 async function caricaRecensioni(){
   S.recensioni = [];
-  const { dirs } = await FS.elenca(['recensioni']);
+  const { dirs } = await FS.elenca(P('recensioni'));
   for (const slug of dirs){
-    const { files } = await FS.elenca(['recensioni', slug]);
+    const { files } = await FS.elenca(P('recensioni', slug));
     for (const f of files){
       if (!f.endsWith('.json')) continue;
-      const r = await FS.readJSON(['recensioni', slug, f]);
+      const r = await FS.readJSON(P('recensioni', slug, f));
       // accetta anche le recensioni importate senza tmdbId (es. convertite da Obsidian)
       if (r && typeof r === 'object' && (r.meta || Array.isArray(r.sezioni) || r.tmdbId != null)){
-        r.autore = slug; r._file = ['recensioni', slug, f]; r._key = r._file.join('/');
+        r.autore = slug; r._file = P('recensioni', slug, f); r._key = r._file.join('/');
         S.recensioni.push(r);
       }
     }
@@ -1426,8 +1488,8 @@ async function salvaRecensione(rec){
   const vecchio = rec._file;
   // con tmdbId il nome canonico è <tmdbId>.json; senza, mantengo il file esistente (es. importate)
   const percorso = (rec.tmdbId != null)
-    ? ['recensioni', S.me, rec.tmdbId + '.json']
-    : (rec._file || ['recensioni', S.me, 'senza-id-' + Date.now() + '.json']);
+    ? P('recensioni', S.me, rec.tmdbId + '.json')
+    : (rec._file || P('recensioni', S.me, 'senza-id-' + Date.now() + '.json'));
   const salvabile = {...rec}; delete salvabile._file; delete salvabile._key; delete salvabile.autore;
   await FS.writeJSON(percorso, salvabile);
   if (vecchio && vecchio.join('/') !== percorso.join('/')) await FS.cancella(vecchio); // rinomina (aggancio tmdbId)
@@ -1437,7 +1499,7 @@ async function salvaRecensione(rec){
 }
 const miaRecensione = id => S.recensioni.find(r => r.autore === S.me && r.tmdbId === id);
 // stato "pronto alla visione" dell'archivio (scritto dall'host, file condiviso)
-async function salvaArchivio(){ await FS.writeJSON(['archivio.json'], {pronti:[...S.archivioPronti], dove:S.archivioDove}); }
+async function salvaArchivio(){ await FS.writeJSON(P('archivio.json'), {pronti:[...S.archivioPronti], dove:S.archivioDove}); }
 
 /* ════════════════════════ CONSIGLI «PER TE» ════════════════════════ */
 // Profilo del gusto ricavato dalle recensioni e indice di compatibilità coi film nuovi.
@@ -1595,7 +1657,7 @@ function fasciaConsiglio(i, tot, C){
 // I film scartati si tengono con il titolo, così si possono rileggere in Impostazioni
 // senza dover richiedere le schede a TMDB. Accetta anche il vecchio formato (soli id).
 async function caricaConsigli(){
-  const d = await FS.readJSON(['consigli', S.me + '.json']);
+  const d = await FS.readJSON(P('consigli', S.me + '.json'));
   S.cgScartati = new Map();
   for (const x of ((d && Array.isArray(d.scartati)) ? d.scartati : [])){
     if (typeof x === 'number') S.cgScartati.set(x, 'Film #'+x);          // formato vecchio
@@ -1607,7 +1669,7 @@ async function caricaConsigli(){
 // mano restano fuori (`cgRipristinati`), altrimenti la fusione li rimetterebbe dentro.
 async function salvaConsigli(){
   try {
-    const d = await FS.readJSON(['consigli', S.me + '.json']);
+    const d = await FS.readJSON(P('consigli', S.me + '.json'));
     for (const x of ((d && Array.isArray(d.scartati)) ? d.scartati : [])){
       const id = (typeof x === 'number') ? x : (x && x.tmdbId);
       if (id != null && !S.cgScartati.has(id) && !S.cgRipristinati.has(id))
@@ -1615,7 +1677,7 @@ async function salvaConsigli(){
     }
   } catch(e){}
   const scartati = [...S.cgScartati.entries()].map(([tmdbId, titolo]) => ({tmdbId, titolo}));
-  await FS.writeJSON(['consigli', S.me + '.json'], {scartati, aggiornato:new Date().toISOString()});
+  await FS.writeJSON(P('consigli', S.me + '.json'), {scartati, aggiornato:new Date().toISOString()});
 }
 
 /* ── arricchimento: aggiunge le keyword alle recensioni già scritte (una tantum) ── */
@@ -1642,6 +1704,11 @@ async function arricchisciKeyword(){
 const GENERI_ID = {Azione:28, Avventura:12, Animazione:16, Commedia:35, Crime:80, Documentario:99,
   Dramma:18, Famiglia:10751, Fantasy:14, Storia:36, Horror:27, Musica:10402, Mistero:9648,
   Romance:10749, Fantascienza:878, 'Film TV':10770, Thriller:53, Guerra:10752, Western:37};
+const GENERI_ID_SERIE = {'Action & Adventure':10759, Animazione:16, Commedia:35, Crime:80,
+  Documentario:99, Dramma:18, Famiglia:10751, Kids:10762, Mistero:9648, News:10763,
+  Reality:10764, 'Sci-Fi & Fantasy':10765, Soap:10766, Talk:10767, 'War & Politics':10768, Western:37};
+const generiTMDB = () => inSerie() ? GENERI_TMDB_SERIE : GENERI_TMDB;
+const generiID   = () => inSerie() ? GENERI_ID_SERIE   : GENERI_ID;
 
 async function tmdbJSON(url){
   const r = await fetch(url);
@@ -1672,7 +1739,7 @@ async function generaConsigli(){
   try {
     const f = S.cgFiltri, k = S.config.tmdbKey;
     const visti = new Set(S.storico.filter(v => (v.partecipanti||[]).includes(S.me)).map(v => v.tmdbId));
-    const inLista = new Set((mioProfilo().lista || []).map(v => v.tmdbId));
+    const inLista = new Set(listaDi(mioProfilo()).map(v => v.tmdbId));
     const recensiti = new Set(S.recensioni.filter(r => r.autore === S.me).map(r => r.tmdbId));
     const escludi = id => visti.has(id) || inLista.has(id) || recensiti.has(id) || S.cgScartati.has(id);
 
@@ -1684,17 +1751,18 @@ async function generaConsigli(){
       avanz('Cerco film che potrebbero piacerti…');
       const p = new URLSearchParams({api_key:k, language:'it-IT', include_adult:'false',
         sort_by:'popularity.desc', 'vote_count.gte':'150', page:'1'});
-      const generi = (f.generi.length ? f.generi : prof.top.generi).map(g => GENERI_ID[g]).filter(Boolean);
+      const generi = (f.generi.length ? f.generi : prof.top.generi).map(g => generiID()[g]).filter(Boolean);
       if (generi.length) p.set('with_genres', generi.join('|'));
       if (f.escludiNegativi){
-        const neg = ((profiloDi(S.me)||{}).generiNegativi || []).map(g => GENERI_ID[g]).filter(Boolean);
+        const neg = generiNeg(profiloDi(S.me)).map(g => generiID()[g]).filter(Boolean);
         if (neg.length) p.set('without_genres', neg.join(','));
       }
-      if (f.annoDa) p.set('primary_release_date.gte', f.annoDa+'-01-01');
-      if (f.annoA)  p.set('primary_release_date.lte', f.annoA+'-12-31');
+      const campoData = inSerie() ? 'first_air_date' : 'primary_release_date';
+      if (f.annoDa) p.set(campoData+'.gte', f.annoDa+'-01-01');
+      if (f.annoA)  p.set(campoData+'.lte', f.annoA+'-12-31');
       if (f.durata) p.set('with_runtime.lte', String(f.durata));
       if (f.votoMin) p.set('vote_average.gte', String(f.votoMin));
-      if (f.persona) p.set('with_people', String(f.persona));
+      if (f.persona && !inSerie()) p.set('with_people', String(f.persona));  // discover/tv non lo sostiene
       if (f.soloMiei){
         const miei = ((profiloDi(S.me)||{}).serviziStreaming || []).map(s => PROVIDER_ID[s]).filter(Boolean);
         if (miei.length){ p.set('with_watch_providers', miei.join('|')); p.set('watch_region','IT'); }
@@ -1704,7 +1772,7 @@ async function generaConsigli(){
       for (const pag of ['1','2']){
         p.set('page', pag);
         try {
-          const j = await tmdbJSON('https://api.themoviedb.org/3/discover/movie?'+p);
+          const j = await tmdbJSON('https://api.themoviedb.org/3/discover/'+(inSerie()?'tv':'movie')+'?'+p);
           for (const m of (j.results || [])) if (!escludi(m.id) && !grezzi.has(m.id)) grezzi.set(m.id, {tmdbId:m.id});
         } catch(e){}
       }
@@ -1714,7 +1782,7 @@ async function generaConsigli(){
         .sort((a,b) => (b.votoPersonale||0) - (a.votoPersonale||0)).slice(0,5);
       for (const r of amati){
         try {
-          const j = await tmdbJSON(`https://api.themoviedb.org/3/movie/${r.tmdbId}/recommendations?api_key=${k}&language=it-IT&page=1`);
+          const j = await tmdbJSON(`https://api.themoviedb.org/3/${inSerie()?'tv':'movie'}/${r.tmdbId}/recommendations?api_key=${k}&language=it-IT&page=1`);
           for (const m of (j.results || []).slice(0,10)) if (!escludi(m.id) && !grezzi.has(m.id)) grezzi.set(m.id, {tmdbId:m.id});
         } catch(e){}
       }
@@ -1766,7 +1834,7 @@ function consigliFiltrati(){
       if (!dentro) return false;
     }
     if (f.escludiNegativi){
-      const neg = ((profiloDi(S.me)||{}).generiNegativi || []);
+      const neg = generiNeg(profiloDi(S.me));
       if (neg.length && (m.generi||[]).some(g => neg.includes(g))) return false;
     }
     return true;
@@ -2115,7 +2183,7 @@ async function providersFilm(tmdbId){
     out = [pool[tmdbId % pool.length], pool[(tmdbId >> 3) % pool.length]].filter((x,i,a)=>a.indexOf(x)===i);
   } else if (S.config.tmdbKey){
     try {
-      const r = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}/watch/providers?api_key=${S.config.tmdbKey}`);
+      const r = await fetch(`https://api.themoviedb.org/3/${inSerie()?'tv':'movie'}/${tmdbId}/watch/providers?api_key=${S.config.tmdbKey}`);
       if (r.ok){
         const it = ((await r.json()).results || {}).IT || {};
         out = [...new Set((it.flatrate || []).map(p => normProvider(p.provider_name)))];
@@ -2137,12 +2205,12 @@ function badgeStreaming(servizi){
 }
 
 async function registraVisione(voce){
-  const attuale = await FS.readJSON(['storico.json']) || {visioni:[]};
+  const attuale = await FS.readJSON(P('storico.json')) || {visioni:[]};
   if (!Array.isArray(attuale.visioni)) attuale.visioni = [];
   const ids = new Set(attuale.visioni.map(v => v.id));
   for (const v of S.storico) if (!ids.has(v.id)){ attuale.visioni.push(v); ids.add(v.id); }
   attuale.visioni.push(voce);
-  await FS.writeJSON(['storico.json'], attuale);
+  await FS.writeJSON(P('storico.json'), attuale);
   S.storico = attuale.visioni.sort((a,b) => a.data.localeCompare(b.data));
 }
 
@@ -2245,6 +2313,8 @@ function gateNome(conIndietro){
 }
 
 async function entra(){
+  S.modo = await leggiModo();   // prima di caricare: i percorsi dipendono dalla modalità
+  applicaModo();
   await caricaTutto();
   S.host = await leggiHost();
   const ricordato = await leggiMe();
@@ -2282,7 +2352,7 @@ function disegnaTutto(){
 // presenti (Desiderio × Coralità × Soddisfazione; niente bonus coppia, che dipende dai presenti).
 function punteggioProssima(film){
   const prop = [];
-  for (const p of S.profili) for (const voce of (p.lista || []))
+  for (const p of S.profili) for (const voce of listaDi(p))
     if (voce.tmdbId === film.tmdbId && entryAttiva(voce, p.slug)){ prop.push({slug:p.slug, desiderio:voce.desiderio || 3}); break; }
   if (!prop.length) return 0;
   const n = prop.length;
@@ -2318,7 +2388,7 @@ function disegnaArchivio(){
   const sel = S.archivioChi;
   // per ogni film candidato tengo anche CHI lo vuole (proponenti attivi)
   const mappa = new Map();
-  for (const p of S.profili) for (const v of (p.lista || [])){
+  for (const p of S.profili) for (const v of listaDi(p)){
     if (!v.tmdbId || !entryAttiva(v, p.slug)) continue;
     let e = mappa.get(v.tmdbId);
     if (!e){ e = {film:v, chi:[]}; mappa.set(v.tmdbId, e); }
@@ -2791,12 +2861,12 @@ function creaZip(files){
 
 function tuttiGeneri(){
   const g = new Set();
-  for (const p of S.profili) for (const v of (p.lista || [])) (v.generi || []).forEach(x => g.add(x));
+  for (const p of S.profili) for (const v of listaDi(p)) (v.generi || []).forEach(x => g.add(x));
   return [...g].sort((a,b) => a.localeCompare(b));
 }
 function tuttiRegisti(){
   const r = new Set();
-  for (const p of S.profili) for (const v of (p.lista || [])) if (v.regista) v.regista.split(', ').forEach(x => r.add(x));
+  for (const p of S.profili) for (const v of listaDi(p)) if (v.regista) v.regista.split(', ').forEach(x => r.add(x));
   return [...r].sort();
 }
 
@@ -3042,7 +3112,7 @@ function cicloCompagnia(voce, slug){
 
 function disegnaGeneriCatalogo(){
   const mio = mioProfilo();
-  const daVedere = (mio ? mio.lista : []).filter(v => entryAttiva(v, S.me));
+  const daVedere = listaDi(mio).filter(v => entryAttiva(v, S.me));
   const cont = $('#generi-catalogo');
   if (!daVedere.length){ cont.innerHTML = ''; return; }
   const conteggio = {};
@@ -3082,7 +3152,7 @@ function filtraCatalogo(lista){
 
 function disegnaCatalogo(){
   const mio = mioProfilo();
-  const daVedereTot = (mio ? mio.lista : []).filter(v => entryAttiva(v, S.me));
+  const daVedereTot = listaDi(mio).filter(v => entryAttiva(v, S.me));
   const daVedere = filtraCatalogo(daVedereTot);
   disegnaGeneriCatalogo();
   const conta = $('#cat-conta');
@@ -3112,7 +3182,7 @@ function disegnaCatalogo(){
   // Un film recensito ma mai messo in lista prende titolo e locandina dalla recensione.
   const visti = [...vistiMap.entries()]
     .sort((a, b) => String(b[1].data).localeCompare(String(a[1].data)))
-    .map(([id, vis]) => ({id, vis, voce:(mio ? mio.lista : []).find(v => v.tmdbId === id)
+    .map(([id, vis]) => ({id, vis, voce:listaDi(mio).find(v => v.tmdbId === id)
       || {tmdbId:id, ...(vis.meta || {}), titolo:vis.titolo}}));
   $('#lista-visti').innerHTML = visti.map(({id, vis, voce}) => `<div class="scheda-film" data-visto="${id}">
       <div class="copertina">
@@ -3166,7 +3236,7 @@ function agganciaCard(v){
   };
   el.querySelector('.btn-togli').onclick = () => confermaModale(`Togliere «${v.titolo}» dalla tua lista?`, 'Rimuovi', async () => {
     const mio = mioProfilo();
-    mio.lista = mio.lista.filter(x => x !== v);
+    const L = listaDi(mio); const i = L.indexOf(v); if (i >= 0) L.splice(i, 1);
     await salvaMioProfilo();
     disegnaCatalogo(); disegnaFiltri(); disegnaSala(); disegnaArchivio();
     toast(`«${v.titolo}» tolto dalla lista`);
@@ -3175,7 +3245,7 @@ function agganciaCard(v){
 
 async function riguarda(id){
   const mio = mioProfilo();
-  let voce = mio.lista.find(v => v.tmdbId === id);
+  let voce = listaDi(mio).find(v => v.tmdbId === id);
   if (voce){ voce.aggiunto = new Date().toISOString(); }
   else {
     let d = null;
@@ -3184,7 +3254,7 @@ async function riguarda(id){
     const ora = new Date().toISOString();
     voce = d ? {...d, desiderio:3, conChi:[], nonCon:[], aggiunto:ora}
              : {tmdbId:id, titolo:vis ? vis.titolo : 'Film', desiderio:3, conChi:[], nonCon:[], aggiunto:ora};
-    mio.lista.push(voce);
+    listaDi(mio).push(voce);
     if (d) salvaImmagini(d);
   }
   await salvaMioProfilo();
@@ -3335,7 +3405,7 @@ async function modaleAggiungi(id){
   try { d = await dettagliFilm(id); }
   catch(e){ return apriModale(`<h3>Ahi</h3><p style="color:var(--dim)">Scheda non recuperata: ${esc(e.message)}</p><div class="m-azioni"><button class="bottone piccolo" onclick="chiudiModale()">Chiudi</button></div>`); }
   const mio = mioProfilo();
-  const doppione = mio.lista.find(v => v.tmdbId === d.tmdbId && entryAttiva(v, S.me));
+  const doppione = listaDi(mio).find(v => v.tmdbId === d.tmdbId && entryAttiva(v, S.me));
   const voce = {...d, desiderio:3, conChi:[], nonCon:[], aggiunto:new Date().toISOString()};
   apriModale(`
     <h3>${esc(d.titolo)}</h3>
@@ -3367,7 +3437,7 @@ async function modaleAggiungi(id){
     $('#m-chips').innerHTML = chipsCompagnia(voce);
   };
   $('#m-aggiungi').onclick = async () => {
-    mio.lista.push(voce);
+    listaDi(mio).push(voce);
     await salvaMioProfilo();
     chiudiModale();
     disegnaCatalogo(); disegnaFiltri(); disegnaSala();
@@ -3479,8 +3549,8 @@ function disegnaServizi(){
 }
 function disegnaBonusGenere(){
   const p = mioProfilo(); if (!p || !$('#imp-generi-pref')) return;
-  const pos = p.generiPositivi || [], neg = p.generiNegativi || [];
-  $('#imp-generi-pref').innerHTML = GENERI_TMDB.map(g => {
+  const pos = generiPos(p), neg = generiNeg(p);
+  $('#imp-generi-pref').innerHTML = generiTMDB().map(g => {
     const st = pos.includes(g) ? 'pos' : neg.includes(g) ? 'neg' : '';
     const col = st === 'pos' ? '#7d9b76' : st === 'neg' ? '#c0504d' : '';
     const seg = st === 'pos' ? '✓ ' : st === 'neg' ? '✗ ' : '';

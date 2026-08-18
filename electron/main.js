@@ -70,6 +70,10 @@ function registraIPC(){
   // modalità host (questo PC prepara i film): ricordata tra i riavvii
   ipcMain.handle('mvn:getHost', async () => !!(await leggiCfg()).host);
   ipcMain.handle('mvn:setHost', async (e, on) => { await scriviCfg({ host: !!on }); return true; });
+  // modalita' film / serie TV: come l'host, sta nel config di sistema perche' su app://mvn
+  // il localStorage non sopravvive ai riavvii
+  ipcMain.handle('mvn:getModo', async () => (await leggiCfg()).modo || null);
+  ipcMain.handle('mvn:setModo', async (e, m) => { await scriviCfg({ modo: m === 'serie' ? 'serie' : 'film' }); return true; });
 
   ipcMain.handle('mvn:readJSON', async (e, rel) => {
     try { return JSON.parse(await fs.readFile(risolvi(rel), 'utf8')); } catch (err) { return null; }
