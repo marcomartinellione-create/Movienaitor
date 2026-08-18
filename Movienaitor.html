@@ -363,6 +363,13 @@ header .spazio{flex:1; min-width:0}
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
 .cg-motivi{margin:6px 0 0 18px; color:var(--dim); font-size:13px; line-height:1.6}
 .cg-gen-chips{display:flex; flex-wrap:wrap; gap:5px}
+.cg-spia{color:var(--oro2); font-size:12px; letter-spacing:.04em; animation:pulsa 1.1s ease-in-out infinite}
+@keyframes pulsa{50%{opacity:.35}}
+/* elenco dei film esclusi dai consigli */
+.sc-lista{display:flex; flex-direction:column; gap:2px; max-height:min(50vh,420px); overflow-y:auto; margin:6px 0}
+.sc-riga{display:flex; align-items:center; gap:12px; padding:7px 10px; border-bottom:1px solid var(--bordo2)}
+.sc-riga .t{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13.5px}
+.pericolo-b{color:var(--rosso2) !important; border-color:var(--rosso2) !important}
 /* recensione "in corso": bordo oro + badge, sempre in cima */
 .rec-card.in-corso{outline:2px solid var(--oro); outline-offset:-2px}
 .rec-incorso-badge{position:absolute; top:6px; left:6px; background:var(--oro); color:#231208; font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:7px; letter-spacing:.03em; z-index:2}
@@ -689,8 +696,10 @@ header .spazio{flex:1; min-width:0}
         <label>Voto ≥ <input type="number" id="cg-votomin" min="0" max="10" step="0.5" placeholder="0" style="width:64px"></label>
         <label><input type="checkbox" id="cg-soloMiei"> solo dove posso vederlo</label>
         <label><input type="checkbox" id="cg-escludiNeg" checked> escludi i generi ✗</label>
+        <span class="cg-spia" id="cg-spia" hidden>cerco…</span>
         <span style="flex:1"></span>
-        <button class="bottone piccolo" id="cg-genera">✨ Genera consigli</button>
+        <button class="testo-link" id="cg-azzera">azzera</button>
+        <button class="bottone piccolo" id="cg-genera">✨ Aggiorna</button>
       </div>
     </div>
     <div class="rec-galleria" id="cg-galleria"></div>
@@ -741,6 +750,9 @@ header .spazio{flex:1; min-width:0}
         </div>
         <div class="campo"><label>I miei servizi streaming<span class="aiuto-q" tabindex="0">?<span class="tip">Segna gli abbonamenti che hai. Nella scheda dei film e in Pronti alla visione, i film disponibili su un servizio che qualcuno del gruppo ha vengono evidenziati in verde — così sai cosa potete guardare senza cercare a mano.</span></span></label>
           <div id="imp-servizi" class="compagnia" style="margin-top:6px"></div>
+        </div>
+        <div class="campo"><label>Film esclusi dai consigli<span class="aiuto-q" tabindex="0">?<span class="tip">I film a cui hai detto «non mi interessa» nella sezione ✨ Per te: non te li propone più. Da qui puoi rivedere l'elenco e rimetterli in gioco.</span></span></label>
+          <button class="bottone piccolo secondario" id="imp-scartati">🚫 Gestisci esclusi</button>
         </div>
         <div class="campo"><label class="campo-check"><input type="checkbox" id="imp-host"> <span>Modalità host</span></label></div>
         <div class="campo"><label>Cartella collegata</label><div class="aiuto" id="imp-cartella">—</div></div>
@@ -1011,9 +1023,11 @@ const S = {
   archivioChi:new Set(),    // slug selezionati nella box "Chi" (vuoto = scorta intera di tutti)
   providersCache:new Map(), // tmdbId → [servizi streaming] da TMDB watch/providers (sessione)
   // ── consigli «Per te» ──
-  cgLista:[],               // ultimi consigli calcolati [{film, C, parti, fascia, perche}]
+  cgPool:[],                // candidati valutati (non filtrati): i filtri lavorano su questi
+  cgLista:[],               // ciò che si vede ora = pool filtrato [{film, C, fascia, perche}]
   cgProfilo:null,           // profilo del gusto dell'ultima generazione
-  cgScartati:new Set(),     // tmdbId dei «non mi interessa» (consigli/<slug>.json)
+  cgScartati:new Map(),     // tmdbId → titolo dei «non mi interessa» (consigli/<slug>.json)
+  cgRipristinati:new Set(), // id tolti a mano dagli esclusi: la fusione non deve rimetterli
   cgCaricamento:false, cgQuando:null,
   cgFiltri:{generi:[], keyword:[], persona:null, personaNome:'', annoDa:null, annoA:null,
             durata:null, votoMin:null, soloMiei:false, escludiNegativi:true},
@@ -1557,12 +1571,30 @@ function fasciaConsiglio(i, tot, C){
 }
 
 /* ── persistenza: consigli/<slug>.json (solo il proprio file, come le recensioni) ── */
+// I film scartati si tengono con il titolo, così si possono rileggere in Impostazioni
+// senza dover richiedere le schede a TMDB. Accetta anche il vecchio formato (soli id).
 async function caricaConsigli(){
   const d = await FS.readJSON(['consigli', S.me + '.json']);
-  S.cgScartati = new Set((d && Array.isArray(d.scartati)) ? d.scartati : []);
+  S.cgScartati = new Map();
+  for (const x of ((d && Array.isArray(d.scartati)) ? d.scartati : [])){
+    if (typeof x === 'number') S.cgScartati.set(x, 'Film #'+x);          // formato vecchio
+    else if (x && x.tmdbId != null) S.cgScartati.set(x.tmdbId, x.titolo || 'Film #'+x.tmdbId);
+  }
 }
+// Rilegge il file prima di scrivere e fonde: così due sessioni aperte insieme (app
+// installata + sviluppo) non si cancellano i rifiuti a vicenda. I film che ho tolto a
+// mano restano fuori (`cgRipristinati`), altrimenti la fusione li rimetterebbe dentro.
 async function salvaConsigli(){
-  await FS.writeJSON(['consigli', S.me + '.json'], {scartati:[...S.cgScartati], aggiornato:new Date().toISOString()});
+  try {
+    const d = await FS.readJSON(['consigli', S.me + '.json']);
+    for (const x of ((d && Array.isArray(d.scartati)) ? d.scartati : [])){
+      const id = (typeof x === 'number') ? x : (x && x.tmdbId);
+      if (id != null && !S.cgScartati.has(id) && !S.cgRipristinati.has(id))
+        S.cgScartati.set(id, (x && x.titolo) || 'Film #'+id);
+    }
+  } catch(e){}
+  const scartati = [...S.cgScartati.entries()].map(([tmdbId, titolo]) => ({tmdbId, titolo}));
+  await FS.writeJSON(['consigli', S.me + '.json'], {scartati, aggiornato:new Date().toISOString()});
 }
 
 /* ── arricchimento: aggiunge le keyword alle recensioni già scritte (una tantum) ── */
@@ -1675,12 +1707,8 @@ async function generaConsigli(){
       try { film.push(await dettagliFilm(ids[i])); } catch(e){}
     }
 
-    // 4) punteggio, ordinamento, fasce
-    const val = film.map(x => ({film:x, ...compatibilita(x, prof)}))
-      .filter(x => x.noto)
-      .sort((a,b) => b.C - a.C);
-    val.forEach((x,i) => { x.fascia = fasciaConsiglio(i, val.length, x.C); x.perche = perche(x.film, x, prof); });
-    S.cgLista = val.filter(x => x.fascia).slice(0, 24);
+    // 4) punteggio: il "pool" resta intero, i filtri si applicano al volo in disegnaConsigli
+    S.cgPool = film.map(x => ({film:x, ...compatibilita(x, prof)})).filter(x => x.noto);
     S.cgQuando = new Date();
   } catch(e){
     toast('Consigli non riusciti: '+e.message, true);
@@ -1695,9 +1723,40 @@ const PROVIDER_ID = {'Netflix':8, 'Prime Video':119, 'Disney+':337, 'NOW':39, 'S
   'RaiPlay':222, 'Mediaset Infinity':359, 'Apple TV+':350, 'YouTube':192, 'Crunchyroll':283,
   'Paramount+':531, 'Mubi':11, 'TIMVISION':109};
 
+// Applica i filtri al pool già scaricato: è istantaneo e non tocca la rete, così la
+// sezione risponde come una barra di ricerca. La ricerca vera su TMDB parte a parte,
+// con un ritardo (cgAggiorna), perché costa decine di chiamate.
+function consigliFiltrati(){
+  const f = S.cgFiltri, prof = S.cgProfilo;
+  let out = (S.cgPool || []).filter(x => {
+    const m = x.film;
+    if (S.cgScartati.has(m.tmdbId)) return false;
+    if (f.generi.length && !(m.generi||[]).some(g => f.generi.includes(g))) return false;
+    const anno = parseInt(m.anno,10) || 0;
+    if (f.annoDa && anno && anno < f.annoDa) return false;
+    if (f.annoA  && anno && anno > f.annoA)  return false;
+    if (f.durata && m.durata && m.durata > f.durata) return false;
+    if (f.votoMin && (m.voto||0) < f.votoMin) return false;
+    if (f.personaNome){
+      const q = f.personaNome.toLowerCase();
+      const dentro = String(m.regista||'').toLowerCase().includes(q)
+        || (m.cast||[]).some(a => String(a).toLowerCase().includes(q));
+      if (!dentro) return false;
+    }
+    if (f.escludiNegativi){
+      const neg = ((profiloDi(S.me)||{}).generiNegativi || []);
+      if (neg.length && (m.generi||[]).some(g => neg.includes(g))) return false;
+    }
+    return true;
+  }).sort((a,b) => b.C - a.C);
+  out.forEach((x,i) => { x.fascia = fasciaConsiglio(i, out.length, x.C); if (prof) x.perche = perche(x.film, x, prof); });
+  return out.filter(x => x.fascia).slice(0, 24);
+}
+
 function disegnaConsigli(){
   const g = $('#cg-galleria'); if (!g) return;
   const prof = S.cgProfilo || profiloGusto(S.me);
+  S.cgLista = consigliFiltrati();
   const info = $('#cg-info');
   const senzaKw = S.recensioni.filter(r => r.autore === S.me && r.tmdbId != null && !((r.meta||{}).keywords||[]).length).length;
   if (info){
@@ -1709,17 +1768,20 @@ function disegnaConsigli(){
     const b = $('#cg-arricchisci');
     if (b) b.onclick = async () => { b.disabled = true; await arricchisciKeyword(); await generaConsigli(); };
   }
-  if (S.cgCaricamento){
-    g.innerHTML = `<div class="rec-vuoto">Sto preparando i consigli…<br><span id="cg-stato" style="color:var(--dim2); font-size:13px"></span></div>`;
-    return;
-  }
   if (prof.n < 3){
     g.innerHTML = `<div class="rec-vuoto">Servono almeno <b>3 recensioni</b> per capire i tuoi gusti.<br>
       Ne hai ${prof.n}: scrivine ancora ${3-prof.n} e torna qui.</div>`;
     return;
   }
+  // il pool già scaricato resta a schermo mentre cerco: niente sfarfallio a ogni tasto
+  const spia = $('#cg-spia');
+  if (spia) spia.hidden = !S.cgCaricamento;
   if (!S.cgLista.length){
-    g.innerHTML = `<div class="rec-vuoto">Nessun consiglio ancora.<br>Premi «✨ Genera consigli» per cercarne.</div>`;
+    g.innerHTML = S.cgCaricamento
+      ? `<div class="rec-vuoto">Sto cercando i film…<br><span id="cg-stato" style="color:var(--dim2); font-size:13px"></span></div>`
+      : ((S.cgPool||[]).length
+        ? `<div class="rec-vuoto">Nessun film soddisfa questi filtri.<br>Allargali un po'.</div>`
+        : `<div class="rec-vuoto">Nessun consiglio ancora.<br>Cambia un filtro o premi «✨ Aggiorna» per cercarne.</div>`);
     return;
   }
   g.innerHTML = S.cgLista.map((x,i) => {
@@ -1739,6 +1801,40 @@ function disegnaConsigli(){
     mostraLocandina(el.querySelector('.rec-poster'), x.film);
     el.onclick = () => modaleConsiglio(x);
   });
+}
+
+// Elenco dei film esclusi dai consigli, con il tasto per rimetterli in gioco.
+function modaleScartati(){
+  const righe = [...S.cgScartati.entries()];
+  apriModale(`
+    <h3>🚫 Film esclusi dai consigli</h3>
+    <p style="color:var(--dim); font-size:13.5px">${righe.length
+      ? 'Non te li propongo più in «Per te». Togli l\'esclusione per rimetterli in gioco.'
+      : 'Non hai escluso nessun film. Quando in «Per te» premi «Non mi interessa», il film finisce qui.'}</p>
+    ${righe.length ? `<div class="sc-lista" id="sc-lista">${righe.map(([id, tit]) => `
+      <div class="sc-riga" data-sc="${id}">
+        <span class="t">${esc(tit)}</span>
+        <button class="testo-link" data-ripristina="${id}">rimetti in gioco</button>
+      </div>`).join('')}</div>` : ''}
+    <div class="m-azioni">
+      ${righe.length ? '<button class="bottone piccolo secondario pericolo-b" id="sc-tutti">Svuota l\'elenco</button>' : ''}
+      <button class="bottone piccolo" id="sc-chiudi">Chiudi</button>
+    </div>`);
+  $('#sc-chiudi').onclick = chiudiModale;
+  const salva = async () => {
+    try { await salvaConsigli(); } catch(e){ toast('Salvataggio non riuscito: '+e.message, true); }
+    disegnaConsigli(); modaleScartati();
+  };
+  $$('#modale [data-ripristina]').forEach(b => b.onclick = async () => {
+    const id = parseInt(b.dataset.ripristina, 10);
+    S.cgScartati.delete(id); S.cgRipristinati.add(id);
+    await salva(); toast('Rimesso tra i possibili consigli');
+  });
+  if ($('#sc-tutti')) $('#sc-tutti').onclick = () => confermaModale(
+    `Togliere l'esclusione a tutti e ${righe.length} i film?`, 'Svuota', async () => {
+      for (const id of S.cgScartati.keys()) S.cgRipristinati.add(id);
+      S.cgScartati.clear(); await salva(); toast('Elenco svuotato');
+    });
 }
 
 function modaleConsiglio(x){
@@ -1765,7 +1861,7 @@ function modaleConsiglio(x){
   providersFilm(f.tmdbId).then(sv => { const b = $('#m-strm');
     if (b && sv.length) b.innerHTML = `<span class="lab">📺 In streaming:</span> ${badgeStreaming(sv)}`; });
   $('#cg-no').onclick = async () => {
-    S.cgScartati.add(f.tmdbId);
+    S.cgScartati.set(f.tmdbId, f.titolo || ('Film #'+f.tmdbId)); S.cgRipristinati.delete(f.tmdbId);
     try { await salvaConsigli(); } catch(e){}
     S.cgLista = S.cgLista.filter(y => y !== x);
     chiudiModale(); disegnaConsigli();
@@ -3429,20 +3525,41 @@ function agganciaGlobali(){
     if (b.dataset.vista === 'archivio') disegnaArchivio();
     if (b.dataset.vista === 'recensioni') disegnaRecensioni();
     if (b.dataset.vista === 'segnalazioni') disegnaSegnalazioni();
-    if (b.dataset.vista === 'consigli') disegnaConsigli();
+    // aprendo «Per te» la prima volta cerca da sé: non serve premere niente
+    if (b.dataset.vista === 'consigli'){
+      disegnaConsigli();
+      if (!S.cgPool.length && !S.cgCaricamento && profiloGusto(S.me).n >= 3) generaConsigli();
+    }
     // apre Impostazioni → rilegge dalla cartella, così vede i cambi fatti da un altro dispositivo
     if (b.dataset.vista === 'impostazioni' && !S.demo) ricarica(true);
   });
   // ── consigli «Per te» ──
+  // Ogni modifica ai filtri aggiorna SUBITO ciò che si vede (filtrando i candidati già
+  // scaricati) e programma una ricerca vera su TMDB dopo una pausa: rigenerare a ogni
+  // tasto sarebbe decine di chiamate per battuta.
+  let cgTimer = null;
+  const cgTocca = () => {
+    disegnaConsigli();                       // immediato, senza rete
+    clearTimeout(cgTimer);
+    cgTimer = setTimeout(() => generaConsigli(), 900);
+  };
   $('#cg-genere').innerHTML = '<option value="">tutti</option>' + GENERI_TMDB.map(g => `<option>${esc(g)}</option>`).join('');
-  $('#cg-genere').onchange = e => { S.cgFiltri.generi = e.target.value ? [e.target.value] : []; };
-  $('#cg-annoda').oninput  = e => { S.cgFiltri.annoDa = parseInt(e.target.value,10) || null; };
-  $('#cg-annoa').oninput   = e => { S.cgFiltri.annoA  = parseInt(e.target.value,10) || null; };
-  $('#cg-durata').oninput  = e => { S.cgFiltri.durata = parseInt(e.target.value,10) || null; };
-  $('#cg-votomin').oninput = e => { S.cgFiltri.votoMin = parseFloat(e.target.value) || null; };
-  $('#cg-soloMiei').onchange   = e => { S.cgFiltri.soloMiei = e.target.checked; };
-  $('#cg-escludiNeg').onchange = e => { S.cgFiltri.escludiNegativi = e.target.checked; };
-  $('#cg-genera').onclick = () => generaConsigli();
+  $('#cg-genere').onchange = e => { S.cgFiltri.generi = e.target.value ? [e.target.value] : []; cgTocca(); };
+  $('#cg-annoda').oninput  = e => { S.cgFiltri.annoDa = parseInt(e.target.value,10) || null; cgTocca(); };
+  $('#cg-annoa').oninput   = e => { S.cgFiltri.annoA  = parseInt(e.target.value,10) || null; cgTocca(); };
+  $('#cg-durata').oninput  = e => { S.cgFiltri.durata = parseInt(e.target.value,10) || null; cgTocca(); };
+  $('#cg-votomin').oninput = e => { S.cgFiltri.votoMin = parseFloat(e.target.value) || null; cgTocca(); };
+  $('#cg-soloMiei').onchange   = e => { S.cgFiltri.soloMiei = e.target.checked; cgTocca(); };
+  $('#cg-escludiNeg').onchange = e => { S.cgFiltri.escludiNegativi = e.target.checked; cgTocca(); };
+  $('#cg-genera').onclick = () => { clearTimeout(cgTimer); generaConsigli(); };
+  $('#cg-azzera').onclick = () => {
+    S.cgFiltri = {generi:[], keyword:[], persona:null, personaNome:'', annoDa:null, annoA:null,
+                  durata:null, votoMin:null, soloMiei:false, escludiNegativi:true};
+    $('#cg-genere').value=''; $('#cg-persona').value=''; $('#cg-annoda').value=''; $('#cg-annoa').value='';
+    $('#cg-durata').value=''; $('#cg-votomin').value='';
+    $('#cg-soloMiei').checked=false; $('#cg-escludiNeg').checked=true;
+    cgTocca();
+  };
   // regista/attore: cerco la persona su TMDB e tengo l'id (discover vuole quello)
   let cgPersonaTimer = null;
   $('#cg-persona').oninput = e => {
@@ -3459,7 +3576,9 @@ function agganciaGlobali(){
         if (esatto) S.cgFiltri.persona = esatto.id;
       } catch(err){}
     }, 400);
+    cgTocca();   // intanto filtra per nome sui candidati già scaricati
   };
+  $('#imp-scartati').onclick = modaleScartati;
   $('#btn-ricarica').onclick = () => ricarica();
   // aiuti "?": hover di default, ma anche click/tap (utile su touch) con chiusura degli altri
   document.addEventListener('click', e => {

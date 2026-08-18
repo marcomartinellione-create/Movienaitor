@@ -428,7 +428,11 @@ Sezione **✨ Per te**: film **mai visti** proposti in base alle proprie recensi
 - **Fasce** (non percentuali): *Molto in linea* / *Da provare* / *Forse*, assegnate per
   posizione relativa nel lotto **più** una soglia minima assoluta.
 - Ogni consiglio mostra **il perché** in italiano; «non mi interessa» viene ricordato in
-  `consigli/<slug>.json` (scrive solo il proprietario, §3.2).
+  `consigli/<slug>.json` col titolo (scrive solo il proprietario, §3.2) e si gestisce da
+  ⚙ Impostazioni → **Gestisci esclusi**, dove si rimettono in gioco uno per uno o tutti.
+- **I filtri agiscono in tempo reale**: ogni modifica rifiltra subito i candidati già
+  scaricati (nessuna attesa) e, dopo una pausa di ~1s, lancia una ricerca nuova su TMDB
+  con quei filtri. Rigenerare a ogni battuta costerebbe decine di chiamate.
 - Filtri: genere, regista/attore, anno, durata, voto minimo, **solo dove posso vederlo**
   (incrocia i servizi del profilo coi provider TMDB), escludi i generi ✗.
 - Servono almeno **3 recensioni**; le keyword delle recensioni già scritte si recuperano

@@ -174,6 +174,9 @@ Stato "da vedere/visto" e i valori derivati NON si salvano: si ricalcolano dallo
 ## Build & release
 
 ```bash
+# avvio rapido dell'app PC: doppio clic su Movienaitor.bat nella radice
+# (copia l'HTML nel renderer e lancia Electron, installa le dipendenze la prima volta)
+
 # anteprima browser (demo, senza cartella né chiavi)
 node .claude/serve.js            # → http://localhost:8137
 
