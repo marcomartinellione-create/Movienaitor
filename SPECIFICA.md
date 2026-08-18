@@ -430,9 +430,12 @@ Sezione **✨ Per te**: film **mai visti** proposti in base alle proprie recensi
 - Ogni consiglio mostra **il perché** in italiano; «non mi interessa» viene ricordato in
   `consigli/<slug>.json` col titolo (scrive solo il proprietario, §3.2) e si gestisce da
   ⚙ Impostazioni → **Gestisci esclusi**, dove si rimettono in gioco uno per uno o tutti.
-- **I filtri agiscono in tempo reale**: ogni modifica rifiltra subito i candidati già
-  scaricati (nessuna attesa) e, dopo una pausa di ~1s, lancia una ricerca nuova su TMDB
-  con quei filtri. Rigenerare a ogni battuta costerebbe decine di chiamate.
+- **Tutto si aggiorna da sé, nessun tasto**: ogni modifica ai filtri rifiltra subito i
+  candidati già scaricati (nessuna attesa) e, dopo una pausa di ~1s, lancia una ricerca
+  nuova su TMDB — rigenerare a ogni battuta costerebbe decine di chiamate. La sezione
+  cerca da sola alla prima apertura e ogni volta che **le recensioni sono cambiate**
+  (confronto di una firma: numero, voti e date di modifica), così i consigli seguono il
+  gusto senza doverli chiedere.
 - Filtri: genere, regista/attore, anno, durata, voto minimo, **solo dove posso vederlo**
   (incrocia i servizi del profilo coi provider TMDB), escludi i generi ✗.
 - Servono almeno **3 recensioni**; le keyword delle recensioni già scritte si recuperano

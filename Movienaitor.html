@@ -698,8 +698,7 @@ header .spazio{flex:1; min-width:0}
         <label><input type="checkbox" id="cg-escludiNeg" checked> escludi i generi ✗</label>
         <span class="cg-spia" id="cg-spia" hidden>cerco…</span>
         <span style="flex:1"></span>
-        <button class="testo-link" id="cg-azzera">azzera</button>
-        <button class="bottone piccolo" id="cg-genera">✨ Aggiorna</button>
+        <button class="testo-link" id="cg-azzera">azzera i filtri</button>
       </div>
     </div>
     <div class="rec-galleria" id="cg-galleria"></div>
@@ -1029,6 +1028,7 @@ const S = {
   cgScartati:new Map(),     // tmdbId → titolo dei «non mi interessa» (consigli/<slug>.json)
   cgRipristinati:new Set(), // id tolti a mano dagli esclusi: la fusione non deve rimetterli
   cgCaricamento:false, cgQuando:null,
+  cgFirma:'',               // con quali recensioni è stato calcolato il pool
   cgFiltri:{generi:[], keyword:[], persona:null, personaNome:'', annoDa:null, annoA:null,
             durata:null, votoMin:null, soloMiei:false, escludiNegativi:true},
   segnalazioni:[],          // [{...segnalazione, autore}] da segnalazioni/<slug>.json
@@ -1429,6 +1429,13 @@ async function salvaArchivio(){ await FS.writeJSON(['archivio.json'], {pronti:[.
 // Profilo del gusto ricavato dalle recensioni e indice di compatibilità coi film nuovi.
 // Non è un preset da configurare: si ricalcola da zero ogni volta. Vedi CONCEPT-consigli.md.
 
+// "Firma" delle mie recensioni: cambia se ne aggiungo, ne tolgo o cambio un voto.
+// Serve a rigenerare i consigli da soli quando il gusto è cambiato, senza tasti.
+function firmaRecensioni(){
+  const mie = S.recensioni.filter(r => r.autore === S.me);
+  return mie.length + '|' + mie.map(r => r.tmdbId+':'+r.votoPersonale+':'+(r.modificato||'')).sort().join(',');
+}
+
 // Peso di una recensione in base all'età: le recenti contano di più, così il profilo
 // segue il gusto quando cambia invece di restare ancorato alle vecchie recensioni.
 function pesoRecensione(rec){
@@ -1710,6 +1717,7 @@ async function generaConsigli(){
     // 4) punteggio: il "pool" resta intero, i filtri si applicano al volo in disegnaConsigli
     S.cgPool = film.map(x => ({film:x, ...compatibilita(x, prof)})).filter(x => x.noto);
     S.cgQuando = new Date();
+    S.cgFirma = firmaRecensioni();   // con quali recensioni è stato costruito
   } catch(e){
     toast('Consigli non riusciti: '+e.message, true);
   } finally {
@@ -1781,7 +1789,7 @@ function disegnaConsigli(){
       ? `<div class="rec-vuoto">Sto cercando i film…<br><span id="cg-stato" style="color:var(--dim2); font-size:13px"></span></div>`
       : ((S.cgPool||[]).length
         ? `<div class="rec-vuoto">Nessun film soddisfa questi filtri.<br>Allargali un po'.</div>`
-        : `<div class="rec-vuoto">Nessun consiglio ancora.<br>Cambia un filtro o premi «✨ Aggiorna» per cercarne.</div>`);
+        : `<div class="rec-vuoto">Nessun consiglio trovato.<br>Prova ad allargare i filtri.</div>`);
     return;
   }
   g.innerHTML = S.cgLista.map((x,i) => {
@@ -3525,10 +3533,12 @@ function agganciaGlobali(){
     if (b.dataset.vista === 'archivio') disegnaArchivio();
     if (b.dataset.vista === 'recensioni') disegnaRecensioni();
     if (b.dataset.vista === 'segnalazioni') disegnaSegnalazioni();
-    // aprendo «Per te» la prima volta cerca da sé: non serve premere niente
+    // «Per te» si aggiorna da sé: alla prima apertura e ogni volta che le recensioni
+    // sono cambiate da quando i consigli sono stati calcolati (niente tasto "aggiorna")
     if (b.dataset.vista === 'consigli'){
       disegnaConsigli();
-      if (!S.cgPool.length && !S.cgCaricamento && profiloGusto(S.me).n >= 3) generaConsigli();
+      const cambiate = S.cgFirma !== firmaRecensioni();
+      if ((!S.cgPool.length || cambiate) && !S.cgCaricamento && profiloGusto(S.me).n >= 3) generaConsigli();
     }
     // apre Impostazioni → rilegge dalla cartella, così vede i cambi fatti da un altro dispositivo
     if (b.dataset.vista === 'impostazioni' && !S.demo) ricarica(true);
@@ -3551,7 +3561,6 @@ function agganciaGlobali(){
   $('#cg-votomin').oninput = e => { S.cgFiltri.votoMin = parseFloat(e.target.value) || null; cgTocca(); };
   $('#cg-soloMiei').onchange   = e => { S.cgFiltri.soloMiei = e.target.checked; cgTocca(); };
   $('#cg-escludiNeg').onchange = e => { S.cgFiltri.escludiNegativi = e.target.checked; cgTocca(); };
-  $('#cg-genera').onclick = () => { clearTimeout(cgTimer); generaConsigli(); };
   $('#cg-azzera').onclick = () => {
     S.cgFiltri = {generi:[], keyword:[], persona:null, personaNome:'', annoDa:null, annoA:null,
                   durata:null, votoMin:null, soloMiei:false, escludiNegativi:true};
