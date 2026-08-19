@@ -191,17 +191,22 @@ header .spazio{flex:1; min-width:0}
 :root[data-modo="serie"] .schermo.pronto.aperto .tv-spenta i{animation:tvFascioAccende .85s ease-out both}
 /* l'immagine che arriva: aspetta che il fascio si sia allargato, poi si apre */
 :root[data-modo="serie"] .schermo.pronto.aperto .schermo-inner{
-  animation:tvImmagineAccende .55s cubic-bezier(.2,.7,.3,1) .34s both}
+  animation:tvImmagineAccende .55s linear .34s both}
 /* la copia dell'immagine che se ne va (la mette disegnaSala prima di sostituire) */
 :root[data-modo="serie"] .tv-uscita{position:absolute; inset:0; z-index:4; pointer-events:none;
-  animation:tvImmagineSpegne .44s cubic-bezier(.5,0,.75,.4) both}
+  animation:tvImmagineSpegne .55s linear both}
 @keyframes tvImmagineSpegne{
   0%   {transform:scaleY(1);    filter:brightness(1);   opacity:1}
-  70%  {transform:scaleY(.06);  filter:brightness(2.6); opacity:1}
-  100% {transform:scaleY(.004); filter:brightness(3.4); opacity:.9}
+  35%  {transform:scaleY(.6);   filter:brightness(1.5); opacity:1}
+  65%  {transform:scaleY(.25);  filter:brightness(2.2); opacity:1}
+  88%  {transform:scaleY(.06);  filter:brightness(3);   opacity:1}
+  100% {transform:scaleY(.008); filter:brightness(3.4); opacity:0}   /* niente riga residua */
 }
 @keyframes tvImmagineAccende{
-  0%   {transform:scaleY(.004); filter:brightness(3.4); opacity:.9}
+  0%   {transform:scaleY(.008); filter:brightness(3.4); opacity:0}
+  12%  {transform:scaleY(.06);  filter:brightness(3);   opacity:1}
+  35%  {transform:scaleY(.25);  filter:brightness(2.2); opacity:1}
+  65%  {transform:scaleY(.6);   filter:brightness(1.5); opacity:1}
   100% {transform:scaleY(1);    filter:brightness(1);   opacity:1}
 }
 /* il messaggio arriva quando la TV è ormai spenta, non sopra l'immagine che collassa */
