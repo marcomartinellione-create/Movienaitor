@@ -2,8 +2,9 @@
 
 > Manuale operativo per continuare a lavorare sul progetto. Contesto rapido +
 > convenzioni + workflow. Per le regole di prodotto e le formule vedi **SPECIFICA.md**.
-> **Stato: v1.7.1** — modalità Serie TV pubblicata su **desktop**; l'APK mobile con la
-> stessa modalità non è ancora stato pubblicato (Marco la fa a parte). Cartella progetto: `D:\4 - Programmi\Movienaitor`.
+> **Stato: v1.7.2** — modalità Serie TV pubblicata su **desktop e mobile**, coi
+> ritocchi dopo la prova sul campo (animazione TV, filtri per modalità, tasto «visto»
+> e «rimuovi dai visti»). Cartella progetto: `D:\4 - Programmi\Movienaitor`.
 
 ## Cos'è
 

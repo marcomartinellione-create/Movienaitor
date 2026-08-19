@@ -1,8 +1,9 @@
 # Concept — Serie TV come seconda modalità
 
-> **Stato: implementato e pubblicato su desktop (v1.7.1, 2026-08-19).** Il codice mobile
-> è scritto (stesso ramo, poi confluito in master) ma l'APK non è stato ancora costruito
-> né distribuito: lo pubblica Marco con `Pubblica APK.bat` quando vuole.
+> **Stato: implementato e pubblicato su desktop e mobile (v1.7.2, 2026-08-19).** Dopo la
+> prima release (v1.7.1) sono arrivati ritocchi dalla prova sul campo: animazione della
+> TV rifatta due volte (l'immagine collassa invece di sparire sotto un nero, poi curva
+> lineare), filtri legati alla modalità, e i tasti «visto» / «rimuovi dai visti».
 > Misure prese sul codice reale (`Movienaitor.html` 3.717 righe,
 > `app-mobile/www/index.html` 2.120).
 >
