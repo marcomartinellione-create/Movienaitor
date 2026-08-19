@@ -564,12 +564,17 @@ header .spazio{flex:1; min-width:0}
   border-radius:50%; border:1px solid var(--oro-dim); color:var(--oro-dim); font:600 11px/1 system-ui,sans-serif;
   cursor:help; margin-left:8px; vertical-align:middle; position:relative; letter-spacing:0}
 .aiuto-q:hover,.aiuto-q.aperto{border-color:var(--oro2); color:var(--oro2)}
-.aiuto-q .tip{position:absolute; top:150%; left:0; width:240px; max-width:70vw; z-index:50;
+.aiuto-q .tip{display:none; position:absolute; top:150%; left:0; width:240px; max-width:70vw; z-index:50;
   background:var(--bg2); border:1px solid var(--oro-dim); color:var(--crema); box-shadow:var(--ombra);
   font:400 12.5px/1.45 system-ui,sans-serif; letter-spacing:normal; text-transform:none; text-align:left;
-  padding:9px 12px; border-radius:9px; opacity:0; transform:translateY(-4px); pointer-events:none; transition:opacity var(--rapida), transform var(--rapida)}
-.aiuto-q:hover .tip,.aiuto-q.aperto .tip{opacity:1; transform:none}
+  padding:9px 12px; border-radius:9px; opacity:0; transform:translateY(-4px); pointer-events:none;
+  transition:opacity var(--rapida), transform var(--rapida), display var(--rapida) allow-discrete}
+.aiuto-q:hover .tip,.aiuto-q.aperto .tip{display:block; opacity:1; transform:none}
+@starting-style{.aiuto-q:hover .tip,.aiuto-q.aperto .tip{opacity:0; transform:translateY(-4px)}}
+/* il «?» in fondo a una riga: il tooltip si aggancia a destra, se no uscirebbe dallo schermo */
+.aiuto-q.a-destra .tip{left:auto; right:0}
 .aiuto-q .tip::before{content:''; position:absolute; bottom:100%; left:6px; border:6px solid transparent; border-bottom-color:var(--oro-dim)}
+.aiuto-q.a-destra .tip::before{left:auto; right:6px}
 
 /* selettore colore poltrona: griglia stile CAD + picker personalizzato */
 .cp-tabs{display:flex; gap:8px; margin-bottom:14px}
@@ -731,7 +736,7 @@ header .spazio{flex:1; min-width:0}
   <main id="vista-catalogo" hidden>
     <div class="catalogo-testa">
       <input type="text" id="cerca" data-dove="segnaposto" data-film="Cerca un film da aggiungere alla tua lista…" data-serie="Cerca una serie da aggiungere alla tua lista…" placeholder="Cerca un film da aggiungere alla tua lista…" autocomplete="off">
-      <span class="aiuto-q" tabindex="0">?<span class="tip" data-film="Scrivi il titolo di un film: dai risultati che compaiono scegli quello da aggiungere alla tua lista. Serve la chiave TMDB (in ⚙ Impostazioni)." data-serie="Scrivi il titolo di una serie: dai risultati che compaiono scegli quella da aggiungere alla tua lista. Serve la chiave TMDB (in ⚙ Impostazioni).">Scrivi il titolo di un film: dai risultati che compaiono scegli quello da aggiungere alla tua lista. Serve la chiave TMDB (in ⚙ Impostazioni) e una connessione a internet.</span></span>
+      <span class="aiuto-q a-destra" tabindex="0">?<span class="tip" data-film="Scrivi il titolo di un film: dai risultati che compaiono scegli quello da aggiungere alla tua lista. Serve la chiave TMDB (in ⚙ Impostazioni)." data-serie="Scrivi il titolo di una serie: dai risultati che compaiono scegli quella da aggiungere alla tua lista. Serve la chiave TMDB (in ⚙ Impostazioni).">Scrivi il titolo di un film: dai risultati che compaiono scegli quello da aggiungere alla tua lista. Serve la chiave TMDB (in ⚙ Impostazioni) e una connessione a internet.</span></span>
       <div id="risultati" hidden></div>
     </div>
     <div id="generi-catalogo"></div>
@@ -1285,7 +1290,11 @@ const chiaveGeneriNeg = () => inSerie() ? 'generiNegativiSerie' : 'generiNegativ
 const generiPos = p => (p && p[chiaveGeneriPos()]) || [];
 const generiNeg = p => (p && p[chiaveGeneriNeg()]) || [];
 // come si chiama, in questa modalità, la cosa che si guarda
-const COSA = () => inSerie() ? 'serie' : 'film';
+const COSA        = () => inSerie() ? 'serie' : 'film';
+const UN_COSA     = () => inSerie() ? 'una serie' : 'un film';
+const IL_COSA     = () => inSerie() ? 'la serie' : 'il film';
+const NESSUN_COSA = () => inSerie() ? 'Nessuna serie' : 'Nessun film';
+const I_COSA      = () => inSerie() ? 'le serie' : 'i film';
 
 const mioProfilo = () => S.profili.find(p => p.slug === S.me);
 const profiloDi = slug => S.profili.find(p => p.slug === slug);
@@ -2157,9 +2166,9 @@ function disegnaConsigli(){
   if (spia) spia.hidden = !S.cgCaricamento;
   if (!S.cgLista.length){
     g.innerHTML = S.cgCaricamento
-      ? `<div class="rec-vuoto">Sto cercando i film…<br><span id="cg-stato" style="color:var(--dim2); font-size:13px"></span></div>`
+      ? `<div class="rec-vuoto">Sto cercando ${I_COSA()}…<br><span id="cg-stato" style="color:var(--dim2); font-size:13px"></span></div>`
       : ((S.cgPool||[]).length
-        ? `<div class="rec-vuoto">Nessun film soddisfa questi filtri.<br>Allargali un po'.</div>`
+        ? `<div class="rec-vuoto">${NESSUN_COSA()} soddisfa questi filtri.<br>Allargali un po'.</div>`
         : `<div class="rec-vuoto">Nessun consiglio trovato.<br>Prova ad allargare i filtri.</div>`);
     return;
   }
@@ -2189,7 +2198,7 @@ function modaleScartati(){
     <h3>🚫 Film esclusi dai consigli</h3>
     <p style="color:var(--dim); font-size:13.5px">${righe.length
       ? 'Non te li propongo più in «Per te». Togli l\'esclusione per rimetterli in gioco.'
-      : 'Non hai escluso nessun film. Quando in «Per te» premi «Non mi interessa», il film finisce qui.'}</p>
+      : `Non hai escluso ${inSerie() ? 'nessuna serie' : 'nessun film'}. Quando in «Per te» premi «Non mi interessa», ${IL_COSA()} finisce qui.`}</p>
     ${righe.length ? `<div class="sc-lista" id="sc-lista">${righe.map(([id, tit]) => `
       <div class="sc-riga" data-sc="${id}">
         <span class="t">${esc(tit)}</span>
@@ -2715,7 +2724,7 @@ function disegnaArchivio(){
       </div>
       <span class="arch-flag">${pronto ? '✓ pronto' : '⚑ segna'}</span>
     </div>`;
-  }).join('') || `<div class="vuoto-msg">${q ? 'Nessun film con questo titolo.' : sel.size ? 'Niente da preparare per chi hai scelto.' : S.archivioFiltro === 'daPreparare' ? 'Sono tutti pronti 🎉' : 'Nessun film da vedere nell\'archivio.'}</div>`;
+  }).join('') || `<div class="vuoto-msg">${q ? `${NESSUN_COSA()} con questo titolo.` : sel.size ? 'Niente da preparare per chi hai scelto.' : S.archivioFiltro === 'daPreparare' ? 'Sono tutti pronti 🎉' : `${NESSUN_COSA()} da vedere nell'archivio.`}</div>`;
   $$('#lista-archivio .arch-riga').forEach(el => {
     const id = parseInt(el.dataset.arch, 10);
     const v = mappa.get(id).film;
@@ -2739,7 +2748,7 @@ function modaleDovePronto(id, titolo){
   const dv = S.archivioDove[id] = S.archivioDove[id] || {streaming:[], fisico:[], percorso:''};
   apriModale(`
     <h3>Dove trovare «${esc(titolo)}»</h3>
-    <p style="color:var(--dim)">Dove il film è disponibile / dove ce l'hai.</p>
+    <p style="color:var(--dim)">Dove ${IL_COSA()} è disponibile / dove ce l'hai.</p>
     <div class="etich">STREAMING <button class="testo-link" id="dp-rileva" style="font-size:12px; margin-left:6px">🔄 rileva da TMDB</button></div>
     <div class="re-dove-chips" id="dp-strm">${DOVE_STREAMING.map(x=>doveChip(x,'streaming',(dv.streaming||[]).includes(x))).join('')}</div>
     <div class="etich">FISICO</div>
@@ -2821,7 +2830,7 @@ function disegnaRecensioni(){
   const nonRec = mio ? filmVistiNonRecensiti() : [];
   if (nonRec.length){
     boxV.style.display = '';
-    boxV.querySelector('summary').textContent = `🎬 Film visti non ancora recensiti (${nonRec.length})`;
+    boxV.querySelector('summary').textContent = `${inSerie() ? '📺 Serie viste non ancora recensite' : '🎬 Film visti non ancora recensiti'} (${nonRec.length})`;
     $('#rec-visti').innerHTML = nonRec.map(f => `<button class="rec-nr" data-id="${f.tmdbId}">${esc(f.titolo)}</button>`).join('');
     $('#rec-visti').querySelectorAll('[data-id]').forEach(b => b.onclick = () => avviaEditorDaTMDB(parseInt(b.dataset.id,10)));
   } else boxV.style.display = 'none';
@@ -2916,7 +2925,7 @@ function editorRecensione(recOrig, opts={}){
            <div class="re-dove-chips" id="re-dove-fis">${DOVE_FISICO.map(x=>doveChip(x,'fisico', (bozza.doveVederlo.fisico||[]).includes(x))).join('')}</div>
            <div class="re-dove-file"><input type="text" id="re-dove-perc" value="${esc(bozza.doveVederlo.percorso||'')}" placeholder="file o cartella sul PC (es. D:\\Film\\...)…"><button class="bottone piccolo secondario" id="re-dove-apri" title="Apri sul PC (solo app desktop)">📂 Apri</button></div>`
         : `<div class="m-meta">${bozza.ultimaVisione?'👁 '+esc(dataBreve(bozza.ultimaVisione))+'   ':''}${doveTesto(bozza.doveVederlo)}</div>`}
-      ${editabile ? `<div style="margin:2px 0 10px">${bozza.tmdbId==null?'<span style="color:var(--rosso2);font-size:12px">⚠ nessun film TMDB collegato (niente locandina) · </span>':''}<button class="testo-link" id="re-collega">🔗 ${bozza.tmdbId!=null?'Cambia film collegato':'Collega a TMDB'}</button></div>` : ''}
+      ${editabile ? `<div style="margin:2px 0 10px">${bozza.tmdbId==null?`<span style="color:var(--rosso2);font-size:12px">⚠ ${inSerie()?'nessuna serie':'nessun film'} TMDB collegat${inSerie()?'a':'o'} (niente locandina) · </span>`:''}<button class="testo-link" id="re-collega">🔗 ${bozza.tmdbId!=null?`Cambia ${COSA()} collegat${inSerie()?'a':'o'}`:'Collega a TMDB'}</button></div>` : ''}
       ${editabile ? `<div class="re-toolbar" id="re-toolbar">
         <button type="button" data-cmd="bold" title="Grassetto"><b>B</b></button>
         <button type="button" data-cmd="underline" title="Sottolineato"><span style="text-decoration:underline">U</span></button>
@@ -2980,7 +2989,7 @@ function editorRecensione(recOrig, opts={}){
     // rileva da TMDB i servizi streaming dove è disponibile il film (regione Italia) e
     // spunta i chip corrispondenti, senza toccare quelli già scelti a mano.
     const rilevaStreaming = async (silenzioso) => {
-      if (bozza.tmdbId == null){ if (!silenzioso) toast('Nessun film TMDB collegato', true); return; }
+      if (bozza.tmdbId == null){ if (!silenzioso) toast(`${NESSUN_COSA()} TMDB collegat${inSerie() ? 'a' : 'o'}`, true); return; }
       const btn = $('#re-dove-rileva'); if (btn && !silenzioso) btn.textContent = '⏳ cerco…';
       const sv = await providersFilm(bozza.tmdbId);
       if (btn) btn.textContent = '🔄 rileva da TMDB';
@@ -3003,7 +3012,7 @@ function editorRecensione(recOrig, opts={}){
       if (inElectron && window.mvnFS.apriPercorso) window.mvnFS.apriPercorso(p).then(ok => { if (!ok) toast('Percorso non trovato sul PC', true); });
       else toast('L\'apertura del file funziona solo nell\'app desktop installata', true);
     };
-    if ($('#re-collega')) $('#re-collega').onclick = () => { leggiCampi(); modaleCercaFilm(id => collegaTMDB(bozza, id), {titolo: bozza.tmdbId!=null?'Cambia film collegato':'Collega a TMDB', sub:'Scegli il film: sovrascrive i metadati e aggiunge la locandina.', query:(bozza.meta||{}).titolo||''}); };
+    if ($('#re-collega')) $('#re-collega').onclick = () => { leggiCampi(); modaleCercaFilm(id => collegaTMDB(bozza, id), {titolo: bozza.tmdbId!=null?`Cambia ${COSA()} collegat${inSerie()?'a':'o'}`:'Collega a TMDB', sub:`Scegli ${IL_COSA()}: sovrascrive i metadati e aggiunge la locandina.`, query:(bozza.meta||{}).titolo||''}); };
     $('#re-add-sez').onclick = () => { leggiCampi(); bozza.sezioni.push({titolo:'Nuova sezione', testo:''}); render(); };
     $('#re-sezioni').querySelectorAll('[data-az]').forEach(b => b.onclick = () => {
       leggiCampi(); const i = +b.dataset.i, az = b.dataset.az;
@@ -3027,8 +3036,8 @@ function editorRecensione(recOrig, opts={}){
 }
 
 function modaleCercaFilm(onScegli, opts={}){
-  apriModale(`<h3>${esc(opts.titolo||'Cerca film')}</h3><p style="color:var(--dim)">${esc(opts.sub||'Cerca il film.')}</p>
-    <input type="text" id="rn-q" placeholder="Titolo del film…" autocomplete="off" style="width:100%;background:var(--bg2);border:1px solid var(--velluto3);color:var(--crema);padding:9px 12px;border-radius:8px">
+  apriModale(`<h3>${esc(opts.titolo||('Cerca '+COSA()))}</h3><p style="color:var(--dim)">${esc(opts.sub||('Cerca '+IL_COSA()+'.'))}</p>
+    <input type="text" id="rn-q" placeholder="Titolo ${inSerie() ? 'della serie' : 'del film'}…" autocomplete="off" style="width:100%;background:var(--bg2);border:1px solid var(--velluto3);color:var(--crema);padding:9px 12px;border-radius:8px">
     <div id="rn-ris" class="rn-ris"></div>
     <div class="m-azioni"><button class="bottone piccolo secondario" id="rn-chiudi">Annulla</button></div>`);
   $('#rn-chiudi').onclick = chiudiModale;
@@ -3050,11 +3059,11 @@ function modaleCercaFilm(onScegli, opts={}){
   setTimeout(() => $('#rn-q').focus(), 40);
 }
 function modaleNuovaRecensione(){
-  modaleCercaFilm(id => avviaEditorDaTMDB(id), {titolo:'Nuova recensione', sub:'Cerca il film da recensire.'});
+  modaleCercaFilm(id => avviaEditorDaTMDB(id), {titolo:'Nuova recensione', sub:`Cerca ${UN_COSA()} da recensire.`});
 }
 // Aggancia una recensione (magari importata senza id) a un film TMDB: sovrascrive i metadati e aggiunge la locandina.
 async function collegaTMDB(bozza, id){
-  apriModale('<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero i dati del film.</p>');
+  apriModale(`<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero i dati ${inSerie() ? 'della serie' : 'del film'}.</p>`);
   let d; try { d = await dettagliFilm(id); } catch(e){ return apriModale(`<h3>Ahi</h3><p style="color:var(--dim)">Scheda non recuperata.</p><div class="m-azioni"><button class="bottone piccolo" onclick="chiudiModale()">Chiudi</button></div>`); }
   salvaImmagini(d).then(() => { S.urlCache.clear(); });
   bozza.tmdbId = d.tmdbId;
@@ -3066,7 +3075,7 @@ async function collegaTMDB(bozza, id){
 async function avviaEditorDaTMDB(id){
   const mia = miaRecensione(id);
   if (mia) return editorRecensione(mia);
-  apriModale('<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero i dati del film.</p>');
+  apriModale(`<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero i dati ${inSerie() ? 'della serie' : 'del film'}.</p>`);
   let d; try { d = await dettagliFilm(id); } catch(e){ return apriModale(`<h3>Ahi</h3><p style="color:var(--dim)">Scheda non recuperata.</p><div class="m-azioni"><button class="bottone piccolo" onclick="chiudiModale()">Chiudi</button></div>`); }
   salvaImmagini(d).then(()=>{ S.urlCache.clear(); });
   const rec = { tmdbId:d.tmdbId, votoPersonale:0, doveVederlo:{streaming:[],fisico:[],percorso:''}, ultimaVisione:ultimaVisioneDi(d.tmdbId, S.me) || oggiISO(),
@@ -3384,7 +3393,7 @@ async function disegnaSala(){
           ${scelto.M > 1 ? ' · 💛 serata su misura' : ''}
         </div>
       </div>
-      <button id="btn-play" title="Elegge il film della serata e lo registra per tutti i presenti">▶</button>`;
+      <button id="btn-play" title="${inSerie() ? 'Registra la serata e sposta il segnalibro' : 'Elegge il film della serata e lo registra per tutti i presenti'}">▶</button>`;
     schermo.classList.add('aperto');
     $('.schermo-clic').onclick = () => modaleScheda(scelto);
     $('#btn-play').onclick = () => modalePlay(scelto);
@@ -3442,7 +3451,7 @@ function modaleListaCompleta(){
   const inOnda = () => S.proiettato || (S.tutti[0] && S.tutti[0].film.tmdbId);
   apriModale(`
     <h3>Lista completa — ${S.tutti.length} film</h3>
-    <p style="color:var(--dim); font-size:13.5px; margin-bottom:12px">In ordine di pertinenza secondo i presenti e i filtri di stasera. Clic su un film per metterlo sul proiettore.</p>
+    <p style="color:var(--dim); font-size:13.5px; margin-bottom:12px">In ordine di pertinenza secondo i presenti e i filtri di stasera. Clic su ${UN_COSA()} per metterl${inSerie()?'a':'o'} sul proiettore.</p>
     <input type="search" class="lc-q" id="lc-q" placeholder="🔎 filtra per titolo o regista…" autocomplete="off">
     <div class="lc-lista" id="lc-lista"></div>
     <div class="m-azioni"><button class="bottone piccolo" id="lc-chiudi">Chiudi</button></div>`);
@@ -3465,7 +3474,7 @@ function modaleListaCompleta(){
         </div>
         <div class="lc-punti">🏆 ${fmtNum(o.r.S)}${f.voto ? `<small>★ ${fmtNum(f.voto,1)}</small>` : ''}</div>
       </div>`;
-    }).join('') || '<div class="vuoto-msg">Nessun film con questo testo.</div>';
+    }).join('') || `<div class="vuoto-msg">${NESSUN_COSA()} con questo testo.</div>`;
     $$('#lc-lista .lc-riga').forEach(el => {
       const id = parseInt(el.dataset.id, 10);
       const r = S.tutti.find(x => x.film.tmdbId === id);
@@ -3853,7 +3862,7 @@ document.addEventListener('keydown', e => {
 });
 
 async function modaleAggiungi(id){
-  apriModale('<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero la scheda del film.</p>');
+  apriModale(`<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero la scheda ${inSerie() ? 'della serie' : 'del film'}.</p>`);
   let d;
   try { d = await dettagliFilm(id); }
   catch(e){ return apriModale(`<h3>Ahi</h3><p style="color:var(--dim)">Scheda non recuperata: ${esc(e.message)}</p><div class="m-azioni"><button class="bottone piccolo" onclick="chiudiModale()">Chiudi</button></div>`); }

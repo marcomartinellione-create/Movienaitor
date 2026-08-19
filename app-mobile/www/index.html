@@ -181,6 +181,11 @@
   .toast.on{opacity:1}
   .toast.err{border-color:var(--rosso2)}
 
+  #m-carico{position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center;
+    background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:blur(2px)}
+  #m-carico[hidden]{display:none}
+  .carico-box{display:flex; flex-direction:column; align-items:center; gap:12px; color:var(--dim); font-size:14px}
+  .carico-box .spin{width:30px; height:30px; border-width:3px}
   .spin{width:22px; height:22px; border:3px solid var(--linea); border-top-color:var(--oro); border-radius:50%; animation:g .8s linear infinite; display:inline-block; vertical-align:-4px}
   @keyframes g{to{transform:rotate(360deg)}}
 
@@ -413,7 +418,7 @@
 
       <div id="pan-lista">
         <div class="cerca">
-          <input id="q" type="search" enterkeyhint="search" placeholder="Cerca un film da aggiungere…" autocomplete="off">
+          <input id="q" type="search" enterkeyhint="search" data-dove="segnaposto" data-film="Cerca un film da aggiungere…" data-serie="Cerca una serie da aggiungere…" placeholder="Cerca un film da aggiungere…" autocomplete="off">
         </div>
         <div id="risultati"></div>
         <div class="sezione"><span class="grow">La mia lista <span id="conta-lista"></span></span><button class="f-btn" id="btn-filtri">≡ filtri</button></div>
@@ -453,6 +458,7 @@
   </div>
 </div>
 
+<div id="m-carico" hidden><div class="carico-box"><span class="spin"></span><span id="m-carico-txt">Un attimo…</span></div></div>
 <button class="bug-btn" id="m-segnala" style="display:none">🐞 Segnala</button>
 <button class="modo-btn" id="m-modo" style="display:none"><span id="m-modo-ic">🎬</span> <span id="m-modo-nome">Film</span></button>
 <div class="backdrop" id="backdrop"><div class="modale" id="modale"></div></div>
@@ -486,6 +492,13 @@ const GENERI_TMDB_SERIE = ['Action & Adventure','Animazione','Commedia','Crime',
 // Come sul desktop: la modalità decide da dove si leggono i dati, quale endpoint TMDB si
 // interroga e che vestito indossa l'app. Le formule non la vedono. Vedi CONCEPT-serie.md.
 const inSerie = () => S.modo === 'serie';
+// le parole della modalità: con articolo e concordanza, così un testo nuovo nasce già
+// corretto in tutte e due (stesse funzioni del desktop)
+const COSA        = () => inSerie() ? 'serie' : 'film';
+const UN_COSA     = () => inSerie() ? 'una serie' : 'un film';
+const IL_COSA     = () => inSerie() ? 'la serie' : 'il film';
+const NESSUN_COSA = () => inSerie() ? 'Nessuna serie' : 'Nessun film';
+const I_COSA      = () => inSerie() ? 'le serie' : 'i film';
 // percorso dentro lo spazio della modalità: i film restano dove sono sempre stati
 const PS = p => inSerie() ? 'serie/' + p : p;
 // la lista della modalità: il profilo resta UN file per persona
@@ -547,10 +560,17 @@ async function cambiaModoM(m){
   S.cgPool = []; S.cgLista = []; S.cgProfilo = null; S.cgFirma = '';
   S.providersCache = new Map();
   S.recUtente = null; S.listaVista = 'daVedere';
-  try { await caricaCartella(S.treeUri); } catch(e){ toast('Rilettura non riuscita: '+e.message, true); }
-  // caricaCartella riporta alla scelta del profilo: rientro con quello di prima
-  const slug = S.me && S.me.slug;
-  if (slug && S.profili.some(p => p.slug === slug)) entra(slug);
+  caricamento(true, inSerie() ? 'Apro il salotto…' : 'Apro la sala…');
+  try {
+    await caricaCartella(S.treeUri);
+    // caricaCartella riporta alla scelta del profilo: rientro con quello di prima
+    const slug = S.me && S.me.slug;
+    if (slug && S.profili.some(p => p.slug === slug)) entra(slug);
+  } catch(e){
+    toast('Rilettura non riuscita: '+e.message, true);
+  } finally {
+    caricamento(false);
+  }
   toast(inSerie() ? 'Modalità serie TV 📺' : 'Modalità film 🎬');
 }
 function modaleModoM(){
@@ -569,6 +589,13 @@ function modaleModoM(){
     b.onclick = () => { chiudiModale(); cambiaModoM(b.dataset.m); });
 }
 
+// velo di attesa: si accende prima di un'operazione lunga e si spegne sempre, anche se
+// va storta (chiamata in un finally)
+function caricamento(acceso, testo){
+  const box = $('#m-carico'); if (!box) return;
+  if (testo) $('#m-carico-txt').textContent = testo;
+  box.hidden = !acceso;
+}
 function schermo(id){
   document.querySelectorAll('.schermo').forEach(s=>s.classList.remove('on'));
   $('#'+id).classList.add('on');
@@ -860,7 +887,7 @@ function entra(slug){
   $('#q').value = ''; $('#risultati').innerHTML = '';
   disegnaMiaLista();
   S.presenti = new Set([slug]); S.proiettato = null;
-  S.recUtente = null; setPan('lista');
+  S.recUtente = null; setPan('sala');   // la Sala è la home dell'app
   schermo('sc-app');
 }
 
@@ -1105,9 +1132,9 @@ function disegnaMiaLista(){
   $('#conta-lista').textContent = base.length ? (lista.length===base.length ? '· '+base.length : '· '+lista.length+'/'+base.length) : '';
   const fb = $('#btn-filtri'); if (fb) fb.classList.toggle('attivo', filtriAttivi());
   const box = $('#mia-lista');
-  if (!tutte.length && !visti.length){ box.innerHTML = '<div class="vuoto">Ancora nessun film. Cerca qui sopra e aggiungi il primo 🎬</div>'; return; }
-  if (!base.length){ box.innerHTML = `<div class="vuoto">${sonoVisti ? 'Ancora nessun film già visto in questa lista.' : 'Niente da vedere: sono già stati visti tutti 🎉'}</div>`; return; }
-  if (!lista.length){ box.innerHTML = '<div class="vuoto">Nessun film corrisponde ai filtri.</div>'; return; }
+  if (!tutte.length && !visti.length){ box.innerHTML = `<div class="vuoto">Ancora ${inSerie() ? 'nessuna serie' : 'nessun film'}. Cerca qui sopra e aggiungi ${inSerie() ? 'la prima 📺' : 'il primo 🎬'}</div>`; return; }
+  if (!base.length){ box.innerHTML = `<div class="vuoto">${sonoVisti ? `Ancora ${inSerie() ? 'nessuna serie già vista' : 'nessun film già visto'} in questa lista.` : 'Niente da vedere: sono già stati visti tutti 🎉'}</div>`; return; }
+  if (!lista.length){ box.innerHTML = `<div class="vuoto">${NESSUN_COSA()} corrisponde ai filtri.</div>`; return; }
   box.innerHTML = lista.map(v=>{
     const pst = v.posterUrl || '';
     const comp = [ ...(v.conChi||[]).map(s=>'✓'+nomeDi(s)), ...(v.nonCon||[]).map(s=>'✗'+nomeDi(s)) ].join(' · ');
@@ -1442,7 +1469,7 @@ function disegnaSalaM(){
   const e = ris.esclusi, fuori = e.durata+e.genere+e.regista+e.vincoli;
   stato.innerHTML = `🎞 ${ris.totale} in cartellone · ${S.presenti.size} in sala
     ${fuori ? `<br><span class="avv">esclusi: ${[e.durata&&e.durata+' per durata', e.genere&&e.genere+' per genere', e.regista&&e.regista+' per regista', e.vincoli&&e.vincoli+' per compagnia'].filter(Boolean).join(', ')}</span>` : ''}
-    <br><span style="color:var(--dim)">▶ registra il film come visto per chi è in sala.</span>`;
+    <br><span style="color:var(--dim)">▶ registra ${inSerie() ? 'la serata e sposta il segnalibro' : 'il film come visto per chi è in sala'}.</span>`;
 }
 
 function modaleSchedaM(r){
@@ -1597,7 +1624,7 @@ function modaleListaCompletaM(){
         <div class="info"><div class="tit">${esc(f.titolo)}</div>
           <div class="meta">${esc(f.anno||'')}${f.durata?' · '+fmtMin(f.durata):''} · 🎟 ${o.r.prop.length} · 🏆 ${fmtNum(o.r.S)}</div></div>
       </div>`;
-    }).join('') || '<div class="vuoto">Nessun film con questo testo.</div>';
+    }).join('') || `<div class="vuoto">${NESSUN_COSA()} con questo testo.</div>`;
     $('#lc-lista').querySelectorAll('[data-lc]').forEach(b => b.onclick = () => {
       const id = parseInt(b.dataset.lc,10);
       S.proiettato = (id === primoId) ? null : id;
@@ -2165,8 +2192,8 @@ function disegnaConsigliM(){
   }
   if (!S.cgLista.length){
     g.innerHTML = S.cgCaricamento
-      ? `<div class="rec-vuoto"><span class="spin"></span> cerco i film…<br><span id="cg-stato" style="font-size:12px"></span></div>`
-      : ((S.cgPool||[]).length ? `<div class="rec-vuoto">Nessun film con questi filtri.<br>Allargali un po'.</div>`
+      ? `<div class="rec-vuoto"><span class="spin"></span> cerco ${I_COSA()}…<br><span id="cg-stato" style="font-size:12px"></span></div>`
+      : ((S.cgPool||[]).length ? `<div class="rec-vuoto">${NESSUN_COSA()} con questi filtri.<br>Allargali un po'.</div>`
                                : `<div class="rec-vuoto">Nessun consiglio trovato.</div>`);
     return;
   }
@@ -2245,7 +2272,7 @@ function modaleScartatiM(){
   const righe = [...S.cgScartati.entries()];
   apriModale(`
     <h3>🚫 Film esclusi dai consigli</h3>
-    <p class="meta">${righe.length ? 'Tocca «rimetti» per riproporlo in «Per te».' : 'Non hai escluso nessun film.'}</p>
+    <p class="meta">${righe.length ? 'Tocca «rimetti» per riproporlo in «Per te».' : `Non hai escluso ${inSerie() ? 'nessuna serie' : 'nessun film'}.`}</p>
     ${righe.map(([id,tit])=>`<div class="sc-riga"><span class="t">${esc(tit)}</span><button class="linkbtn" data-rip="${id}" style="padding:2px 6px">rimetti</button></div>`).join('')}
     <div class="m-az">${righe.length?'<button class="ghost" id="sc-tutti" style="color:var(--rosso2)">Svuota</button>':''}<button class="primario" id="sc-ok">Chiudi</button></div>`);
   $('#sc-ok').onclick = chiudiModale;
@@ -2311,7 +2338,7 @@ function disegnaRecMobile(){
   const mio=sel===S.me.slug;
   $('#m-rec-nuova').style.display=mio?'':'none';
   const box=$('#m-rec-visti-box'); const nr=mio?filmVistiNonRecM():[];
-  if(nr.length){ box.style.display=''; box.querySelector('summary').textContent=`🎬 Film visti non recensiti (${nr.length})`;
+  if(nr.length){ box.style.display=''; box.querySelector('summary').textContent=`${inSerie() ? '📺 Serie viste non recensite' : '🎬 Film visti non recensiti'} (${nr.length})`;
     $('#m-rec-visti').innerHTML=nr.map(f=>`<button class="rec-nr" data-id="${f.tmdbId}">${esc(f.titolo)}</button>`).join('');
     $('#m-rec-visti').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>avviaEditorDaTMDBM(parseInt(b.dataset.id,10)));
   } else box.style.display='none';
