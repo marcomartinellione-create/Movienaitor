@@ -217,6 +217,8 @@ durata, generi, regista. Per la **media voti IMDb** vera si aggiunge **OMDb API*
 | C2 | Aggiungi film | imposta: **desiderio 1–5** (stelle), **conChi** (chip ✓), **nonCon** (chip ✗) |
 | C3 | Modifica | cambia desiderio/conChi/nonCon di un film già in lista |
 | C4 | Rimuovi | togli dalla lista, **con conferma** (i visti restano nello storico) |
+| C4b | **Visto** (2026-08-19) | accanto a «rimuovi», segna il titolo come visto **senza passare dalla Sala**. Scrive una visione col solo autore fra i partecipanti e il flag `solo`: l'**Indice di Soddisfazione la salta** (§8.1), perché non ha occupato la serata di nessuno. Per una serie porta il segnalibro in fondo all'ultima stagione uscita |
+| C4c | **Rimuovi dai già visti** (2026-08-19) | accanto a «rimettilo in lista»: toglie **me** dalle visioni di quel titolo e la voce dalla mia lista. Le serate a cui hanno partecipato altri restano nel loro storico; quelle rimaste senza nessuno spariscono. Se ne esiste una mia recensione il titolo resta fra i visti finché non la si elimina (§3.3) |
 | C5 | I miei visti | sezione derivata: le serate dello storico (film, data, con chi) **e** i film che si sono recensiti (data della recensione, segno «✍ recensito»). Se un film ha entrambi vince la data più recente. Comprende anche i film mai passati dalla watch list: titolo e locandina si prendono dalla recensione |
 | C6 | Riaggiungi un visto | un film già visto può tornare in lista (rewatch consapevole) |
 | C7 | Generi | in cima al Catalogo, barre percentuali della distribuzione dei generi nella lista "da vedere" (un film può avere più generi) |
@@ -572,6 +574,20 @@ come lo stato «visto» dei film e l'indice di soddisfazione:
 — e le stagioni da `seasons`, scartando gli speciali (S0) e quelle annunciate a 0 episodi.
 Le **keyword stanno in `keywords.results`** e non in `keywords.keywords` come per i film.
 Il filtro «durata massima» della serata diventa la **durata di un episodio**.
+
+### 14.3-bis I filtri della serata
+
+Il cursore della **durata** cambia scala con la modalità: un film si misura in ore
+(60'–4h), un episodio in minuti (**20'–1h30**, poi «qualsiasi»), e l'etichetta diventa
+*Durata dell'episodio*. Al **cambio di modalità i filtri della serata si azzerano**: i
+generi delle due tassonomie non si somigliano e un filtro rimasto acceso dall'altra parte
+svuoterebbe la Sala senza spiegazione.
+
+Nota di layout: lo schermo riempie la riga del palco, e quella riga è alta quanto il
+pannello dei filtri — che dipende da quanti generi ci sono nelle liste. Per tenere la TV
+grande **esattamente come il proiettore** l'app misura la differenza fra i generi delle due
+modalità e la recupera come spazio in fondo al pannello. La misura si può prendere solo a
+Sala aperta: quando è nascosta la riserva si lascia com'è e si rifà all'apertura.
 
 ### 14.4 L'aspetto
 

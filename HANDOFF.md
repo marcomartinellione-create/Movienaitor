@@ -330,7 +330,23 @@ Seconda modalità, non una seconda app: casella in basso a destra (speculare al 
   (liste, storico, Sala, consigli passano da `leggiPercorso`/`scriviPercorso`, che i
   percorsi annidati li reggevano già): **si vedono solo le recensioni dei film**.
   Serve una build dell'APK, che è una pubblicazione ⇒ solo su ok esplicito di Marco.
+- **Visto / rimuovi dai visti**: `segnaVisto` scrive una visione col solo autore e il flag
+  `solo`, che `indiceSoddisfazione` salta (se no segnare un film per conto proprio
+  sposterebbe il turno del gruppo). `rimuoviDaiVisti` toglie **me** dai partecipanti e
+  cancella la voce dalla mia lista; sul mobile `rimuoviDaiVistiM` fa lo stesso.
+  ⚠️ La cancellazione va d'accordo male con la fusione di `registraVisione`, che rimette le
+  voci che il file non ha: se un altro dispositivo ha ancora quella visione in memoria e
+  preme Play, torna. Si riallinea da sé appena tutti ricaricano.
+- **La riserva del pannello filtri** (`riservaFiltri`) tiene la TV grande come il proiettore.
+  Si misura **solo a Sala aperta**: a vista nascosta ogni misura vale 0 e la riserva
+  andrebbe persa, quindi in quel caso si lascia com'era e si rifà tornando in Sala. Era il
+  motivo per cui lo schermo tornava compatto dopo aver aggiunto un titolo dalla Watch List.
 - **Da fare**: provare la modalità sul telefono vero dopo la prossima build.
+
+⚠️ **Gotcha delle patch (2)**: `core.autocrlf=true`, quindi dopo un `git checkout` questi
+file tornano a **CRLF** e le ancore multi-riga scritte con `\n` non combaciano più. Gli
+script di patch normalizzano a LF prima di cercare e riscrivono in LF: git rinormalizza al
+commit, nessun diff finto.
 
 ⚠️ **Gotcha trovato scrivendo queste patch**: nelle stringhe di sostituzione di
 `String.replace` la sequenza `$$` significa «un $ letterale» e si mangia un carattere.

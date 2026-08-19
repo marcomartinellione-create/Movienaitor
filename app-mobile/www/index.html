@@ -1168,14 +1168,19 @@ function modaleModifica(id){
     };
   }
   $('#m-togli').onclick = () => {
-    apriModale(`<h3>Togliere dalla lista?</h3><p class="meta">«${esc(orig.titolo)}» sparirà dalla tua lista.</p>
+    apriModale(`<h3>Togliere dalla lista?</h3><p class="meta">${visto
+      ? `«${esc(orig.titolo)}» sparirà dai tuoi già visti. Le serate a cui hanno partecipato altri restano nel loro storico.`
+      : `«${esc(orig.titolo)}» sparirà dalla tua lista.`}</p>
       <div class="m-az"><button class="ghost" id="m-no">Annulla</button><button class="primario" id="m-si">Rimuovi</button></div>`);
     $('#m-no').onclick = () => modaleModifica(id);
     $('#m-si').onclick = async () => {
       $('#m-si').disabled=true; $('#m-si').innerHTML='<span class="spin"></span>';
       try {
         await mutaLista(p => { const L = listaDi(p); const i = L.findIndex(x=>x.tmdbId===id); if (i>=0) L.splice(i,1); });
-        chiudiModale(); disegnaMiaLista(); eseguiRicerca();
+        // se era fra i già visti, si tolgono anche le mie visioni: se no rimettendolo in
+        // lista tornerebbe subito "visto" per via dello storico
+        if (visto) await rimuoviDaiVistiM(id);
+        chiudiModale(); disegnaMiaLista(); disegnaSalaM(); eseguiRicerca();
         toast(`«${orig.titolo}» tolto`);
       } catch(e){ $('#m-si').disabled=false; $('#m-si').textContent='Rimuovi'; toast('Non riuscito: '+e.message, true); }
     };
@@ -1409,6 +1414,21 @@ function modaleSchedaM(r){
 // Registra la visione nello storico condiviso. Come sul desktop: rilegge storico.json
 // FRESCO e fonde le voci per `id` (ognuna ha id univoco timestamp+autore), così anche se
 // più dispositivi registrano non si perde nulla (SPECIFICA §3.2).
+async function rimuoviDaiVistiM(tmdbId){
+  let attuale = {visioni:[]};
+  const txt = await fsLeggiPercorso(PS('storico.json'));
+  if (txt){ try { const j = JSON.parse(txt); if (j && Array.isArray(j.visioni)) attuale = j; } catch(e){} }
+  const rimaste = [];
+  for (const v of (attuale.visioni || [])){
+    if (v.tmdbId !== tmdbId || !(v.partecipanti || []).includes(S.me.slug)){ rimaste.push(v); continue; }
+    const chi = (v.partecipanti || []).filter(s => s !== S.me.slug);
+    if (!chi.length) continue;                     // visione solo mia: sparisce
+    rimaste.push({...v, partecipanti:chi, proponenti:(v.proponenti || []).filter(s => s !== S.me.slug)});
+  }
+  await fsScriviPercorso(PS('storico.json'), JSON.stringify({...attuale, visioni:rimaste}));
+  S.storico = rimaste.sort((a,b) => String(a.data||'').localeCompare(String(b.data||'')));
+}
+
 async function registraVisioneM(voce){
   let attuale = {visioni:[]};
   const txt = await fsLeggiPercorso(PS('storico.json'));

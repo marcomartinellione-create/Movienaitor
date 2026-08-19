@@ -271,7 +271,7 @@ header .spazio{flex:1; min-width:0}
 .pchip.con{border-color:var(--verde); color:var(--verde); background:rgba(125,155,118,.08)}
 .pchip.non{border-color:var(--rosso2); color:var(--rosso2); background:rgba(168,84,84,.08)}
 .scheda-film .azioni{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:auto}
-.scheda-film .btn-visto{color:var(--verde)}
+.scheda-film .btn-visto,.scheda-film .btn-riguarda{color:var(--verde)}
 .testo-link{color:var(--dim2); font-size:12.5px; text-decoration:underline}
 /* oro sulle azioni normali; il rosso resta a quelle che tolgono qualcosa, dove
    prima anche «modifica» o «rileva» diventavano rosse come fossero pericolose */
@@ -3523,7 +3523,10 @@ function disegnaCatalogo(){
       </div>
       <div class="corpo">
         <h4>${esc(voce.titolo)}</h4>
-        <div class="azioni"><button class="testo-link btn-riguarda" data-id="${id}" style="color:var(--verde)">↺ rimettilo in lista</button></div>
+        <div class="azioni">
+          <button class="testo-link btn-riguarda" data-id="${id}">↺ rimettilo in lista</button>
+          <button class="testo-link pericolo btn-scorda" data-id="${id}" data-tit="${esc(vis.titolo || voce.titolo)}">rimuovi</button>
+        </div>
       </div>
     </div>`).join('') || `<div class="vuoto-msg">Ancora nessun${inSerie() ? 'a serie finita' : ' film visto'}: né serate registrate né recensioni.</div>`;
   const vociViste = new Map(visti.map(x => [x.id, x.voce]));
@@ -3532,6 +3535,16 @@ function disegnaCatalogo(){
     if (voce) urlImmagine(voce, 'locandina').then(u => { const img = el.querySelector('img'); if (u && img){ img.src = u; img.hidden = false; el.querySelector('.segnaposto').remove(); } });
   });
   $$('.btn-riguarda').forEach(b => b.onclick = () => riguarda(parseInt(b.dataset.id, 10)));
+  $$('.btn-scorda').forEach(b => b.onclick = () => {
+    const id = parseInt(b.dataset.id, 10), tit = b.dataset.tit;
+    const rec = visioneRecensione(id, S.me);
+    const avviso = rec
+      ? ' Attenzione: ne hai scritto una recensione, quindi resterà fra i visti finché non la elimini dall\'Archivio.'
+      : '';
+    confermaModale(
+      `Togliere «${esc(tit)}» dai già visti? Sparisce dal tuo storico; le serate a cui hanno partecipato altri restano nel loro.` + avviso,
+      'Rimuovi', () => rimuoviDaiVisti(id, tit));
+  });
 }
 
 function cardFilm(v){
@@ -3582,6 +3595,26 @@ function agganciaCard(v){
     disegnaCatalogo(); disegnaFiltri(); disegnaSala(); disegnaArchivio();
     toast(`«${v.titolo}» tolto dalla lista`);
   });
+}
+
+async function rimuoviDaiVisti(id, titolo){
+  const attuale = await FS.readJSON(P('storico.json')) || {visioni:[]};
+  const viste = Array.isArray(attuale.visioni) ? attuale.visioni : [];
+  const rimaste = [];
+  for (const v of viste){
+    if (v.tmdbId !== id || !(v.partecipanti || []).includes(S.me)){ rimaste.push(v); continue; }
+    const chi = (v.partecipanti || []).filter(s => s !== S.me);
+    if (!chi.length) continue;                       // era una visione solo mia: sparisce
+    rimaste.push({...v, partecipanti:chi, proponenti:(v.proponenti || []).filter(s => s !== S.me)});
+  }
+  try { await FS.writeJSON(P('storico.json'), {...attuale, visioni:rimaste}); }
+  catch(e){ return toast('Non riuscito: '+e.message, true); }
+  S.storico = rimaste.sort((a,b) => String(a.data||'').localeCompare(String(b.data||'')));
+  const mio = mioProfilo();
+  const L = listaDi(mio), i = L.findIndex(v => v.tmdbId === id);
+  if (i >= 0){ L.splice(i, 1); await salvaMioProfilo(); }
+  disegnaCatalogo(); disegnaFiltri(); disegnaSala(); disegnaArchivio();
+  toast(`«${titolo}» tolto dai visti`);
 }
 
 async function segnaVisto(v){
