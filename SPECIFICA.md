@@ -291,7 +291,7 @@ libera, nello stile velluto dell'app.
    degli esclusi per motivo ("3 troppo lunghi, 2 per vincoli di compagnia")
    — senza mai rivelare le liste di chi.
 
-## 6.3 Gruppi di visione (2026-08-19, desktop)
+## 6.3 Gruppi di visione (2026-08-19, desktop e mobile)
 
 I profili nella cartella possono diventare tanti — decine, in prospettiva centinaia — ma
 la platea ha 19 posti e nessuno guarda i film con tutti. Ognuno tiene nel **proprio**
@@ -611,7 +611,7 @@ grande **esattamente come il proiettore** l'app misura la differenza fra i gener
 modalità e la recupera come spazio in fondo al pannello. La misura si può prendere solo a
 Sala aperta: quando è nascosta la riserva si lascia com'è e si rifà all'apertura.
 
-### 14.3-ter Recensioni per stagione (2026-08-19, desktop)
+### 14.3-ter Recensioni per stagione (2026-08-19, desktop e mobile)
 
 Una serie si può recensire **tutta insieme** (com'è sempre stato) oppure **una stagione
 per volta**. Nell'editor compare una riga «per stagioni»: accendendola la recensione

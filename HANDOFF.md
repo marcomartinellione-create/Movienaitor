@@ -352,8 +352,9 @@ Seconda modalità, non una seconda app: casella in basso a destra (speculare al 
   `visibiliInSala()` (Set o null = tutti) e `profiliVisibili()`. Filtrano `disegnaPlatea`
   e la scorta dell'host; `scegliGruppo` fa alzare chi non si vede più. Massimo 5, nel
   proprio `profili/<slug>.json`; il gruppo attivo sta in localStorage, è del dispositivo.
-- **Da fare**: portare gruppi di visione e recensioni per stagione sul mobile; provare la modalità sul
-  telefono vero dopo la prossima build.
+- Gruppi di visione e recensioni per stagione ci sono **anche sul mobile**, con le stesse
+  funzioni e gli stessi file (`disegnaGruppiM`/`scegliGruppoM`, `miaRecensioneM`).
+- **Da fare**: provare la modalità serie sul telefono vero dopo la prossima build.
 
 ⚠️ **Gotcha delle patch (2)**: `core.autocrlf=true`, quindi dopo un `git checkout` questi
 file tornano a **CRLF** e le ancore multi-riga scritte con `\n` non combaciano più. Gli

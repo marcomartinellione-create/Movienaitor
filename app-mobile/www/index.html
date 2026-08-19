@@ -271,6 +271,13 @@
   .re-dove-file input{flex:1; background:var(--bg2); border:1px solid var(--linea); color:var(--testo); border-radius:9px; padding:8px 10px; font:inherit; font-size:13px}
 
   /* ── Sala (mobile) ── */
+  .re-stagioni2{display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:6px 0 2px}
+  .re-stagioni2 label{display:flex; align-items:center; gap:6px; color:var(--dim); font-size:13px}
+  .re-stagioni2 .inp{width:auto; min-width:70px}
+  .gr-riga2{display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--linea)}
+  .gr-riga2:last-child{border-bottom:none}
+  .chips-gruppi{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:10px 0 -4px}
+  .chips-gruppi[hidden]{display:none}
   .platea{--per-fila:5; display:grid; grid-template-columns:repeat(var(--per-fila), minmax(0, 62px));
     justify-content:center; gap:6px 8px; padding:12px 4px 6px; margin-bottom:2px;
     background:radial-gradient(65% 95% at 50% 0%, rgba(74,40,48,.22), transparent 72%); border-radius:16px}
@@ -413,6 +420,7 @@
         </div>
         <button class="ghost" id="m-lista-completa" style="width:100%; margin-top:8px">📋 Lista completa</button>
         <div class="sezione"><span class="grow">Chi c'è stasera <span id="m-conta-pres"></span></span></div>
+        <div class="chips-gruppi" id="m-gruppi" hidden></div>
         <div class="platea" id="m-platea"></div>
         <div class="stato-sala" id="m-stato-sala"></div>
       </div>
@@ -470,7 +478,7 @@
 /* ══════════════════ STATO ══════════════════ */
 const APP_VERSION = '1.7.3';
 const CONFIG_DEFAULT = { bonusCoralita:0.10, capCoralita:0.30, passoSoddisfazione:0.15, bonusCoppia:1.15, sogliaSpareggio:0.02 };
-const S = { treeUri:null, config:{}, profili:[], me:null, storico:[], modo:'film',
+const S = { treeUri:null, config:{}, profili:[], me:null, storico:[], modo:'film', gruppo:null,
   filtri:{ q:'', ordina:'aggiunto', dir:'desc', minDes:0, genere:[], annoDa:null, annoA:null },
   recensioni:[], recUtente:null, recFiltri:{ q:'', ordina:'votoPersonale', dir:'desc' }, pan:'lista',
   listaVista:'daVedere',
@@ -493,6 +501,38 @@ const GENERI_TMDB_SERIE = ['Action & Adventure','Animazione','Commedia','Crime',
 // Come sul desktop: la modalità decide da dove si leggono i dati, quale endpoint TMDB si
 // interroga e che vestito indossa l'app. Le formule non la vedono. Vedi CONCEPT-serie.md.
 const inSerie = () => S.modo === 'serie';
+/* Gruppi di visione: fino a cinque, nel PROPRIO profilo, per non vedere in Sala tutti i
+   profili della cartella quando diventano tanti. Chi lo attiva vede sempre sé stesso. */
+// Recensioni di serie: tutta insieme (stagione assente) oppure una per stagione.
+const miaRecensioneM = (id, stagione = null) => S.recensioni.find(r =>
+  r.autore === S.me.slug && r.tmdbId === id && (r.stagione || null) === (stagione || null));
+const stagioniRecensite = id => S.recensioni
+  .filter(r => r.autore === S.me.slug && r.tmdbId === id && r.stagione)
+  .map(r => r.stagione).sort((a,b) => a-b);
+// le stagioni le sa la watch list: è lì che TMDB le ha salvate
+function stagioniDellaSerie(id){
+  for (const p of S.profili){
+    const v = listaDi(p).find(x => x.tmdbId === id);
+    if (v && (v.stagioni||[]).length) return v.stagioni.map(s => s.n);
+  }
+  return [];
+}
+
+const MAX_GRUPPI = 5;
+const gruppiDi = p => (p && Array.isArray(p.gruppi)) ? p.gruppi : [];
+const mieiGruppi = () => gruppiDi(S.me);
+const gruppoAttivo = () => mieiGruppi().find(g => g.nome === S.gruppo) || null;
+function visibiliInSala(){
+  const g = gruppoAttivo();
+  if (!g) return null;                       // null = nessun filtro
+  const dentro = new Set(g.membri || []);
+  if (S.me) dentro.add(S.me.slug);
+  return dentro;
+}
+const profiliVisibili = () => {
+  const v = visibiliInSala();
+  return v ? S.profili.filter(p => v.has(p.slug)) : S.profili;
+};
 // le parole della modalità: con articolo e concordanza, così un testo nuovo nasce già
 // corretto in tutte e due (stesse funzioni del desktop)
 const COSA        = () => inSerie() ? 'serie' : 'film';
@@ -787,6 +827,30 @@ function poltronaSVG(colore, presente){
 // Come sul desktop, si aggiungono poltrone vuote decorative per i posti/utenti futuri.
 // Il posto del salotto: cuscini affiancati sotto un unico schienale, braccioli solo ai
 // capi della riga. Stessa firma di poltronaSVG più la posizione. Come sul desktop.
+// Fila dei gruppi sopra la platea: compare solo se ne hai definito almeno uno.
+function disegnaGruppiM(){
+  const box = $('#m-gruppi'); if (!box) return;
+  const gruppi = mieiGruppi();
+  box.hidden = !gruppi.length;
+  if (!gruppi.length) return;
+  const chip = (nome, etichetta, on) =>
+    `<button class="pchip${on ? ' con' : ''}" data-g="${esc(nome)}">${esc(etichetta)}</button>`;
+  box.innerHTML = chip('', '👥 Tutti', !gruppoAttivo()) +
+    gruppi.map(g => chip(g.nome, g.nome, S.gruppo === g.nome)).join('');
+  box.onclick = e => { const b = e.target.closest('[data-g]'); if (!b) return; scegliGruppoM(b.dataset.g || null); };
+}
+// Chi non si vede più non può restare seduto: resterebbe presente di nascosto e
+// continuerebbe a pesare sulla classifica senza comparire.
+function scegliGruppoM(nome){
+  S.gruppo = nome || null;
+  LS.set('gruppo', S.gruppo || '');
+  const visibili = visibiliInSala();
+  if (visibili) S.presenti = new Set([...S.presenti].filter(s => visibili.has(s)));
+  if (S.me) S.presenti.add(S.me.slug);
+  S.proiettato = null;
+  disegnaSalaM();
+}
+
 function postoDivanoSVG(colore, presente, pos){
   const uid = ++poltronaUid;
   const cuscino = presente ? colore : tema('--posto-vuoto');
@@ -821,7 +885,9 @@ const postoSVG = (colore, presente, pos) =>
 
 function disegnaPlateaM(){
   const box = $('#m-platea'); if (!box) return;
-  const n = S.profili.length;
+  disegnaGruppiM();
+  const visibili = profiliVisibili();
+  const n = visibili.length;
   const posti = Math.max(10, Math.ceil((n + 3) / 5) * 5);   // righe piene + qualche posto libero
   // Posizione nella fila: serve al divano per sapere dove mettere i braccioli. Il numero
   // di colonne lo decide il foglio di stile (--per-fila): si legge da lì, così CSS e
@@ -835,7 +901,7 @@ function disegnaPlateaM(){
     if (i === ultimaDellaFila) return 'dx';
     return 'mid';
   };
-  let html = S.profili.map((p,i) => {
+  let html = visibili.map((p,i) => {
     const presente = S.presenti.has(p.slug);
     return `<div class="poltrona assegnata${presente?' presente':''}" data-slug="${esc(p.slug)}">
       ${postoSVG(coloreDi(p,i), presente, pos(i))}
@@ -1861,6 +1927,62 @@ function apriFiltri(){
 }
 
 /* ══════════════════ IMPOSTAZIONI PROFILO — Bonus Genere ══════════════════ */
+// Elenco dei miei gruppi nelle Impostazioni del telefono
+function disegnaGruppiImpM(){
+  const box = $('#i-gruppi'); if (!box) return;
+  const gruppi = mieiGruppi();
+  const nuovo = $('#i-gruppo-nuovo');
+  if (nuovo) nuovo.hidden = gruppi.length >= MAX_GRUPPI;
+  box.innerHTML = gruppi.length
+    ? gruppi.map((g, i) => `<div class="gr-riga2">
+        <span class="grow">${esc(g.nome)} <span class="meta">· ${(g.membri||[]).length}</span></span>
+        <button class="linkbtn" data-gr-mod="${i}">modifica</button>
+        <button class="linkbtn" data-gr-del="${i}" style="color:var(--rosso2)">elimina</button>
+      </div>`).join('')
+    : '<div class="meta">Nessun gruppo: li vedi tutti.</div>';
+}
+// Crea o modifica un gruppo. Si scrive solo il MIO profilo (regola anti-conflitto).
+function modaleGruppoM(indice){
+  const gruppi = mieiGruppi();
+  const g = indice != null ? gruppi[indice] : {nome:'', membri:[]};
+  const scelti = new Set(g.membri || []);
+  const altri = S.profili.filter(p => p.slug !== S.me.slug);
+  const chips = () => altri.map(p =>
+    `<button type="button" class="pchip${scelti.has(p.slug) ? ' con' : ''}" data-slug="${esc(p.slug)}">${scelti.has(p.slug) ? '✓ ' : ''}${esc(p.nome)}</button>`).join('')
+    || '<span class="meta">Non c\'è ancora nessun altro profilo.</span>';
+  apriModale(`<h3>${indice != null ? 'Modifica gruppo' : 'Nuovo gruppo'}</h3>
+    <div class="campo-r"><label>Nome</label><input class="inp" id="gr-nome" maxlength="24" value="${esc(g.nome)}" placeholder="es. il venerdì"></div>
+    <div class="etich" style="margin-top:12px">CHI NE FA PARTE</div>
+    <div class="compagnia" id="gr-membri">${chips()}</div>
+    <p class="meta" style="font-size:12px">Tu ci sei sempre: è la tua Sala.</p>
+    <div class="m-az"><button class="ghost" id="gr-annulla">Annulla</button><button class="primario" id="gr-ok">Salva</button></div>`);
+  $('#gr-membri').onclick = e => {
+    const b = e.target.closest('[data-slug]'); if (!b) return;
+    const s = b.dataset.slug;
+    if (scelti.has(s)) scelti.delete(s); else scelti.add(s);
+    b.classList.toggle('con', scelti.has(s));
+    b.textContent = (scelti.has(s) ? '✓ ' : '') + nomeDi(s);
+  };
+  $('#gr-annulla').onclick = () => apriImpostazioni();
+  $('#gr-ok').onclick = async () => {
+    const nome = $('#gr-nome').value.trim();
+    if (!nome) return toast('Dai un nome al gruppo', true);
+    if (gruppi.some((x, i) => x.nome === nome && i !== indice)) return toast('Hai già un gruppo con questo nome', true);
+    const b = $('#gr-ok'); b.disabled = true; b.innerHTML = '<span class="spin"></span>';
+    const vecchio = indice != null ? gruppi[indice].nome : null;
+    try {
+      await mutaProfilo(pr => {
+        pr.gruppi = Array.isArray(pr.gruppi) ? pr.gruppi.slice() : [];
+        const voce = {nome, membri:[...scelti]};
+        if (indice != null) pr.gruppi[indice] = voce; else pr.gruppi.push(voce);
+      });
+    } catch(e){ b.disabled = false; b.textContent = 'Salva'; return toast('Non riuscito: '+e.message, true); }
+    if (vecchio && S.gruppo === vecchio){ S.gruppo = nome; LS.set('gruppo', nome); }
+    toast('Gruppo salvato 👥');
+    apriImpostazioni();
+  };
+}
+
 async function apriImpostazioni(){
   if (!S.me) return;
   // rilegge il profilo aggiornato dalla cartella (vede i cambi fatti dal desktop)
@@ -1881,6 +2003,9 @@ async function apriImpostazioni(){
     <div class="etich">BONUS GENERE <span style="color:var(--dim);letter-spacing:0">— a parità di priorità sposta la scelta verso i generi che ti piacciono e via da quelli che eviti. Solo spareggio, non cambia la priorità.</span></div>
     <div class="etich" style="margin-top:6px">Tocca per ciclare: <b style="color:#9bbf90">verde ✓ mi piace</b> · <b style="color:#e08a86">rosso ✗ evita</b></div>
     <div class="compagnia" id="i-gen"></div>
+    <div class="etich" style="margin-top:16px">GRUPPI DI VISIONE <span style="color:var(--dim);letter-spacing:0">— quando i profili sono tanti, tieni in Sala solo il tuo giro. Massimo 5, sono tuoi.</span></div>
+    <div id="i-gruppi"></div>
+    <button class="linkbtn" id="i-gruppo-nuovo" style="margin-top:4px">＋ nuovo gruppo</button>
     <div class="etich" style="margin-top:16px">CONSIGLI</div>
     <div class="campo-r"><label>Film esclusi</label><button class="inp" id="i-esclusi">🚫 Gestisci</button></div>
     <div class="etich" style="margin-top:16px">VERSIONE</div>
@@ -1888,6 +2013,24 @@ async function apriImpostazioni(){
       <button class="inp" id="i-agg">Cerca aggiornamenti</button></div>
     <div class="m-az"><button class="primario" id="i-chiudi">Fatto</button></div>`);
   versioneInstallata().then(v => { const el = $('#i-ver'); if (el) el.textContent = 'Movienaitor mobile v'+v; });
+  disegnaGruppiImpM();
+  $('#i-gruppo-nuovo').onclick = () => modaleGruppoM(null);
+  $('#i-gruppi').onclick = e => {
+    const mod = e.target.closest('[data-gr-mod]'), del = e.target.closest('[data-gr-del]');
+    if (mod) return modaleGruppoM(parseInt(mod.dataset.grMod, 10));
+    if (!del) return;
+    const i = parseInt(del.dataset.grDel, 10), g = mieiGruppi()[i]; if (!g) return;
+    apriModale(`<h3>Eliminare «${esc(g.nome)}»?</h3><p class="meta">I profili restano tutti al loro posto.</p>
+      <div class="m-az"><button class="ghost" id="gd-no">Annulla</button><button class="primario" id="gd-si">Elimina</button></div>`);
+    $('#gd-no').onclick = () => apriImpostazioni();
+    $('#gd-si').onclick = async () => {
+      try { await mutaProfilo(pr => { pr.gruppi = (pr.gruppi||[]).slice(); pr.gruppi.splice(i, 1); }); }
+      catch(e2){ return toast('Non riuscito: '+e2.message, true); }
+      if (S.gruppo === g.nome) scegliGruppoM(null);
+      toast('Gruppo eliminato');
+      apriImpostazioni();
+    };
+  };
   $('#i-esclusi').onclick = modaleScartatiM;
   $('#i-agg').onclick = async () => {
     const b = $('#i-agg'); b.disabled = true; b.innerHTML = '<span class="spin"></span>';
@@ -2350,7 +2493,7 @@ function disegnaRecMobile(){
   if(!lista.length){ g.innerHTML=`<div class="rec-vuoto">${mio?'Non hai ancora recensioni.<br>Tocca «✍ Nuova».':esc(nomeDi(sel))+' non ha recensioni.'}</div>`; return; }
   g.innerHTML=lista.map((r,i)=>{const m=r.meta||{};const pst=m.posterUrl||'';return `<div class="rec-card2${r.inCorso?' in-corso':''}" data-i="${i}">
     <div class="rec-poster2">${pst?`<img src="${esc(pst)}" loading="lazy" alt="">`:`<div class="seg2">${esc(m.titolo||'')}</div>`}${r.inCorso?'<div class="rec-incorso-b">✍</div>':''}${r.votoPersonale?`<div class="rec-voto-b">${stelleLetterbox(r.votoPersonale)}</div>`:''}</div>
-    <div class="corpo"><h5>${esc(m.titolo||'Film')}</h5><div class="sub2">${esc(m.anno||'')}</div></div></div>`;}).join('');
+    <div class="corpo"><h5>${esc(m.titolo||'Film')}</h5><div class="sub2">${r.stagione?`<b style="color:var(--oro2)">S${r.stagione}</b> · `:''}${esc(m.anno||'')}</div></div></div>`;}).join('');
   lista.forEach((r,i)=>{const el=g.querySelector(`.rec-card2[data-i="${i}"]`); if(el) el.onclick=()=>editorRecMobile(r);});
 }
 function sezioneHTMLm(s,i,ed){
@@ -2380,12 +2523,20 @@ function editorRecMobile(recOrig, opts={}){
       <div class="re-head">
         <div class="re-poster">${m.posterUrl?`<img src="${esc(m.posterUrl)}" alt="">`:''}</div>
         <div style="flex:1;min-width:0">
-          <h3 style="margin:0 0 2px;font-size:16px">${esc(m.titolo||'Film')}${ed?'':` · <span style="font-size:12px;color:var(--dim)">di ${esc(nomeDi(recOrig.autore))}</span>`}</h3>
+          <h3 style="margin:0 0 2px;font-size:16px">${esc(m.titolo||'Film')}${bozza.stagione?` <span style="font-size:13px;color:var(--oro2)">· St. ${bozza.stagione}</span>`:''}${ed?'':` · <span style="font-size:12px;color:var(--dim)">di ${esc(nomeDi(recOrig.autore))}</span>`}</h3>
           <div class="meta">${esc(m.anno||'')}${m.durata?' · '+fmtMin(m.durata):''}${m.regista?' · '+esc(m.regista):''}</div>
           <div style="margin-top:6px">${ed?`<div class="re-stelle" id="m-re-stelle">${[1,2,3,4,5].map(i=>`<span data-s="${i}">★</span>`).join('')}</div> <span class="re-voto-num" id="m-re-voto-num"></span>`:`<span class="stelle" style="font-size:18px">${stelleLetterbox(bozza.votoPersonale)}</span>`}</div>
         </div>
         <button class="cambia" id="m-re-chiudi" style="font-size:18px">✕</button>
       </div>
+      ${(inSerie() && bozza.tmdbId != null && stagioniDellaSerie(bozza.tmdbId).length) ? `
+      <div class="re-stagioni2">
+        <label><input type="checkbox" id="m-re-perstag"${bozza.stagione?' checked':''}${ed?'':' disabled'}> per stagioni</label>
+        ${bozza.stagione ? `<label>St. <select class="inp" id="m-re-stag-sel">${
+          stagioniDellaSerie(bozza.tmdbId).map(n =>
+            `<option value="${n}"${n===bozza.stagione?' selected':''}>${n}${stagioniRecensite(bozza.tmdbId).includes(n)?' ✓':''}</option>`).join('')
+        }</select></label>` : ''}
+      </div>` : ''}
       ${ed
         ?`<div class="re-riga2"><label>Ultima visione <input type="date" id="m-re-uv" value="${esc(bozza.ultimaVisione||'')}"></label>
             <label class="re-incorso2"><input type="checkbox" id="m-re-incorso"${bozza.inCorso?' checked':''}> ✍ In corso</label></div>
@@ -2447,6 +2598,28 @@ function editorRecMobile(recOrig, opts={}){
     if($('#m-re-collega')) $('#m-re-collega').onclick=()=>{ leggiCampi(); modaleCercaFilmM(id=>collegaTMDBM(bozza,id), {titolo:bozza.tmdbId!=null?'Cambia film':'Collega a TMDB', query:(bozza.meta||{}).titolo||''}); };
     $('#m-re-add-sez').onclick=()=>{ leggiCampi(); bozza.sezioni.push({titolo:'Nuova sezione',testo:''}); render(); };
     $('#m-re-sezioni').querySelectorAll('[data-az]').forEach(b=>b.onclick=()=>{ leggiCampi(); const i=+b.dataset.i, az=b.dataset.az; if(az==='del') bozza.sezioni.splice(i,1); else if(az==='su'&&i>0)[bozza.sezioni[i-1],bozza.sezioni[i]]=[bozza.sezioni[i],bozza.sezioni[i-1]]; else if(az==='giu'&&i<bozza.sezioni.length-1)[bozza.sezioni[i+1],bozza.sezioni[i]]=[bozza.sezioni[i],bozza.sezioni[i+1]]; render(); });
+    // passa a un'altra recensione della stessa serie salvando prima quella aperta
+    const vaiAStagione = async (stagione) => {
+      leggiCampi();
+      const haRoba = voto || bozza.sezioni.some(s => (s.testo||'').replace(/<[^>]*>/g,'').trim());
+      if (ed && haRoba){
+        try { await salvaRecensioneMobile(bozza); }
+        catch(e){ return toast('Salvataggio non riuscito: '+e.message, true); }
+      }
+      const gia = miaRecensioneM(bozza.tmdbId, stagione);
+      if (gia){ chiudiModale(); disegnaRecMobile(); return editorRecMobile(gia); }
+      const nuova = {tmdbId:bozza.tmdbId, stagione:stagione || null, votoPersonale:0,
+        doveVederlo:{streaming:[], fisico:[], percorso:''}, ultimaVisione:null,
+        meta:JSON.parse(JSON.stringify(bozza.meta||{})),
+        sezioni:SEZIONI_DEFAULT.map(x => ({titolo:x, testo:''})), link:[]};
+      chiudiModale(); disegnaRecMobile();
+      editorRecMobile(nuova, {nuova:true});
+    };
+    if ($('#m-re-perstag')) $('#m-re-perstag').onchange = e => {
+      const st = stagioniDellaSerie(bozza.tmdbId);
+      vaiAStagione(e.target.checked ? (st[0] || 1) : null);
+    };
+    if ($('#m-re-stag-sel')) $('#m-re-stag-sel').onchange = e => vaiAStagione(parseInt(e.target.value, 10) || 1);
     $('#m-re-salva').onclick=async()=>{ leggiCampi(); if(!voto && !bozza.sezioni.some(s=>(s.testo||'').replace(/<[^>]*>/g,'').trim())){ toast('Metti un voto o del testo',true); return; }
       $('#m-re-salva').disabled=true; $('#m-re-salva').innerHTML='<span class="spin"></span>';
       try { await salvaRecensioneMobile(bozza); chiudiModale(); disegnaRecMobile(); toast('Recensione salvata 🎞'); }
@@ -2544,6 +2717,7 @@ $('#q').addEventListener('keydown', e => { if (e.key === 'Enter'){ clearTimeout(
     return;
   }
   S.modo = LS.get('modo') === 'serie' ? 'serie' : 'film';   // prima di caricare: decide i percorsi
+  S.gruppo = LS.get('gruppo') || null;
   applicaModo();
   $('#m-modo').onclick = modaleModoM;
   const saved = LS.get('tree');
