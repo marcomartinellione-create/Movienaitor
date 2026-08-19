@@ -1,6 +1,6 @@
 {
   "name": "movienaitor-mobile",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "private": true,
   "description": "APK Movienaitor: aggiungi film da telefono, cartella Drive sincronizzata in locale.",
   "devDependencies": {
