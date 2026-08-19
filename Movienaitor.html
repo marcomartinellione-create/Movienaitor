@@ -3462,17 +3462,10 @@ function spegniImmagine(schermo, inner){
   setTimeout(() => fantasma.remove(), 1000);
 }
 
-function abilitaAnimazioneTV(schermo){
-  if (schermo.dataset.animTv) return;
-  schermo.dataset.animTv = '1';
-  setTimeout(() => schermo.classList.add('pronto'), 80);
-}
-
 async function disegnaSala(){
   disegnaGruppi();
   disegnaPlatea();
   const schermo = $('#schermo'), inner = $('#schermo-inner'), rosaEl = $('#rosa');
-  abilitaAnimazioneTV(schermo);
   if (!S.presenti.size){
     spegniImmagine(schermo, inner);
     schermo.classList.remove('aperto');
@@ -3518,6 +3511,9 @@ async function disegnaSala(){
         </div>
       </div>
       <button id="btn-play" title="${inSerie() ? 'Registra la serata e sposta il segnalibro' : 'Elegge il film della serata e lo registra per tutti i presenti'}">▶</button>`;
+    // .pronto abilita le animazioni della TV: si mette qui, nello stesso tick dell'immagine,
+    // così l'accensione parte da opacity 0 senza che l'immagine lampeggi prima
+    if (inSerie() && !schermo.classList.contains('aperto')) schermo.classList.add('pronto');
     schermo.classList.add('aperto');
     $('.schermo-clic').onclick = () => modaleScheda(scelto);
     $('#btn-play').onclick = () => modalePlay(scelto);

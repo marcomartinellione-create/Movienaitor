@@ -1480,18 +1480,12 @@ function spegniImmagine(schermo, inner){
   inner.parentNode.insertBefore(fantasma, inner.nextSibling);
   setTimeout(() => fantasma.remove(), 1000);
 }
-function abilitaAnimazioneTV(el){
-  if (!el || el.dataset.animTv) return;
-  el.dataset.animTv = '1';
-  setTimeout(() => el.classList.add('pronto'), 80);
-}
 function disegnaSalaM(){
   disegnaPlateaM();   // le poltrone in velluto, come sul desktop
   $('#m-conta-pres').textContent = S.presenti.size ? '· '+S.presenti.size : '';
   $('#m-btn-filtri-sala').classList.toggle('attivo', filtriSalaAttivi());
 
   const schermo = $('#m-schermo'), inner = $('#m-schermo-inner'), stato = $('#m-stato-sala'), btnLC = $('#m-lista-completa');
-  abilitaAnimazioneTV(schermo);
   const aggiornaLC = n => { if (btnLC){ btnLC.disabled = !n; btnLC.textContent = n ? `📋 Lista completa (${n})` : '📋 Lista completa'; } };
   // schermo.classList `aperto` apre le tende (sipario); l'inner si rifà ad ogni render
   if (!S.presenti.size){
@@ -1529,11 +1523,13 @@ function disegnaSalaM(){
       <button class="play" id="m-play" title="Segna questo film come visto stasera">▶</button>`;
     inner.onclick = () => modaleSchedaM(scelto);
     $('#m-play').onclick = e => { e.stopPropagation(); modalePlayM(scelto); };
-    // Sipario: se era chiuso lo apro dopo un attimo, così le tende partono chiuse e si
-    // vedono scorrere (transizione CSS). Se era già aperto (cambio film) resta aperto,
-    // niente flash. setTimeout e non rAF: scatta anche col tab in background, così il
-    // film non resta mai coperto.
-    if (!schermo.classList.contains('aperto')) setTimeout(() => schermo.classList.add('aperto'), 60);
+    // Accensione: in serie .pronto e .aperto vanno insieme, nello stesso tick dell'immagine,
+    // così l'accensione parte da opacity 0 e l'immagine non lampeggia prima. In film è il
+    // sipario: le tende partono chiuse e si vedono scorrere dopo un attimo.
+    if (!schermo.classList.contains('aperto')){
+      if (inSerie()){ schermo.classList.add('pronto'); schermo.classList.add('aperto'); }
+      else setTimeout(() => schermo.classList.add('aperto'), 60);
+    }
   }
   const e = ris.esclusi, fuori = e.durata+e.genere+e.regista+e.vincoli;
   stato.innerHTML = `🎞 ${ris.totale} in cartellone · ${S.presenti.size} in sala
