@@ -357,6 +357,14 @@ header .spazio{flex:1; min-width:0}
 .rec-poster .segnaposto{position:absolute; inset:0}
 .rec-voto-badge{position:absolute; bottom:6px; left:6px; background:var(--velo-badge); color:var(--oro2); padding:3px 8px; border-radius:7px; font-size:12px; font-weight:600; letter-spacing:1px}
 .rec-card .corpo{padding:8px 9px}
+.rec-stag{color:var(--oro2)}
+/* riga della recensione per stagioni (solo serie TV) */
+.re-stagioni{display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin:2px 0 10px}
+.re-stagioni label{display:flex; align-items:center; gap:7px; color:var(--dim); font-size:13.5px}
+.re-stagioni select{background:var(--bg2); color:var(--crema); border:1px solid var(--velluto3);
+  border-radius:8px; padding:6px 9px; font:inherit; font-size:14px}
+.re-stagioni select:focus{border-color:var(--oro-dim); outline:none}
+.re-stag-tit{font-size:14px; color:var(--oro2)}
 .rec-card h5{margin:0; font-size:13px; line-height:1.2; color:var(--crema); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .rec-card .sub{color:var(--dim2); font-size:11px; margin-top:3px}
 /* stesso trattamento degli altri "niente da mostrare" (cornice tratteggiata) */
@@ -1496,7 +1504,7 @@ function mostraLocandina(box, film){
 // vale come aver visto il film (§5.2 C5), esattamente come una serata nello storico.
 function visioneRecensione(tmdbId, slug){
   if (tmdbId == null) return null;
-  const r = S.recensioni.find(x => x.autore === slug && x.tmdbId === tmdbId);
+  const r = S.recensioni.find(x => x.autore === slug && x.tmdbId === tmdbId && !x.stagione);
   if (!r) return null;
   return String(r.ultimaVisione || r.creato || r.modificato || '').slice(0, 10) || null;
 }
@@ -1785,8 +1793,9 @@ async function salvaRecensione(rec){
   if (!rec.creato) rec.creato = oggiISO();
   const vecchio = rec._file;
   // con tmdbId il nome canonico è <tmdbId>.json; senza, mantengo il file esistente (es. importate)
+  const suffisso = rec.stagione ? '-s' + rec.stagione : '';
   const percorso = (rec.tmdbId != null)
-    ? P('recensioni', S.me, rec.tmdbId + '.json')
+    ? P('recensioni', S.me, rec.tmdbId + suffisso + '.json')
     : (rec._file || P('recensioni', S.me, 'senza-id-' + Date.now() + '.json'));
   const salvabile = {...rec}; delete salvabile._file; delete salvabile._key; delete salvabile.autore;
   await FS.writeJSON(percorso, salvabile);
@@ -1795,7 +1804,22 @@ async function salvaRecensione(rec){
   const i = S.recensioni.findIndex(x => x.autore === S.me && x._key === rec._key);
   if (i >= 0) S.recensioni[i] = rec; else S.recensioni.push(rec);
 }
-const miaRecensione = id => S.recensioni.find(r => r.autore === S.me && r.tmdbId === id);
+// stagione: null/assente = recensione di tutta la serie (e unico caso possibile per i film)
+const miaRecensione = (id, stagione = null) => S.recensioni.find(r =>
+  r.autore === S.me && r.tmdbId === id && (r.stagione || null) === (stagione || null));
+// tutte le stagioni che ho già recensito di quella serie
+const stagioniRecensite = id => S.recensioni
+  .filter(r => r.autore === S.me && r.tmdbId === id && r.stagione)
+  .map(r => r.stagione).sort((a,b) => a-b);
+// le stagioni della serie, prese dalla watch list (è lì che TMDB le ha salvate)
+function stagioniDellaSerie(id){
+  for (const p of S.profili){
+    const v = listaDi(p).find(x => x.tmdbId === id);
+    if (v && (v.stagioni||[]).length) return v.stagioni.map(s => s.n);
+  }
+  return [];
+}
+const nomeStagione = r => (r && r.stagione) ? `Stagione ${r.stagione}` : '';
 // stato "pronto alla visione" dell'archivio (scritto dall'host, file condiviso)
 async function salvaArchivio(){ await FS.writeJSON(P('archivio.json'), {pronti:[...S.archivioPronti], dove:S.archivioDove}); }
 
@@ -2850,7 +2874,7 @@ function disegnaRecensioni(){
       <div class="rec-poster"><img hidden alt=""><div class="segnaposto" style="background:url('${segnapostoSVG(m.titolo||'', r.tmdbId||m.titolo||idx)}') center/cover"></div>
         ${r.inCorso ? '<div class="rec-incorso-badge">✍ in corso</div>' : ''}
         ${r.votoPersonale ? `<div class="rec-voto-badge">${stelleLetterbox(r.votoPersonale)}</div>` : ''}</div>
-      <div class="corpo"><h5>${esc(m.titolo||'Film')}</h5><div class="sub">${esc(m.anno||'')}${m.regista?' · '+esc(m.regista):''}</div></div>
+      <div class="corpo"><h5>${esc(m.titolo||'Film')}</h5><div class="sub">${r.stagione ? '<b class="rec-stag">S'+r.stagione+'</b> · ' : ''}${esc(m.anno||'')}${m.regista?' · '+esc(m.regista):''}</div></div>
     </div>`;
   }).join('');
   lista.forEach((r, idx) => {
@@ -2907,7 +2931,7 @@ function editorRecensione(recOrig, opts={}){
       <div class="re-head">
         <div class="re-poster"><img hidden alt=""><div class="segnaposto" style="background:url('${segnapostoSVG(m.titolo||'', bozza.tmdbId)}') center/cover"></div></div>
         <div style="flex:1; min-width:0">
-          <h3 style="margin:0 0 3px">${esc(m.titolo||'Film')}${editabile?'':` <span style="font-size:13px;color:var(--dim2)">· recensione di ${esc(nomeDi(recOrig.autore))}</span>`}</h3>
+          <h3 style="margin:0 0 3px">${esc(m.titolo||'Film')}${bozza.stagione?` <span class="re-stag-tit">· Stagione ${bozza.stagione}</span>`:''}${editabile?'':` <span style="font-size:13px;color:var(--dim2)">· recensione di ${esc(nomeDi(recOrig.autore))}</span>`}</h3>
           <div class="m-meta">${esc(m.anno||'')}${m.durata?' · '+fmtMin(m.durata):''}${m.regista?' · '+esc(m.regista):''}<br>
             ${esc((m.generi||[]).join(', '))}${m.paese?' · '+esc(m.paese):''}${m.voto?` · ★ ${fmtNum(m.voto,1)} ${m.votoFonte==='imdb'?'IMDb':'TMDB'}`:''}</div>
           ${m.cast&&m.cast.length?`<div class="m-meta" style="color:var(--dim2)">${esc(m.cast.join(', '))}</div>`:''}
@@ -2915,6 +2939,18 @@ function editorRecensione(recOrig, opts={}){
         </div>
         <button class="re-x" id="re-chiudi" title="Chiudi">✕</button>
       </div>
+      ${(inSerie() && bozza.tmdbId != null && stagioniDellaSerie(bozza.tmdbId).length) ? `
+      <div class="re-stagioni">
+        <label class="re-perstag" title="Una recensione per stagione invece di una sola per tutta la serie">
+          <input type="checkbox" id="re-perstag"${bozza.stagione ? ' checked' : ''}${editabile?'':' disabled'}> per stagioni</label>
+        ${bozza.stagione ? `<label>Stagione <select id="re-stag-sel">${
+            stagioniDellaSerie(bozza.tmdbId).map(n => {
+              const scritta = stagioniRecensite(bozza.tmdbId).includes(n);
+              return `<option value="${n}"${n === bozza.stagione ? ' selected' : ''}>${n}${scritta ? ' ✓' : ''}</option>`;
+            }).join('')
+          }</select></label>
+          <span class="aiuto">le stagioni con ✓ sono già recensite</span>` : ''}
+      </div>` : ''}
       ${editabile
         ? `<div class="re-riga"><label>Ultima visione <input type="date" id="re-uv" value="${esc(bozza.ultimaVisione||'')}"></label>
              <label class="re-incorso" title="Tienila in cima all'elenco finché non la completi"><input type="checkbox" id="re-incorso"${bozza.inCorso?' checked':''}> ✍ In corso</label></div>
@@ -3021,13 +3057,39 @@ function editorRecensione(recOrig, opts={}){
       else if (az === 'giu' && i<bozza.sezioni.length-1) [bozza.sezioni[i+1], bozza.sezioni[i]] = [bozza.sezioni[i], bozza.sezioni[i+1]];
       render();
     });
+    // passa a un'altra recensione della stessa serie (altra stagione, o tutta la serie),
+    // salvando prima quella aperta se ha qualcosa dentro
+    const vaiA = async (stagione) => {
+      leggiCampi();
+      const haRoba = voto || bozza.sezioni.some(s => (s.testo||'').trim());
+      if (editabile && haRoba){
+        try { await salvaRecensione(bozza); }
+        catch(e){ toast('Salvataggio non riuscito: '+e.message, true); return; }
+      }
+      const gia = miaRecensione(bozza.tmdbId, stagione);
+      if (gia){ chiudiModale(); disegnaRecensioni(); return editorRecensione(gia); }
+      // non esiste ancora: si parte da una nuova, con gli stessi metadati della serie
+      const nuova = {tmdbId:bozza.tmdbId, stagione:stagione || null, votoPersonale:0,
+        doveVederlo:{streaming:[], fisico:[], percorso:''},
+        ultimaVisione:null, meta:JSON.parse(JSON.stringify(bozza.meta||{})),
+        sezioni:SEZIONI_DEFAULT.map(x => ({titolo:x, testo:''})), link:[]};
+      chiudiModale(); disegnaRecensioni();
+      editorRecensione(nuova, {nuova:true});
+    };
+    if ($('#re-perstag')) $('#re-perstag').onchange = e => {
+      // accesa: si va sulla stagione 1 (o la prima che esiste); spenta: torna la recensione
+      // di tutta la serie
+      const stagioni = stagioniDellaSerie(bozza.tmdbId);
+      vaiA(e.target.checked ? (stagioni[0] || 1) : null);
+    };
+    if ($('#re-stag-sel')) $('#re-stag-sel').onchange = e => vaiA(parseInt(e.target.value, 10) || 1);
     $('#re-salva').onclick = async () => {
       leggiCampi();
       if (!voto && !bozza.sezioni.some(s => (s.testo||'').trim())){ toast('Metti almeno un voto o una sezione', true); return; }
       try { await salvaRecensione(bozza); chiudiModale(); disegnaRecensioni(); toast('Recensione salvata 🎞'); }
       catch(e){ toast('Salvataggio non riuscito: '+e.message, true); }
     };
-    if ($('#re-del')) $('#re-del').onclick = () => confermaModale(`Eliminare la recensione di «${m.titolo}»?`, 'Elimina', async () => {
+    if ($('#re-del')) $('#re-del').onclick = () => confermaModale(`Eliminare la recensione di «${m.titolo}»${bozza.stagione?` — Stagione ${bozza.stagione}`:''}?`, 'Elimina', async () => {
       try { await eliminaRecensione(bozza); chiudiModale(); disegnaRecensioni(); toast('Recensione eliminata'); }
       catch(e){ toast('Non riuscito: '+e.message, true); }
     });

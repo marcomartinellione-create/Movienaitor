@@ -679,7 +679,8 @@ async function salvaRecensioneMobile(rec){
   rec.autore = S.me.slug;
   rec.modificato = new Date().toISOString();
   if (!rec.creato) rec.creato = new Date().toISOString().slice(0,10);
-  const nome = (rec.tmdbId != null) ? rec.tmdbId + '.json' : (rec._nome || ('senza-id-' + Date.now() + '.json'));
+  const suffisso = rec.stagione ? '-s' + rec.stagione : '';   // recensione di una stagione
+  const nome = (rec.tmdbId != null) ? rec.tmdbId + suffisso + '.json' : (rec._nome || ('senza-id-' + Date.now() + '.json'));
   const vecchioUri = rec._uri, vecchioNome = rec._nome;
   const salvabile = {...rec}; delete salvabile._uri; delete salvabile._nome; delete salvabile.autore;
   const res = await saf().salvaRecensione({ uri: S.treeUri, slug: S.me.slug, nome,
@@ -1255,7 +1256,7 @@ const ordineSaga = f => f.uscita || (f.anno ? f.anno + '-00-00' : '9999');
 // vale come aver visto il film, esattamente come una serata nello storico.
 function visioneRecensione(tmdbId, slug){
   if (tmdbId == null) return null;
-  const r = S.recensioni.find(x => x.autore === slug && x.tmdbId === tmdbId);
+  const r = S.recensioni.find(x => x.autore === slug && x.tmdbId === tmdbId && !x.stagione);
   if (!r) return null;
   return String(r.ultimaVisione || r.creato || r.modificato || '').slice(0,10) || null;
 }

@@ -342,7 +342,14 @@ Seconda modalità, non una seconda app: casella in basso a destra (speculare al 
   Si misura **solo a Sala aperta**: a vista nascosta ogni misura vale 0 e la riserva
   andrebbe persa, quindi in quel caso si lascia com'era e si rifà tornando in Sala. Era il
   motivo per cui lo schermo tornava compatto dopo aver aggiunto un titolo dalla Watch List.
-- **Da fare**: provare la modalità sul telefono vero dopo la prossima build.
+- **Recensioni per stagione** (desktop): `miaRecensione(id, stagione)`,
+  `stagioniRecensite`, `stagioniDellaSerie` (le legge dalla watch list, è lì che TMDB le
+  ha salvate). Il file prende `-s<N>` in coda. `visioneRecensione` ignora di proposito le
+  recensioni di stagione: se no recensire la prima stagione spegnerebbe tutta la serie.
+  Sul mobile la funzione non c'è ancora, ma `salvaRecensioneMobile` rispetta già il nome
+  col suffisso (se no schiaccerebbe la recensione di stagione su quella intera).
+- **Da fare**: portare le recensioni per stagione sul mobile; provare la modalità sul
+  telefono vero dopo la prossima build.
 
 ⚠️ **Gotcha delle patch (2)**: `core.autocrlf=true`, quindi dopo un `git checkout` questi
 file tornano a **CRLF** e le ancore multi-riga scritte con `\n` non combaciano più. Gli

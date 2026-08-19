@@ -589,6 +589,23 @@ grande **esattamente come il proiettore** l'app misura la differenza fra i gener
 modalità e la recupera come spazio in fondo al pannello. La misura si può prendere solo a
 Sala aperta: quando è nascosta la riserva si lascia com'è e si rifà all'apertura.
 
+### 14.3-ter Recensioni per stagione (2026-08-19, desktop)
+
+Una serie si può recensire **tutta insieme** (com'è sempre stato) oppure **una stagione
+per volta**. Nell'editor compare una riga «per stagioni»: accendendola la recensione
+diventa quella della stagione scelta, e una **tendina** porta da una stagione all'altra —
+ognuna con il suo voto, le sue sezioni e la sua data. Le stagioni già scritte hanno un ✓
+nella tendina. Passando da una stagione all'altra quella aperta si salva da sé (l'editor è
+un modale protetto proprio per non perdere il lavoro).
+
+- File: `serie/recensioni/<slug>/<tmdbId>-s<N>.json` — stesso schema di sempre col numero
+  in coda, e un campo `stagione`. Senza il campo è la recensione dell'intera serie.
+- L'elenco dell'Archivio mostra una scheda per recensione, con il numero di stagione.
+- **Una recensione di stagione non dice che la serie è finita**: la regola «recensire =
+  averla vista» (§3.3) vale solo per la recensione dell'intera serie. Se no bastasse
+  scrivere della prima stagione per far sparire la serie dalla lista.
+- L'opzione è per serie: non tutte meritano quel dettaglio.
+
 ### 14.4 L'aspetto
 
 Tutto per token: `:root[data-modo="serie"]` ridichiara la palette (blu), e la scenografia
