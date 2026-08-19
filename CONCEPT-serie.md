@@ -1,6 +1,8 @@
 # Concept — Serie TV come seconda modalità
 
-> **Stato: decisioni prese il 2026-08-18, implementazione sul ramo `serie-tv`.**
+> **Stato: implementato e pubblicato su desktop (v1.7.1, 2026-08-19).** Il codice mobile
+> è scritto (stesso ramo, poi confluito in master) ma l'APK non è stato ancora costruito
+> né distribuito: lo pubblica Marco con `Pubblica APK.bat` quando vuole.
 > Misure prese sul codice reale (`Movienaitor.html` 3.717 righe,
 > `app-mobile/www/index.html` 2.120).
 >
