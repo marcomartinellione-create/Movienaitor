@@ -80,7 +80,7 @@
     70%  {opacity:.5; transform:scaleX(1)}
     100% {opacity:0; transform:scaleX(1)}
   }
-  :root[data-modo="serie"] .platea{gap:0 0;
+  :root[data-modo="serie"] .platea{row-gap:14px; column-gap:0;
     background:radial-gradient(65% 95% at 50% 0%, rgba(42,59,82,.34), transparent 72%)}
   .tv-spenta{display:none}
   :focus-visible{outline:2px solid var(--oro); outline-offset:2px}
@@ -271,9 +271,10 @@
   .re-dove-file input{flex:1; background:var(--bg2); border:1px solid var(--linea); color:var(--testo); border-radius:9px; padding:8px 10px; font:inherit; font-size:13px}
 
   /* ── Sala (mobile) ── */
-  .platea{display:flex; flex-wrap:wrap; justify-content:center; gap:6px 8px; padding:12px 4px 6px; margin-bottom:2px;
+  .platea{--per-fila:5; display:grid; grid-template-columns:repeat(var(--per-fila), minmax(0, 62px));
+    justify-content:center; gap:6px 8px; padding:12px 4px 6px; margin-bottom:2px;
     background:radial-gradient(65% 95% at 50% 0%, rgba(74,40,48,.22), transparent 72%); border-radius:16px}
-  .poltrona{width:62px; text-align:center; padding-top:4px; transition:transform .12s}
+  .poltrona{width:auto; min-width:0; text-align:center; padding-top:4px; transition:transform .12s}
   .poltrona.assegnata{cursor:pointer}
   .poltrona.assegnata:active{transform:translateY(-2px)}
   .poltrona svg{width:100%; display:block; filter:drop-shadow(0 4px 6px rgba(0,0,0,.4))}
@@ -822,9 +823,10 @@ function disegnaPlateaM(){
   const box = $('#m-platea'); if (!box) return;
   const n = S.profili.length;
   const posti = Math.max(10, Math.ceil((n + 3) / 5) * 5);   // righe piene + qualche posto libero
-  // posizione nella fila: serve al divano per sapere dove mettere i braccioli. Sul mobile
-  // i posti vanno a capo da soli, quindi si ragiona per righe da PER_FILA.
-  const PER_FILA = 5;
+  // Posizione nella fila: serve al divano per sapere dove mettere i braccioli. Il numero
+  // di colonne lo decide il foglio di stile (--per-fila): si legge da lì, così CSS e
+  // codice non possono più raccontarsi cose diverse.
+  const PER_FILA = parseInt(getComputedStyle(box).getPropertyValue('--per-fila'), 10) || 5;
   const pos = i => {
     if (posti <= 1) return 'solo';
     const dentro = i % PER_FILA, ultimaDellaFila = Math.min(posti - 1, i - dentro + PER_FILA - 1);
