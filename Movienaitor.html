@@ -173,16 +173,25 @@ header .spazio{flex:1; min-width:0}
 /* accensione e spegnimento: il pannello collassa sulla riga di luce e sparisce (e al
    contrario quando si spegne). Stesso aggancio del sipario: la classe .aperto. */
 :root[data-modo="serie"] .tv-spenta{display:block; position:absolute; inset:0; z-index:4; pointer-events:none;
-  transform-origin:center; border-radius:3px;
+  transform-origin:center center; border-radius:3px; transform:scaleY(1); opacity:1;
   background:radial-gradient(62% 62% at 50% 50%,rgba(90,140,181,.07),transparent 70%),var(--vuoto-righe);
-  transition:transform .42s cubic-bezier(.6,0,.25,1), opacity .18s .34s}
-:root[data-modo="serie"] .schermo.aperto .tv-spenta{transform:scaleY(.005); opacity:0}
-:root[data-modo="serie"] .tv-spenta::after{content:''; position:absolute; left:5%; right:5%; top:50%;
-  height:2px; margin-top:-1px; border-radius:2px; background:var(--oro2); box-shadow:0 0 14px var(--oro2);
-  opacity:0; transition:opacity .18s}
-:root[data-modo="serie"] .schermo.aperto .tv-spenta::after{opacity:1; transition:opacity .1s .16s}
+  /* SPEGNIMENTO: il nero ricompare subito schiacciato e poi si riapre */
+  transition:opacity .01s, transform .40s cubic-bezier(.16,.84,.32,1) .09s}
+:root[data-modo="serie"] .schermo.aperto .tv-spenta{transform:scaleY(.008); opacity:0;
+  /* ACCENSIONE: prima si schiaccia in fretta sulla riga, poi svanisce */
+  transition:transform .20s cubic-bezier(.75,.02,.42,1), opacity .13s .21s}
+/* la riga di luce: bianco-azzurra come un tubo, non oro */
+:root[data-modo="serie"] .tv-spenta::after{content:''; position:absolute; left:0; right:0; top:50%;
+  height:2px; margin-top:-1px; border-radius:2px; background:#e8f6ff;
+  box-shadow:0 0 16px 3px rgba(200,232,255,.85), 0 0 44px 8px rgba(120,180,230,.35);
+  opacity:0; transform:scaleX(.04);
+  /* spegnendosi la riga si accende di colpo e si allarga, poi resta mentre il nero riapre */
+  transition:opacity .06s, transform .16s cubic-bezier(.2,.9,.3,1)}
+:root[data-modo="serie"] .schermo.aperto .tv-spenta::after{opacity:1; transform:scaleX(1);
+  /* accendendosi la riga arriva appena il nero si è chiuso, e se ne va con lui */
+  transition:opacity .07s .16s, transform .13s .16s}
 /* i cuscini si toccano (è un divano, non poltrone), i due divani restano staccati */
-:root[data-modo="serie"] .fila{gap:0}
+:root[data-modo="serie"] .fila{--passo-poltrone:0px}
 :root[data-modo="serie"] .fila+.fila{margin-top:18px}
 :root[data-modo="serie"] #platea{background:radial-gradient(60% 90% at 50% 0%,rgba(42,59,82,.38),transparent 70%)}
 
@@ -220,9 +229,11 @@ header .spazio{flex:1; min-width:0}
 /* poltrone */
 #platea{margin-top:26px; padding:18px 10px 6px;
   background:radial-gradient(60% 90% at 50% 0%, rgba(74,40,48,.25), transparent 70%); border-radius:20px}
-.fila{display:flex; justify-content:center; gap:14px}
+.fila{display:flex; justify-content:center; gap:var(--passo-poltrone); --passo-poltrone:14px}
 .fila+.fila{margin-top:10px}
-.poltrona{position:relative; width:74px; padding-top:6px; text-align:center; transition:transform var(--rapida)}
+.poltrona{position:relative; flex:0 0 auto; min-width:0; padding-top:6px; text-align:center;
+  width:min(74px, calc((100% - 9 * var(--passo-poltrone)) / 10));   /* 10 = la fila più lunga */
+  transition:transform var(--rapida)}
 .poltrona.assegnata{cursor:pointer}
 .poltrona.assegnata:hover{transform:translateY(-3px)}
 .poltrona svg{width:100%; display:block; filter:drop-shadow(0 5px 8px rgba(0,0,0,.4))}
@@ -259,7 +270,8 @@ header .spazio{flex:1; min-width:0}
 .pchip{font-size:11.5px; padding:3px 8px; border-radius:20px; border:1px solid var(--velluto3); color:var(--dim2); cursor:pointer; user-select:none}
 .pchip.con{border-color:var(--verde); color:var(--verde); background:rgba(125,155,118,.08)}
 .pchip.non{border-color:var(--rosso2); color:var(--rosso2); background:rgba(168,84,84,.08)}
-.scheda-film .azioni{display:flex; justify-content:flex-end; align-items:center; margin-top:auto}
+.scheda-film .azioni{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:auto}
+.scheda-film .btn-visto{color:var(--verde)}
 .testo-link{color:var(--dim2); font-size:12.5px; text-decoration:underline}
 /* oro sulle azioni normali; il rosso resta a quelle che tolgono qualcosa, dove
    prima anche «modifica» o «rileva» diventavano rosse come fossero pericolose */
@@ -440,9 +452,14 @@ header .spazio{flex:1; min-width:0}
 /* ---------- segnalazioni (bug / idee) ---------- */
 .aiuto-p{color:var(--dim); line-height:1.6}
 .su-oro{color:var(--oro2)}
-.play-ep{display:flex; flex-wrap:wrap; gap:14px; align-items:center}
-.play-ep label{display:flex; align-items:center; gap:6px; color:var(--dim); font-size:13.5px}
-.play-ep select,.play-ep input{width:auto; min-width:64px}
+.play-ep{display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top:4px}
+.play-ep label{display:flex; align-items:center; gap:7px; color:var(--dim); font-size:13.5px}
+.play-ep select,.play-ep input{width:auto; min-width:66px; background:var(--bg2); color:var(--crema);
+  border:1px solid var(--velluto3); border-radius:8px; padding:7px 9px; font:inherit; font-size:14px;
+  text-align:center; transition:border-color var(--rapida)}
+.play-ep select:focus,.play-ep input:focus{border-color:var(--oro-dim); outline:none}
+.play-ep .play-di{color:var(--dim2); font-size:12.5px; margin-left:-4px}
+.play-tutta{margin-top:9px}
 .bug-btn,.modo-btn{position:fixed; bottom:18px; z-index:80; display:flex; align-items:center; gap:8px;
   padding:9px 16px; border-radius:22px; font-size:13.5px; letter-spacing:.03em;
   background:linear-gradient(180deg,var(--velluto3),var(--velluto2)); border:1px solid var(--oro-dim);
@@ -644,7 +661,7 @@ header .spazio{flex:1; min-width:0}
           <div class="generi-chips" id="filtro-generi"></div>
         </div>
         <div class="filtro">
-          <label>Durata massima</label>
+          <label data-film="Durata massima" data-serie="Durata dell'episodio">Durata massima</label>
           <input type="range" id="filtro-durata" min="60" max="240" step="5" value="240">
           <div class="valore" id="filtro-durata-val">qualsiasi</div>
         </div>
@@ -1116,6 +1133,10 @@ async function cambiaModo(m){
   await ricordaModo(S.modo);
   applicaModo();
   S.proiettato = null;
+  // i filtri della serata sono legati alla modalità: un genere dell'altra tassonomia non
+  // troverebbe niente e la Sala sembrerebbe vuota senza un perché
+  S.filtri = {durata:null, genere:[], regista:''};
+  S.catFiltri = {q:'', ordina:'aggiunto', dir:'desc', minDes:0, minVoto:0, annoDa:null, annoA:null};
   S.cgPool = []; S.cgLista = []; S.cgProfilo = null; S.cgFirma = '';   // i consigli sono per modalità
   S.providersCache = new Map();
   S.archivioChi = new Set(); S.recUtente = null;
@@ -1123,6 +1144,7 @@ async function cambiaModo(m){
   await caricaConsigli();
   aggiornaModoUI();
   disegnaTutto();
+  riservaFiltri();   // dopo il ridisegno, se la Sala è a video
   toast(inSerie() ? 'Modalità serie TV 📺' : 'Modalità film 🎬');
 }
 function aggiornaModoUI(){
@@ -1507,6 +1529,7 @@ function indiceSoddisfazione(slug){
   const passo = S.config.passoSoddisfazione ?? 0.15;
   let idx = 1.0;
   for (const v of S.storico){
+    if (v.solo) continue;                                      // visione personale, non una serata
     if (!(v.partecipanti || []).includes(slug)) continue;      // assente: nessun cambiamento
     if ((v.proponenti || []).includes(slug)){
       if (idx > 1) idx = 1;                                     // azzera l'insoddisfazione
@@ -3102,30 +3125,43 @@ function tuttiRegisti(){
   return [...r].sort();
 }
 
-function disegnaFiltri(){
-  const box = $('#filtro-generi');
-  const chips = elenco => elenco.map(g =>
-    `<button class="gchip${S.filtri.genere.includes(g)?' on':''}" data-g="${esc(g)}">${esc(g)}</button>`).join('')
-    || `<span class="vuoto-filtro">nessun${inSerie() ? 'a serie' : ' film'} in lista</span>`;
-  const pannello = box.closest('.pannello');
+const chipsGeneri = elenco => elenco.map(g =>
+  `<button class="gchip${S.filtri.genere.includes(g)?' on':''}" data-g="${esc(g)}">${esc(g)}</button>`).join('')
+  || `<span class="vuoto-filtro">nessun${inSerie() ? 'a serie' : ' film'} in lista</span>`;
+
+// Lo schermo riempie la riga e la riga è alta quanto il pannello dei filtri, che dipende da
+// quanti generi ci sono nelle liste: in modalità serie sono di solito meno, e la TV verrebbe
+// più bassa del proiettore. Qui si misura la differenza e la si recupera in fondo al pannello.
+// ATTENZIONE: si può misurare SOLO a Sala aperta. Se è nascosta (p.es. si aggiunge un titolo
+// dalla Watch List) ogni misura vale 0: in quel caso si lascia la riserva com'era e la si
+// rifà quando la Sala torna a video, altrimenti lo schermo tornerebbe compatto.
+function riservaFiltri(){
+  const box = $('#filtro-generi'); if (!box) return;
+  const pannello = box.closest('.pannello'); if (!pannello) return;
+  if (!inSerie()){ pannello.style.paddingBottom = ''; return; }
+  if (!box.getClientRects().length) return;          // vista nascosta: non si misura nulla
+  const miei = box.innerHTML;
   pannello.style.paddingBottom = '';
-  if (inSerie()){
-    // Si misurano sul posto i chip che avrebbe la modalità film e i propri; la differenza
-    // si recupera in fondo al pannello, così la riga resta alta uguale (e la TV grande come
-    // il proiettore) senza lasciare un buco in mezzo ai filtri. Niente numeri fissi: la
-    // misura è frazionaria perché offsetHeight arrotonda e lascerebbe un pixel di scarto.
-    const padBase = parseFloat(getComputedStyle(pannello).paddingBottom) || 0;
-    box.innerHTML = chips(tuttiGeneri('film'));
-    const altezzaFilm = box.getBoundingClientRect().height;
-    box.innerHTML = chips(tuttiGeneri());
-    const mancante = altezzaFilm - box.getBoundingClientRect().height;
-    if (mancante > 0) pannello.style.paddingBottom = (padBase + mancante) + 'px';
-  } else {
-    box.innerHTML = chips(tuttiGeneri());
-  }
+  const padBase = parseFloat(getComputedStyle(pannello).paddingBottom) || 0;
+  box.innerHTML = chipsGeneri(tuttiGeneri('film'));
+  const altezzaFilm = box.getBoundingClientRect().height;   // misura frazionaria: offsetHeight
+  box.innerHTML = miei;                                     // arrotonda e lascia un pixel
+  const mancante = altezzaFilm - box.getBoundingClientRect().height;
+  if (mancante > 0) pannello.style.paddingBottom = (padBase + mancante) + 'px';
+}
+
+function disegnaFiltri(){
+  $('#filtro-generi').innerHTML = chipsGeneri(tuttiGeneri());
+  riservaFiltri();
   $('#lista-registi').innerHTML = tuttiRegisti().map(r => `<option value="${esc(r)}">`).join('');
+  // il cursore della durata cambia scala con la modalità: un film si misura in ore, un
+  // episodio in minuti (20' – 1h30, e in fondo "qualsiasi")
+  const slider = $('#filtro-durata');
+  const min = inSerie() ? 20 : 60, max = inSerie() ? 90 : 240;
+  slider.min = min; slider.max = max;
+  if (S.filtri.durata != null && (S.filtri.durata < min || S.filtri.durata >= max)) S.filtri.durata = null;
   const d = S.filtri.durata;
-  $('#filtro-durata').value = d || 240;
+  slider.value = d || max;
   $('#filtro-durata-val').textContent = d ? '≤ '+fmtMin(d) : 'qualsiasi';
   $('#filtro-regista').value = S.filtri.regista;
 }
@@ -3177,7 +3213,6 @@ function postoDivanoSVG(colore, presente, pos){
   const scuro = tema('--poltrona-scura');
   const schienale = presente ? tinta(colore, -0.42) : scuro;
   const capoSx = pos === 'sx' || pos === 'solo', capoDx = pos === 'dx' || pos === 'solo';
-  const sx = capoSx ? 18 : 0, dx = capoDx ? 82 : 100;      // spazio per il bracciolo solo ai capi
   const bSx = capoSx ? 2 : -4, bDx = capoDx ? 98 : 104;    // lo schienale sborda dove continua
   return `<svg viewBox="0 0 100 88">
     <defs>
@@ -3191,12 +3226,12 @@ function postoDivanoSVG(colore, presente, pos){
       </linearGradient>
     </defs>
     <g stroke="${tema('--posto-bordo')}" stroke-width="2.5" stroke-linejoin="round"${presente ? '' : ' opacity=".85"'}>
-      ${capoSx ? '<rect x="2" y="14" width="16" height="64" rx="8" fill="'+scuro+'"/>' : ''}
-      ${capoDx ? '<rect x="82" y="14" width="16" height="64" rx="8" fill="'+scuro+'"/>' : ''}
-      <rect x="${sx + 1}" y="6" width="${dx - sx - 2}" height="58" rx="10" fill="url(#mvnd${uid})"/>
-      <rect x="${sx + 6}" y="12" width="${dx - sx - 12}" height="45" rx="7" fill="none"
+      <rect x="3" y="6" width="94" height="58" rx="10" fill="url(#mvnd${uid})"/>
+      <rect x="9" y="12" width="82" height="45" rx="7" fill="none"
             stroke="${tinta(cuscino, -0.28)}" stroke-width="1.4" stroke-dasharray="3 4" opacity=".85"/>
       <rect x="${bSx}" y="56" width="${bDx - bSx}" height="26" rx="9" fill="url(#mvne${uid})"/>
+      ${capoSx ? '<rect x="-3" y="12" width="17" height="70" rx="8" fill="'+scuro+'"/>' : ''}
+      ${capoDx ? '<rect x="86" y="12" width="17" height="70" rx="8" fill="'+scuro+'"/>' : ''}
     </g>
     ${presente ? `<g fill="${tema('--posto-bordo')}" stroke="${colore}" stroke-width="2.2" stroke-linejoin="round">
       <ellipse cx="50" cy="54" rx="23" ry="10"/>
@@ -3510,7 +3545,10 @@ function cardFilm(v){
       <div class="sotto">${esc(v.anno || '')} · ${fmtMin(v.durata)}${v.regista ? ' · '+esc(v.regista) : ''}</div>
       ${stelleHTML(v.desiderio || 3)}
       <div class="compagnia">${chipsCompagnia(v)}</div>
-      <div class="azioni"><button class="testo-link pericolo btn-togli">rimuovi</button></div>
+      <div class="azioni">
+        <button class="testo-link btn-visto" title="Segnalo come visto senza passare dalla Sala">✓ visto</button>
+        <button class="testo-link pericolo btn-togli">rimuovi</button>
+      </div>
     </div>
   </div>`;
 }
@@ -3531,6 +3569,12 @@ function agganciaCard(v){
     e.currentTarget.innerHTML = chipsCompagnia(v);
     await salvaMioProfilo(); disegnaSala();
   };
+  el.querySelector('.btn-visto').onclick = () => {
+    const dom = inSerie()
+      ? `Segnare «${v.titolo}» come vista fino in fondo? Esce dalla tua lista e finisce fra i già visti.`
+      : `Segnare «${v.titolo}» come visto? Esce dalla tua lista e finisce fra i già visti.`;
+    confermaModale(dom, '✓ Visto', () => segnaVisto(v));
+  };
   el.querySelector('.btn-togli').onclick = () => confermaModale(`Togliere «${v.titolo}» dalla tua lista?`, 'Rimuovi', async () => {
     const mio = mioProfilo();
     const L = listaDi(mio); const i = L.indexOf(v); if (i >= 0) L.splice(i, 1);
@@ -3538,6 +3582,24 @@ function agganciaCard(v){
     disegnaCatalogo(); disegnaFiltri(); disegnaSala(); disegnaArchivio();
     toast(`«${v.titolo}» tolto dalla lista`);
   });
+}
+
+async function segnaVisto(v){
+  const voce = {
+    id:`${Date.now().toString(36)}-${S.me}`, data:oggiISO(), ts:new Date().toISOString(),
+    tmdbId:v.tmdbId, titolo:v.titolo,
+    partecipanti:[S.me], proponenti:[S.me],
+    solo:true   // visione personale: l'Indice di Soddisfazione la salta (§8.1)
+  };
+  if (inSerie()){
+    const fine = fineSerie(v);
+    if (!fine) return toast('Di questa serie non conosco le stagioni: registrala dalla Sala', true);
+    voce.stagione = fine.stagione; voce.episodi = [1, fine.episodio];
+  }
+  try { await registraVisione(voce); }
+  catch(e){ return toast('Registrazione non riuscita: '+e.message, true); }
+  disegnaCatalogo(); disegnaFiltri(); disegnaSala(); disegnaArchivio();
+  toast(inSerie() ? `«${v.titolo}» segnata come vista ✓` : `«${v.titolo}» segnato come visto ✓`);
 }
 
 async function riguarda(id){
@@ -3790,6 +3852,10 @@ function modalePlay(r){
         }</select></label>
         <label>dall'episodio <input type="number" id="pl-da" min="1" value="${da.episodio}"></label>
         <label>al <input type="number" id="pl-a" min="1" value="${da.episodio}"></label>
+        <span class="play-di" id="pl-di"></span>
+      </div>
+      <div class="play-tutta">
+        <button type="button" class="testo-link" id="pl-tutta">l'abbiamo vista tutta</button>
       </div>
       <div class="aiuto">La serie resta in lista: si sposta solo il segnalibro. Sparisce da sé
         quando arrivate in fondo all'ultima stagione uscita.</div>
@@ -3802,6 +3868,32 @@ function modalePlay(r){
       <button class="bottone piccolo" id="m-conferma">▶ Buona visione</button>
     </div>`);
   $('#m-annulla').onclick = chiudiModale;
+  if (serie){
+    // gli episodi non possono andare oltre quelli che la stagione scelta ha davvero
+    const epDi = n => (stagioni.find(s => s.n === n) || {}).episodi || 0;
+    const limita = () => {
+      const n = parseInt($('#pl-stag').value, 10) || 1, tot = epDi(n);
+      for (const id of ['#pl-da', '#pl-a']){
+        const el = $(id);
+        if (tot) el.max = tot;
+        let v = parseInt(el.value, 10) || 1;
+        el.value = Math.max(1, tot ? Math.min(v, tot) : v);
+      }
+      if (parseInt($('#pl-a').value,10) < parseInt($('#pl-da').value,10)) $('#pl-a').value = $('#pl-da').value;
+      $('#pl-di').textContent = tot ? `di ${tot}` : '';
+    };
+    $('#pl-stag').onchange = () => { $('#pl-da').value = 1; $('#pl-a').value = 1; limita(); };
+    $('#pl-da').oninput = limita; $('#pl-a').oninput = limita;
+    // scorciatoia: la si è vista tutta, dal primo all'ultimo episodio dell'ultima stagione
+    $('#pl-tutta').onclick = () => {
+      const fine = fineSerie(f); if (!fine) return;
+      $('#pl-stag').value = fine.stagione;
+      $('#pl-da').value = 1; $('#pl-a').value = fine.episodio;
+      limita();
+      toast('Segnata fino alla fine: S'+fine.stagione+' E'+fine.episodio);
+    };
+    limita();
+  }
   $('#m-conferma').onclick = async () => {
     let stagione = null, episodi = null;
     if (serie){
@@ -3960,6 +4052,7 @@ function agganciaGlobali(){
   $$('nav .tab, header .tab').forEach(b => b.onclick = () => {
     $$('.tab').forEach(x => x.classList.toggle('attivo', x === b));
     for (const v of VISTE) $('#vista-'+v).hidden = v !== b.dataset.vista;
+    if (b.dataset.vista === 'sala') riservaFiltri();   // ora la Sala è a video: si può misurare
     if (b.dataset.vista === 'archivio') disegnaArchivio();
     if (b.dataset.vista === 'recensioni') disegnaRecensioni();
     if (b.dataset.vista === 'segnalazioni') disegnaSegnalazioni();
@@ -4027,7 +4120,8 @@ function agganciaGlobali(){
   });
   $('#filtro-durata').oninput = e => {
     const v = parseInt(e.target.value, 10);
-    S.filtri.durata = v >= 240 ? null : v;
+    const max = parseInt(e.target.max, 10) || 240;   // 240 per i film, 90 per gli episodi
+    S.filtri.durata = v >= max ? null : v;
     $('#filtro-durata-val').textContent = S.filtri.durata ? '≤ '+fmtMin(v) : 'qualsiasi';
     disegnaSala();
   };
