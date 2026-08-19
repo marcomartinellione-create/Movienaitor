@@ -124,7 +124,8 @@ header .spazio{flex:1; min-width:0}
 .filtro input[type=text]{width:100%; background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); padding:8px 10px; border-radius:8px}
 .filtro input[type=range]{width:100%; accent-color:var(--oro)}
 .filtro .valore{color:var(--oro2); font-size:13px; margin-top:2px; min-height:18px}
-.generi-chips{display:flex; flex-wrap:wrap; gap:6px}
+.generi-chips{display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start}
+.vuoto-filtro{color:var(--dim2); font-size:12px}
 .gchip{font-size:12px; padding:4px 9px; border-radius:20px; border:1px solid var(--velluto3); color:var(--dim)}
 .gchip.on{border-color:var(--oro); color:var(--oro2); background:rgba(201,164,92,.08)}
 .filtro-azzera{color:var(--dim2); font-size:12px; text-decoration:underline}
@@ -163,8 +164,10 @@ header .spazio{flex:1; min-width:0}
 /* il riflesso del vetro: sopra l'immagine ma trasparente ai clic */
 :root[data-modo="serie"] .schermo::after{content:''; position:absolute; inset:0; z-index:3;
   pointer-events:none; background:linear-gradient(115deg,rgba(255,255,255,.05) 0 20%,transparent 40%)}
-/* il piedino sotto lo schermo */
-:root[data-modo="serie"] .schermo-wrap::after{content:''; flex:none; width:130px; height:9px; margin:0 auto;
+/* il piedino sotto lo schermo: fuori dal flusso, se no ruberebbe allo schermo l'altezza
+   che occupa e la TV verrebbe più bassa del proiettore */
+:root[data-modo="serie"] .schermo-wrap::after{content:''; position:absolute; left:50%; bottom:-10px;
+  transform:translateX(-50%); width:130px; height:9px; pointer-events:none;
   background:linear-gradient(180deg,var(--velluto3),var(--velluto2));
   border:1px solid var(--bordo); border-top:none; border-radius:0 0 9px 9px}
 /* accensione e spegnimento: il pannello collassa sulla riga di luce e sparisce (e al
@@ -3087,9 +3090,10 @@ function creaZip(files){
   return new Blob(parti, {type:'application/zip'});
 }
 
-function tuttiGeneri(){
+function tuttiGeneri(modo){
   const g = new Set();
-  for (const p of S.profili) for (const v of listaDi(p)) (v.generi || []).forEach(x => g.add(x));
+  const lista = p => modo === 'film' ? (p.lista || []) : modo === 'serie' ? (p.listaSerie || []) : listaDi(p);
+  for (const p of S.profili) for (const v of lista(p)) (v.generi || []).forEach(x => g.add(x));
   return [...g].sort((a,b) => a.localeCompare(b));
 }
 function tuttiRegisti(){
@@ -3099,8 +3103,26 @@ function tuttiRegisti(){
 }
 
 function disegnaFiltri(){
-  $('#filtro-generi').innerHTML = tuttiGeneri().map(g =>
-    `<button class="gchip${S.filtri.genere.includes(g)?' on':''}" data-g="${esc(g)}">${esc(g)}</button>`).join('') || '<span style="color:var(--dim2);font-size:12px">nessun film in lista</span>';
+  const box = $('#filtro-generi');
+  const chips = elenco => elenco.map(g =>
+    `<button class="gchip${S.filtri.genere.includes(g)?' on':''}" data-g="${esc(g)}">${esc(g)}</button>`).join('')
+    || `<span class="vuoto-filtro">nessun${inSerie() ? 'a serie' : ' film'} in lista</span>`;
+  const pannello = box.closest('.pannello');
+  pannello.style.paddingBottom = '';
+  if (inSerie()){
+    // Si misurano sul posto i chip che avrebbe la modalità film e i propri; la differenza
+    // si recupera in fondo al pannello, così la riga resta alta uguale (e la TV grande come
+    // il proiettore) senza lasciare un buco in mezzo ai filtri. Niente numeri fissi: la
+    // misura è frazionaria perché offsetHeight arrotonda e lascerebbe un pixel di scarto.
+    const padBase = parseFloat(getComputedStyle(pannello).paddingBottom) || 0;
+    box.innerHTML = chips(tuttiGeneri('film'));
+    const altezzaFilm = box.getBoundingClientRect().height;
+    box.innerHTML = chips(tuttiGeneri());
+    const mancante = altezzaFilm - box.getBoundingClientRect().height;
+    if (mancante > 0) pannello.style.paddingBottom = (padBase + mancante) + 'px';
+  } else {
+    box.innerHTML = chips(tuttiGeneri());
+  }
   $('#lista-registi').innerHTML = tuttiRegisti().map(r => `<option value="${esc(r)}">`).join('');
   const d = S.filtri.durata;
   $('#filtro-durata').value = d || 240;
