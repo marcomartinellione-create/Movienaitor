@@ -20,6 +20,7 @@
   --posto-vuoto:#5a2830;               /* cuscino di un posto libero */
   --posto-bordo:#201114;               /* contorno dei posti e sagoma della testa */
   --vuoto-righe:#1c1013;               /* righe della casella "coming soon" nella rosa */
+  --schermo-off:#120a0d;               /* fondo dello schermo quando non c'è niente sopra */
   --ombra:0 10px 30px rgba(0,0,0,.45);
   --rapida:.12s; --media:.2s;          /* durate transizioni */
   --serif:Georgia,'Times New Roman',serif;
@@ -40,6 +41,7 @@
   --posto-vuoto:#22354a;
   --posto-bordo:#0a1119;
   --vuoto-righe:#101a26;
+  --schermo-off:#0a1017;
   --ombra:0 10px 30px rgba(0,0,0,.55);
 }
 /* L'accento resta l'oro dell'app anche in salotto (scelta di Marco, 2026-08-18): in una
@@ -133,7 +135,7 @@ header .spazio{flex:1; min-width:0}
 /* schermo */
 .schermo-wrap{position:relative; padding:0 24px; display:flex; flex-direction:column}
 .schermo{position:relative; flex:1; min-height:240px; border:3px double var(--oro-dim); border-radius:10px;
-  background:#120a0d; overflow:hidden; box-shadow:0 0 60px rgba(201,164,92,.10), var(--ombra)}
+  background:var(--schermo-off); overflow:hidden; box-shadow:0 0 60px rgba(201,164,92,.10), var(--ombra)}
 .schermo .sfondo{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.85}
 .schermo .velo{position:absolute; inset:0; background:linear-gradient(180deg,rgba(18,10,13,.15) 30%,rgba(18,10,13,.88) 82%)}
 .schermo .rango{position:absolute; top:8px; left:48px; font-family:var(--serif); font-size:34px; color:var(--oro2);
@@ -172,24 +174,54 @@ header .spazio{flex:1; min-width:0}
   border:1px solid var(--bordo); border-top:none; border-radius:0 0 9px 9px}
 /* accensione e spegnimento: il pannello collassa sulla riga di luce e sparisce (e al
    contrario quando si spegne). Stesso aggancio del sipario: la classe .aperto. */
-:root[data-modo="serie"] .tv-spenta{display:block; position:absolute; inset:0; z-index:4; pointer-events:none;
-  transform-origin:center center; border-radius:3px; transform:scaleY(1); opacity:1;
-  background:radial-gradient(62% 62% at 50% 50%,rgba(90,140,181,.07),transparent 70%),var(--vuoto-righe);
-  /* SPEGNIMENTO: il nero ricompare subito schiacciato e poi si riapre */
-  transition:opacity .01s, transform .40s cubic-bezier(.16,.84,.32,1) .09s}
-:root[data-modo="serie"] .schermo.aperto .tv-spenta{transform:scaleY(.008); opacity:0;
-  /* ACCENSIONE: prima si schiaccia in fretta sulla riga, poi svanisce */
-  transition:transform .20s cubic-bezier(.75,.02,.42,1), opacity .13s .21s}
-/* la riga di luce: bianco-azzurra come un tubo, non oro */
-:root[data-modo="serie"] .tv-spenta::after{content:''; position:absolute; left:0; right:0; top:50%;
-  height:2px; margin-top:-1px; border-radius:2px; background:#e8f6ff;
-  box-shadow:0 0 16px 3px rgba(200,232,255,.85), 0 0 44px 8px rgba(120,180,230,.35);
-  opacity:0; transform:scaleX(.04);
-  /* spegnendosi la riga si accende di colpo e si allarga, poi resta mentre il nero riapre */
-  transition:opacity .06s, transform .16s cubic-bezier(.2,.9,.3,1)}
-:root[data-modo="serie"] .schermo.aperto .tv-spenta::after{opacity:1; transform:scaleX(1);
-  /* accendendosi la riga arriva appena il nero si è chiuso, e se ne va con lui */
-  transition:opacity .07s .16s, transform .13s .16s}
+/* ── accensione e spegnimento della TV ──
+   È l'IMMAGINE che si spegne, non un nero che la copre: si schiaccia verso il centro
+   diventando più luminosa, resta una riga di luce che si stringe in un punto, e il punto
+   svanisce. A schermo spento non resta nessun pannello sopra — solo il vetro scuro — così
+   non si vede nessuna divisione. Accendendosi il percorso è lo stesso al contrario.
+   Il fascio è un elemento suo (<i>) animato a fotogrammi: deve accendersi E spegnersi
+   dentro lo stesso passaggio, cosa che una transizione non sa fare. */
+:root[data-modo="serie"] .tv-spenta{display:block; position:absolute; inset:0; z-index:5;
+  pointer-events:none}
+:root[data-modo="serie"] .tv-spenta i{position:absolute; left:0; right:0; top:50%; height:3px;
+  margin-top:-1.5px; border-radius:3px; background:#eaf7ff; opacity:0; transform:scaleX(.02);
+  box-shadow:0 0 20px 5px rgba(198,230,255,.92), 0 0 66px 16px rgba(120,180,235,.45)}
+/* .pronto arriva dopo il primo disegno: se no all'avvio partirebbe uno spegnimento finto */
+:root[data-modo="serie"] .schermo.pronto .tv-spenta i{animation:tvFascioSpegne .9s ease-out both}
+:root[data-modo="serie"] .schermo.pronto.aperto .tv-spenta i{animation:tvFascioAccende .85s ease-out both}
+/* l'immagine che arriva: aspetta che il fascio si sia allargato, poi si apre */
+:root[data-modo="serie"] .schermo.pronto.aperto .schermo-inner{
+  animation:tvImmagineAccende .55s cubic-bezier(.2,.7,.3,1) .34s both}
+/* la copia dell'immagine che se ne va (la mette disegnaSala prima di sostituire) */
+:root[data-modo="serie"] .tv-uscita{position:absolute; inset:0; z-index:4; pointer-events:none;
+  animation:tvImmagineSpegne .44s cubic-bezier(.5,0,.75,.4) both}
+@keyframes tvImmagineSpegne{
+  0%   {transform:scaleY(1);    filter:brightness(1);   opacity:1}
+  70%  {transform:scaleY(.06);  filter:brightness(2.6); opacity:1}
+  100% {transform:scaleY(.004); filter:brightness(3.4); opacity:.9}
+}
+@keyframes tvImmagineAccende{
+  0%   {transform:scaleY(.004); filter:brightness(3.4); opacity:.9}
+  100% {transform:scaleY(1);    filter:brightness(1);   opacity:1}
+}
+/* il messaggio arriva quando la TV è ormai spenta, non sopra l'immagine che collassa */
+:root[data-modo="serie"] .schermo.pronto:not(.aperto) .messaggio{
+  animation:tvMessaggio .3s ease-out .6s both}
+@keyframes tvMessaggio{from{opacity:0} to{opacity:1}}
+@keyframes tvFascioSpegne{   /* l'immagine collassa, la riga brilla, si stringe, si spegne */
+  0%   {opacity:0; transform:scaleX(1)}
+  36%  {opacity:1; transform:scaleX(1)}
+  58%  {opacity:1; transform:scaleX(.86)}
+  82%  {opacity:1; transform:scaleX(.035)}
+  100% {opacity:0; transform:scaleX(.02)}
+}
+@keyframes tvFascioAccende{  /* il punto si accende, diventa riga, poi si apre l'immagine */
+  0%   {opacity:0; transform:scaleX(.02)}
+  10%  {opacity:1; transform:scaleX(.02)}
+  42%  {opacity:1; transform:scaleX(1)}
+  70%  {opacity:.5; transform:scaleX(1)}
+  100% {opacity:0; transform:scaleX(1)}
+}
 /* i cuscini si toccano (è un divano, non poltrone), i due divani restano staccati */
 :root[data-modo="serie"] .fila{--passo-poltrone:0px}
 :root[data-modo="serie"] .fila+.fila{margin-top:18px}
@@ -676,7 +708,7 @@ header .spazio{flex:1; min-width:0}
       <div class="schermo-wrap">
         <div class="schermo" id="schermo">
           <div class="schermo-inner" id="schermo-inner"></div>
-          <div class="tenda sx"></div><div class="tenda dx"></div><div class="tv-spenta"></div>
+          <div class="tenda sx"></div><div class="tenda dx"></div><div class="tv-spenta"><i></i></div>
         </div>
       </div>
 
@@ -3278,10 +3310,33 @@ function disegnaPlatea(){
 const cellaVuota = () => '<div class="posto vuoto"><span class="cs">Coming<br>soon</span></div>';
 const rosaVuota = () => Array(4).fill(cellaVuota()).join('');
 
+// L'accensione della TV è un'animazione a fotogrammi: al primo disegno non deve partire
+// (si vedrebbe uno spegnimento che non è mai avvenuto), quindi si abilita un attimo dopo.
+// setTimeout e non requestAnimationFrame: scatta anche a scheda in secondo piano.
+// Spegnendosi, il contenuto dello schermo viene subito riscritto: per vedere l'immagine
+// spegnersi se ne lascia una copia che collassa e si toglie da sé.
+function spegniImmagine(schermo, inner){
+  if (!inSerie() || !schermo.classList.contains('pronto') || !schermo.classList.contains('aperto')) return;
+  const fantasma = inner.cloneNode(true);
+  fantasma.removeAttribute('id');
+  fantasma.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));  // niente id doppi
+  fantasma.classList.add('tv-uscita');
+  inner.parentNode.insertBefore(fantasma, inner.nextSibling);
+  setTimeout(() => fantasma.remove(), 1000);
+}
+
+function abilitaAnimazioneTV(schermo){
+  if (schermo.dataset.animTv) return;
+  schermo.dataset.animTv = '1';
+  setTimeout(() => schermo.classList.add('pronto'), 80);
+}
+
 async function disegnaSala(){
   disegnaPlatea();
   const schermo = $('#schermo'), inner = $('#schermo-inner'), rosaEl = $('#rosa');
+  abilitaAnimazioneTV(schermo);
   if (!S.presenti.size){
+    spegniImmagine(schermo, inner);
     schermo.classList.remove('aperto');
     inner.innerHTML = `<div class="messaggio">La sala è vuota…<br><small style="font-size:14px; color:var(--dim2)">clicca le poltrone di chi c'è stasera</small></div>`;
     rosaEl.innerHTML = rosaVuota();
@@ -3303,6 +3358,7 @@ async function disegnaSala(){
       e.durata ? `${e.durata} troppo lunghi` : '', e.genere ? `${e.genere} di altro genere` : '',
       e.regista ? `${e.regista} di altri registi` : '', e.vincoli ? `${e.vincoli} per vincoli di compagnia` : ''
     ].filter(Boolean).join(' · ');
+    spegniImmagine(schermo, inner);
     schermo.classList.remove('aperto');
     inner.innerHTML = `<div class="messaggio">Niente in cartellone stasera<br>
       <small style="font-size:14px; color:var(--dim2)">${motivi || 'le liste dei presenti sono vuote: passate dal Catalogo'}</small></div>`;

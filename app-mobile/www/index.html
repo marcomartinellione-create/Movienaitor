@@ -15,6 +15,7 @@
     --poltrona-scura:#4a2228;  /* struttura della poltrona vuota (SVG della platea) */
     --posto-vuoto:#5a2830;     /* cuscino di un posto libero */
     --posto-bordo:#201114;     /* contorno dei posti e sagoma della testa */
+    --schermo-off:#120a0d;     /* fondo dello schermo quando non c'è niente sopra */
     --rapida:.15s;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
@@ -28,25 +29,52 @@
     --testo:#e9eff7; --dim:#a8b7c9; --ok:#76a08f;
     --su-oro:#101a26; --sel:#1e2b3d; --velo-badge:#000d;
     --poltrona-scura:#28384c; --posto-vuoto:#22354a; --posto-bordo:#0a1119;
+    --schermo-off:#0a1017;
   }
   /* il salotto: niente sipario, la TV che si accende, i posti che si saldano in un divano */
   :root[data-modo="serie"] .cartellone .tenda{display:none}
   :root[data-modo="serie"] .cartellone{border:5px solid var(--posto-bordo)}
-  :root[data-modo="serie"] .tv-spenta{display:block; position:absolute; inset:0; z-index:4;
-    pointer-events:none; transform-origin:center center; border-radius:2px; transform:scaleY(1); opacity:1;
-    background:radial-gradient(62% 62% at 50% 50%,rgba(90,140,181,.07),transparent 70%),#101a26;
-    /* SPEGNIMENTO: il nero torna subito schiacciato e poi si riapre */
-    transition:opacity .01s, transform .40s cubic-bezier(.16,.84,.32,1) .09s}
-  :root[data-modo="serie"] .cartellone.aperto .tv-spenta{transform:scaleY(.008); opacity:0;
-    /* ACCENSIONE: si schiaccia in fretta sulla riga, poi svanisce */
-    transition:transform .20s cubic-bezier(.75,.02,.42,1), opacity .13s .21s}
-  :root[data-modo="serie"] .tv-spenta::after{content:''; position:absolute; left:0; right:0; top:50%;
-    height:2px; margin-top:-1px; border-radius:2px; background:#e8f6ff;
-    box-shadow:0 0 14px 3px rgba(200,232,255,.85), 0 0 38px 7px rgba(120,180,230,.35);
-    opacity:0; transform:scaleX(.04);
-    transition:opacity .06s, transform .16s cubic-bezier(.2,.9,.3,1)}
-  :root[data-modo="serie"] .cartellone.aperto .tv-spenta::after{opacity:1; transform:scaleX(1);
-    transition:opacity .07s .16s, transform .13s .16s}
+  /* Accensione e spegnimento della TV (stessa cosa del desktop): è l'IMMAGINE che si
+     spegne, non un nero che la copre. Si schiaccia verso il centro diventando più
+     luminosa, resta una riga di luce che si stringe in un punto, e il punto svanisce.
+     A schermo spento non resta nessun pannello sopra: solo il vetro scuro, uniforme. */
+  :root[data-modo="serie"] .tv-spenta{display:block; position:absolute; inset:0; z-index:5;
+    pointer-events:none}
+  :root[data-modo="serie"] .tv-spenta i{position:absolute; left:0; right:0; top:50%; height:3px;
+    margin-top:-1.5px; border-radius:3px; background:#eaf7ff; opacity:0; transform:scaleX(.02);
+    box-shadow:0 0 18px 4px rgba(198,230,255,.92), 0 0 56px 14px rgba(120,180,235,.45)}
+  :root[data-modo="serie"] .cartellone.pronto .tv-spenta i{animation:tvFascioSpegne .9s ease-out both}
+  :root[data-modo="serie"] .cartellone.pronto.aperto .tv-spenta i{animation:tvFascioAccende .85s ease-out both}
+  :root[data-modo="serie"] .cartellone.pronto.aperto .cartellone-inner{
+    animation:tvImmagineAccende .55s cubic-bezier(.2,.7,.3,1) .34s both}
+  :root[data-modo="serie"] .tv-uscita{position:absolute; inset:0; z-index:4; pointer-events:none;
+    animation:tvImmagineSpegne .44s cubic-bezier(.5,0,.75,.4) both}
+  :root[data-modo="serie"] .cartellone.pronto:not(.aperto) .msg{
+    animation:tvMessaggio .3s ease-out .6s both}
+  @keyframes tvMessaggio{from{opacity:0} to{opacity:1}}
+  @keyframes tvImmagineSpegne{
+    0%   {transform:scaleY(1);    filter:brightness(1);   opacity:1}
+    70%  {transform:scaleY(.06);  filter:brightness(2.6); opacity:1}
+    100% {transform:scaleY(.004); filter:brightness(3.4); opacity:.9}
+  }
+  @keyframes tvImmagineAccende{
+    0%   {transform:scaleY(.004); filter:brightness(3.4); opacity:.9}
+    100% {transform:scaleY(1);    filter:brightness(1);   opacity:1}
+  }
+  @keyframes tvFascioSpegne{
+    0%   {opacity:0; transform:scaleX(1)}
+    36%  {opacity:1; transform:scaleX(1)}
+    58%  {opacity:1; transform:scaleX(.86)}
+    82%  {opacity:1; transform:scaleX(.035)}
+    100% {opacity:0; transform:scaleX(.02)}
+  }
+  @keyframes tvFascioAccende{
+    0%   {opacity:0; transform:scaleX(.02)}
+    10%  {opacity:1; transform:scaleX(.02)}
+    42%  {opacity:1; transform:scaleX(1)}
+    70%  {opacity:.5; transform:scaleX(1)}
+    100% {opacity:0; transform:scaleX(1)}
+  }
   :root[data-modo="serie"] .platea{gap:0 0;
     background:radial-gradient(65% 95% at 50% 0%, rgba(42,59,82,.34), transparent 72%)}
   .tv-spenta{display:none}
@@ -249,7 +277,7 @@
   .smtab .n{opacity:.65; font-weight:400}
   .film .visto-tag{color:var(--ok)}
   /* schermo: stessa proporzione del desktop (16/9) + sipario animato */
-  .cartellone{position:relative; border:3px double var(--oro); border-radius:12px; overflow:hidden; background:#120a0d; margin:10px 0 4px; aspect-ratio:16/9; box-shadow:0 0 40px rgba(201,164,92,.12)}
+  .cartellone{position:relative; border:3px double var(--oro); border-radius:12px; overflow:hidden; background:var(--schermo-off); margin:10px 0 4px; aspect-ratio:16/9; box-shadow:0 0 40px rgba(201,164,92,.12)}
   .cartellone-inner{position:absolute; inset:0}
   .cartellone .sfondo{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.7}
   .cartellone .velo{position:absolute; inset:0; background:linear-gradient(180deg,#140a0c22 25%,#140a0cf0 88%)}
@@ -370,7 +398,7 @@
         <div class="sezione"><span class="grow">Stasera</span><button class="f-btn" id="m-btn-filtri-sala">≡ filtri</button></div>
         <div class="cartellone" id="m-schermo">
           <div class="cartellone-inner" id="m-schermo-inner"></div>
-          <div class="tenda sx"></div><div class="tenda dx"></div><div class="tv-spenta"></div>
+          <div class="tenda sx"></div><div class="tenda dx"></div><div class="tv-spenta"><i></i></div>
         </div>
         <button class="ghost" id="m-lista-completa" style="width:100%; margin-top:8px">📋 Lista completa</button>
         <div class="sezione"><span class="grow">Chi c'è stasera <span id="m-conta-pres"></span></span></div>
@@ -1340,15 +1368,33 @@ function classificaM(){
 const fmtNum = (n,d=2) => Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:d, maximumFractionDigits:d});
 const filtriSalaAttivi = () => !!(S.fSala.durata || S.fSala.genere.length || S.fSala.regista);
 
+// vedi il desktop: l'animazione della TV si abilita un attimo dopo il primo disegno
+// vedi il desktop: senza una copia da animare l'immagine sparirebbe di colpo
+function spegniImmagine(schermo, inner){
+  if (!inSerie() || !schermo.classList.contains('pronto') || !schermo.classList.contains('aperto')) return;
+  const fantasma = inner.cloneNode(true);
+  fantasma.removeAttribute('id');
+  fantasma.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
+  fantasma.classList.add('tv-uscita');
+  inner.parentNode.insertBefore(fantasma, inner.nextSibling);
+  setTimeout(() => fantasma.remove(), 1000);
+}
+function abilitaAnimazioneTV(el){
+  if (!el || el.dataset.animTv) return;
+  el.dataset.animTv = '1';
+  setTimeout(() => el.classList.add('pronto'), 80);
+}
 function disegnaSalaM(){
   disegnaPlateaM();   // le poltrone in velluto, come sul desktop
   $('#m-conta-pres').textContent = S.presenti.size ? '· '+S.presenti.size : '';
   $('#m-btn-filtri-sala').classList.toggle('attivo', filtriSalaAttivi());
 
   const schermo = $('#m-schermo'), inner = $('#m-schermo-inner'), stato = $('#m-stato-sala'), btnLC = $('#m-lista-completa');
+  abilitaAnimazioneTV(schermo);
   const aggiornaLC = n => { if (btnLC){ btnLC.disabled = !n; btnLC.textContent = n ? `📋 Lista completa (${n})` : '📋 Lista completa'; } };
   // schermo.classList `aperto` apre le tende (sipario); l'inner si rifà ad ogni render
   if (!S.presenti.size){
+    spegniImmagine(schermo, inner);
     schermo.classList.remove('aperto');
     inner.innerHTML = '<div class="msg">La sala è vuota…<br><span style="font-size:12px; color:var(--dim)">tocca le poltrone di chi c\'è stasera</span></div>';
     stato.innerHTML = ''; S.tuttiSala = []; aggiornaLC(0);
@@ -1364,6 +1410,7 @@ function disegnaSalaM(){
     const e = ris.esclusi;
     const motivi = [e.durata && e.durata+' troppo lunghi', e.genere && e.genere+' di altro genere',
       e.regista && e.regista+' di altri registi', e.vincoli && e.vincoli+' per vincoli di compagnia'].filter(Boolean).join(' · ');
+    spegniImmagine(schermo, inner);
     schermo.classList.remove('aperto');
     inner.innerHTML = `<div class="msg">Niente in cartellone stasera<br><span style="font-size:12px">${esc(motivi || 'le liste dei presenti sono vuote')}</span></div>`;
   } else {
