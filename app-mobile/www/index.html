@@ -12,11 +12,38 @@
     --su-oro:#231208;      /* testo scuro sopra i fondi oro */
     --sel:#2a1b16;         /* fondo delle voci scelte (chip, poltrone, tab) */
     --velo-badge:#000c;    /* fondo dei badge sopra le locandine */
+    --poltrona-scura:#4a2228;  /* struttura della poltrona vuota (SVG della platea) */
+    --posto-vuoto:#5a2830;     /* cuscino di un posto libero */
+    --posto-bordo:#201114;     /* contorno dei posti e sagoma della testa */
     --rapida:.15s;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   [hidden]{display:none !important}
   /* messa a fuoco visibile (tastiera esterna / navigazione) */
+  /* ═══ Modalità SERIE TV: stessa app, salotto invece del cinema (CONCEPT-serie §8).
+     Cambiano solo i token; l'accento resta l'oro, come sul desktop. ═══ */
+  :root[data-modo="serie"]{
+    --bg:#0f1620; --bg2:#151f2c; --card:#1b2637; --linea:#2c3e55;
+    --rosso:#2f5470; --rosso2:#5a8cb5;
+    --testo:#e9eff7; --dim:#a8b7c9; --ok:#76a08f;
+    --su-oro:#101a26; --sel:#1e2b3d; --velo-badge:#000d;
+    --poltrona-scura:#28384c; --posto-vuoto:#22354a; --posto-bordo:#0a1119;
+  }
+  /* il salotto: niente sipario, la TV che si accende, i posti che si saldano in un divano */
+  :root[data-modo="serie"] .cartellone .tenda{display:none}
+  :root[data-modo="serie"] .cartellone{border:5px solid var(--posto-bordo)}
+  :root[data-modo="serie"] .tv-spenta{display:block; position:absolute; inset:0; z-index:4;
+    pointer-events:none; transform-origin:center; border-radius:2px;
+    background:radial-gradient(62% 62% at 50% 50%,rgba(90,140,181,.07),transparent 70%),#101a26;
+    transition:transform .42s cubic-bezier(.6,0,.25,1), opacity .18s .34s}
+  :root[data-modo="serie"] .cartellone.aperto .tv-spenta{transform:scaleY(.005); opacity:0}
+  :root[data-modo="serie"] .tv-spenta::after{content:''; position:absolute; left:5%; right:5%; top:50%;
+    height:2px; margin-top:-1px; border-radius:2px; background:var(--oro2); box-shadow:0 0 12px var(--oro2);
+    opacity:0; transition:opacity .18s}
+  :root[data-modo="serie"] .cartellone.aperto .tv-spenta::after{opacity:1; transition:opacity .1s .16s}
+  :root[data-modo="serie"] .platea{gap:0 0;
+    background:radial-gradient(65% 95% at 50% 0%, rgba(42,59,82,.34), transparent 72%)}
+  .tv-spenta{display:none}
   :focus-visible{outline:2px solid var(--oro); outline-offset:2px}
   /* caselle di spunta in tinta col velluto invece del bianco di sistema */
   input[type=checkbox]{appearance:none; -webkit-appearance:none; width:18px; height:18px; flex:none;
@@ -251,9 +278,20 @@
   .stato-sala .avv{color:var(--rosso2)}
 
   /* ── Segnalazioni (mobile) ── */
-  .bug-btn{position:fixed; left:12px; bottom:calc(12px + env(safe-area-inset-bottom)); z-index:15;
+  .bug-btn,.modo-btn{position:fixed; bottom:calc(12px + env(safe-area-inset-bottom)); z-index:15;
     display:flex; align-items:center; gap:6px; padding:9px 14px; border-radius:999px; font-size:12.5px;
-    background:linear-gradient(180deg,#3a2226,#241619); border:1px solid var(--oro); color:var(--oro2); box-shadow:0 6px 18px #0008}
+    background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--oro); color:var(--oro2); box-shadow:0 6px 18px #0008}
+  .bug-btn{left:12px}
+  .modo-btn{right:12px}          /* speculare al 🐞 */
+  .modo-scelta{display:flex; flex-direction:column; gap:9px; margin:6px 0 4px}
+  .modo-card{display:block; text-align:left; padding:12px 13px; border-radius:12px;
+    border:1px solid var(--linea); background:var(--bg2); color:var(--testo)}
+  .modo-card.on{border-color:var(--oro); background:var(--sel)}
+  .modo-card .mc-nome{color:var(--oro2); font-size:15px}
+  .modo-card .mc-desc{color:var(--dim); font-size:12px; line-height:1.45; margin-top:2px}
+  .play-ep{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:4px 0 2px}
+  .play-ep label{display:flex; align-items:center; gap:5px; color:var(--dim); font-size:12.5px}
+  .play-ep .inp{width:auto; min-width:62px}
   .sg-tipi{display:flex; flex-direction:column; gap:7px; margin:8px 0 2px}
   .sg-tipo{display:block; text-align:left; padding:10px 12px; border-radius:11px; border:1px solid var(--linea); background:var(--bg2); color:var(--testo)}
   .sg-tipo.on{border-color:var(--oro); background:var(--sel)}
@@ -325,7 +363,7 @@
         <div class="sezione"><span class="grow">Stasera</span><button class="f-btn" id="m-btn-filtri-sala">≡ filtri</button></div>
         <div class="cartellone" id="m-schermo">
           <div class="cartellone-inner" id="m-schermo-inner"></div>
-          <div class="tenda sx"></div><div class="tenda dx"></div>
+          <div class="tenda sx"></div><div class="tenda dx"></div><div class="tv-spenta"></div>
         </div>
         <button class="ghost" id="m-lista-completa" style="width:100%; margin-top:8px">📋 Lista completa</button>
         <div class="sezione"><span class="grow">Chi c'è stasera <span id="m-conta-pres"></span></span></div>
@@ -376,6 +414,7 @@
 </div>
 
 <button class="bug-btn" id="m-segnala" style="display:none">🐞 Segnala</button>
+<button class="modo-btn" id="m-modo" style="display:none"><span id="m-modo-ic">🎬</span> <span id="m-modo-nome">Film</span></button>
 <div class="backdrop" id="backdrop"><div class="modale" id="modale"></div></div>
 <div id="m-luci"><div>🎬 Buona visione!</div><small id="m-luci-tit"></small></div>
 <div class="toast" id="toast"></div>
@@ -384,7 +423,7 @@
 /* ══════════════════ STATO ══════════════════ */
 const APP_VERSION = '1.7.0';
 const CONFIG_DEFAULT = { bonusCoralita:0.10, capCoralita:0.30, passoSoddisfazione:0.15, bonusCoppia:1.15, sogliaSpareggio:0.02 };
-const S = { treeUri:null, config:{}, profili:[], me:null, storico:[],
+const S = { treeUri:null, config:{}, profili:[], me:null, storico:[], modo:'film',
   filtri:{ q:'', ordina:'aggiunto', dir:'desc', minDes:0, genere:[], annoDa:null, annoA:null },
   recensioni:[], recUtente:null, recFiltri:{ q:'', ordina:'votoPersonale', dir:'desc' }, pan:'lista',
   listaVista:'daVedere',
@@ -399,6 +438,29 @@ const S = { treeUri:null, config:{}, profili:[], me:null, storico:[],
 const SEZIONI_DEFAULT = ['Introduzione', 'Che ne penso', 'Momento preferito', 'Messaggio', 'A chi lo consiglio'];
 const stelleLetterbox = v => { v = v||0; const p = Math.floor(v/2), m = (v%2)===1; return ('★'.repeat(p) + (m?'½':'')) || '—'; };
 const GENERI_TMDB = ['Azione','Avventura','Animazione','Commedia','Crime','Documentario','Dramma','Famiglia','Fantasy','Storia','Horror','Musica','Mistero','Romance','Fantascienza','Film TV','Thriller','Guerra','Western'];
+// Le serie hanno la loro tassonomia: TMDB non traduce "Action & Adventure" né
+// "Sci-Fi & Fantasy" nemmeno in it-IT (nomi verificati su /genre/tv/list).
+const GENERI_TMDB_SERIE = ['Action & Adventure','Animazione','Commedia','Crime','Documentario','Dramma','Famiglia','Kids','Mistero','News','Reality','Sci-Fi & Fantasy','Soap','Talk','War & Politics','Western'];
+
+/* ══════════════════ MODALITÀ (film / serie TV) ══════════════════ */
+// Come sul desktop: la modalità decide da dove si leggono i dati, quale endpoint TMDB si
+// interroga e che vestito indossa l'app. Le formule non la vedono. Vedi CONCEPT-serie.md.
+const inSerie = () => S.modo === 'serie';
+// percorso dentro lo spazio della modalità: i film restano dove sono sempre stati
+const PS = p => inSerie() ? 'serie/' + p : p;
+// la lista della modalità: il profilo resta UN file per persona
+function listaDi(p){
+  if (!p) return [];
+  return inSerie() ? (p.listaSerie = p.listaSerie || []) : (p.lista = p.lista || []);
+}
+const chiaveGeneriPos = () => inSerie() ? 'generiPositiviSerie' : 'generiPositivi';
+const chiaveGeneriNeg = () => inSerie() ? 'generiNegativiSerie' : 'generiNegativi';
+const generiPos = p => (p && p[chiaveGeneriPos()]) || [];
+const generiNeg = p => (p && p[chiaveGeneriNeg()]) || [];
+const generiTMDB = () => inSerie() ? GENERI_TMDB_SERIE : GENERI_TMDB;
+// valore corrente di un token: gli SVG scrivono i colori nell'attributo, non li ereditano
+const tema = (nome, ripiego = '#000') =>
+  (getComputedStyle(document.documentElement).getPropertyValue(nome) || ripiego).trim() || ripiego;
 const filtriAttivi = () => { const f = S.filtri; return !!(f.q || f.minDes || f.genere.length || f.annoDa || f.annoA || f.ordina!=='aggiunto' || f.dir!=='desc'); };
 // Migrazione dal vecchio modello Bonus Genere (bonusGenere+generiPreferiti) al nuovo (pos/neg per genere)
 function migraGeneri(p){
@@ -413,6 +475,56 @@ const $$ = s => [...document.querySelectorAll(s)];
 const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const LS = { get:k=>{try{return localStorage.getItem('mvna_'+k)}catch(e){return null}}, set:(k,v)=>{try{localStorage.setItem('mvna_'+k,v)}catch(e){}} };
 
+// La modalità si ricorda sul telefono. Cambiarla rilegge i dati dell'altro spazio e
+// ridisegna: le formule e le viste sono le stesse. Vedi CONCEPT-serie.md.
+function applicaModo(){
+  document.documentElement.dataset.modo = S.modo;
+  const b = $('#m-modo');
+  if (b){
+    $('#m-modo-ic').textContent = inSerie() ? '📺' : '🎬';
+    $('#m-modo-nome').textContent = inSerie() ? 'Serie TV' : 'Film';
+  }
+  applicaParoleM();
+}
+// i testi fissi portano le due varianti addosso (data-film / data-serie)
+function applicaParoleM(){
+  for (const el of document.querySelectorAll('[data-film]')){
+    const testo = inSerie() ? (el.dataset.serie || el.dataset.film) : el.dataset.film;
+    if ((el.dataset.dove || 'testo') === 'segnaposto') el.placeholder = testo;
+    else el.textContent = testo;
+  }
+}
+async function cambiaModoM(m){
+  if (m === S.modo) return;
+  S.modo = (m === 'serie') ? 'serie' : 'film';
+  LS.set('modo', S.modo);
+  applicaModo();
+  S.proiettato = null;
+  S.cgPool = []; S.cgLista = []; S.cgProfilo = null; S.cgFirma = '';
+  S.providersCache = new Map();
+  S.recUtente = null; S.listaVista = 'daVedere';
+  try { await caricaCartella(S.treeUri); } catch(e){ toast('Rilettura non riuscita: '+e.message, true); }
+  // caricaCartella riporta alla scelta del profilo: rientro con quello di prima
+  const slug = S.me && S.me.slug;
+  if (slug && S.profili.some(p => p.slug === slug)) entra(slug);
+  toast(inSerie() ? 'Modalità serie TV 📺' : 'Modalità film 🎬');
+}
+function modaleModoM(){
+  const scheda = (m, ic, nome, desc) => `<button class="modo-card${S.modo===m?' on':''}" data-m="${m}">
+      <div class="mc-nome">${ic} ${nome}</div><div class="mc-desc">${desc}</div></button>`;
+  apriModale(`<h3>Cosa si guarda</h3>
+    <div class="modo-scelta">
+      ${scheda('film','🎬','Film','La sala: poltrone, sipario e il film della serata')}
+      ${scheda('serie','📺','Serie TV','Il salotto: divano, TV, e si riprende da dove eravate')}
+    </div>
+    <p class="meta" style="font-size:12px">Ogni modalità ha le sue liste, il suo storico e le sue
+      recensioni. I dati dell'altra restano dove sono.</p>
+    <div class="m-az"><button class="ghost" id="mm-chiudi">Chiudi</button></div>`);
+  $('#mm-chiudi').onclick = chiudiModale;
+  document.querySelectorAll('.modo-card').forEach(b =>
+    b.onclick = () => { chiudiModale(); cambiaModoM(b.dataset.m); });
+}
+
 function schermo(id){
   document.querySelectorAll('.schermo').forEach(s=>s.classList.remove('on'));
   $('#'+id).classList.add('on');
@@ -424,7 +536,7 @@ function apriModale(html){ $('#modale').innerHTML=html; $('#backdrop').classList
 function chiudiModale(){ $('#backdrop').classList.remove('on'); }
 $('#backdrop').addEventListener('click', e=>{ if(e.target.id==='backdrop') chiudiModale(); });
 
-const fmtMin = m => m ? Math.floor(m/60)+'h'+String(m%60).padStart(2,'0') : '—';
+const fmtMin = m => m ? (m < 60 ? m+"'" : Math.floor(m/60)+'h'+String(m%60).padStart(2,'0')) : '—';
 // data breve in formato europeo gg/mm/aaaa (deterministico)
 const dataBreve = d => { d = String(d||'').slice(0,10); const m = d.match(/^(\d{4})-(\d\d)-(\d\d)$/); return m ? `${m[3]}/${m[2]}/${m[1]}` : d; };
 const stelle = n => '★★★★★☆☆☆☆☆'.slice(5-(n||0), 10-(n||0));
@@ -484,7 +596,7 @@ async function fsElencaJson(cartella){
 async function caricaRecensioniMobile(){
   S.recensioni = [];
   try {
-    const res = await saf().caricaRecensioni({ uri: S.treeUri });
+    const res = await saf().caricaRecensioni({ uri: S.treeUri, base: inSerie() ? 'serie' : '' });
     for (const f of (res.recensioni || [])){
       try { const r = JSON.parse(f.data);
         if (r && (r.meta || Array.isArray(r.sezioni) || r.tmdbId != null)){ r.autore = f.slug; r._uri = f.uri; r._nome = f.nome; S.recensioni.push(r); }
@@ -499,7 +611,8 @@ async function salvaRecensioneMobile(rec){
   const nome = (rec.tmdbId != null) ? rec.tmdbId + '.json' : (rec._nome || ('senza-id-' + Date.now() + '.json'));
   const vecchioUri = rec._uri, vecchioNome = rec._nome;
   const salvabile = {...rec}; delete salvabile._uri; delete salvabile._nome; delete salvabile.autore;
-  const res = await saf().salvaRecensione({ uri: S.treeUri, slug: S.me.slug, nome, data: JSON.stringify(salvabile) });
+  const res = await saf().salvaRecensione({ uri: S.treeUri, slug: S.me.slug, nome,
+    data: JSON.stringify(salvabile), base: inSerie() ? 'serie' : '' });
   if (vecchioUri && vecchioNome && vecchioNome !== nome){ try { await saf().cancellaDoc({ uri: vecchioUri }); } catch(e){} }
   rec._uri = res.uri; rec._nome = res.nome || nome;
   const i = S.recensioni.findIndex(x => x.autore === S.me.slug && x._nome === rec._nome);
@@ -528,7 +641,13 @@ async function caricaCartella(treeUri){
   S.profili.sort((a,b)=> (a.creato||'').localeCompare(b.creato||'') || a.slug.localeCompare(b.slug));
 
   S.storico = [];
-  if (res.storico){ try { const st = JSON.parse(res.storico); if (Array.isArray(st.visioni)) S.storico = st.visioni; } catch(e){} }
+  if (inSerie()){
+    // loadFolder porta lo storico dei film: quello delle serie sta sotto serie/
+    const txt = await fsLeggiPercorso('serie/storico.json');
+    if (txt){ try { const st = JSON.parse(txt); if (Array.isArray(st.visioni)) S.storico = st.visioni; } catch(e){} }
+  } else if (res.storico){
+    try { const st = JSON.parse(res.storico); if (Array.isArray(st.visioni)) S.storico = st.visioni; } catch(e){}
+  }
   S.storico.sort((a,b)=> String(a.data||'').localeCompare(String(b.data||'')));
   await caricaRecensioniMobile();
   await caricaSegnalazioniM();
@@ -563,9 +682,10 @@ function tinta(hex, f){
 let poltronaUid = 0;
 function poltronaSVG(colore, presente){
   const uid = ++poltronaUid;
-  const cuscino = presente ? colore : '#5a2830';
-  const schienale = presente ? tinta(colore, -0.42) : '#4a2228';
-  const braccioli = '#4a2228';
+  const cuscino = presente ? colore : tema('--posto-vuoto');
+  const scuro = tema('--poltrona-scura');
+  const schienale = presente ? tinta(colore, -0.42) : scuro;
+  const braccioli = scuro;
   return `<svg viewBox="0 0 100 88">
     <defs>
       <radialGradient id="mvnc${uid}" cx="50%" cy="32%" r="80%">
@@ -577,14 +697,14 @@ function poltronaSVG(colore, presente){
         <stop offset="100%" stop-color="${tinta(schienale, -0.2)}"/>
       </linearGradient>
     </defs>
-    <g stroke="#201114" stroke-width="2.5" stroke-linejoin="round"${presente ? '' : ' opacity=".85"'}>
+    <g stroke="${tema('--posto-bordo')}" stroke-width="2.5" stroke-linejoin="round"${presente ? '' : ' opacity=".85"'}>
       <rect x="3" y="16" width="15" height="60" rx="7.5" fill="${braccioli}"/>
       <rect x="82" y="16" width="15" height="60" rx="7.5" fill="${braccioli}"/>
       <rect x="17" y="6" width="66" height="60" rx="14" fill="url(#mvnc${uid})"/>
       <rect x="24" y="13" width="52" height="46" rx="9" fill="none" stroke="${tinta(cuscino, -0.28)}" stroke-width="1.6" stroke-dasharray="3 4" opacity=".9"/>
       <rect x="13" y="58" width="74" height="24" rx="12" fill="url(#mvns${uid})"/>
     </g>
-    ${presente ? `<g fill="#1b1013" stroke="${colore}" stroke-width="2.2" stroke-linejoin="round">
+    ${presente ? `<g fill="${tema('--posto-bordo')}" stroke="${colore}" stroke-width="2.2" stroke-linejoin="round">
       <ellipse cx="50" cy="56" rx="24" ry="10.5"/>
       <circle cx="50" cy="48" r="11.5"/>
     </g>` : ''}
@@ -592,19 +712,65 @@ function poltronaSVG(colore, presente){
 }
 // platea mobile: una poltrona per profilo, a capo su più righe centrate; tocca per presente.
 // Come sul desktop, si aggiungono poltrone vuote decorative per i posti/utenti futuri.
+// Il posto del salotto: cuscini affiancati sotto un unico schienale, braccioli solo ai
+// capi della riga. Stessa firma di poltronaSVG più la posizione. Come sul desktop.
+function postoDivanoSVG(colore, presente, pos){
+  const uid = ++poltronaUid;
+  const cuscino = presente ? colore : tema('--posto-vuoto');
+  const scuro = tema('--poltrona-scura');
+  const schienale = presente ? tinta(colore, -0.42) : scuro;
+  const capoSx = pos === 'sx' || pos === 'solo', capoDx = pos === 'dx' || pos === 'solo';
+  const sx = capoSx ? 18 : 0, dx = capoDx ? 82 : 100;
+  const bSx = capoSx ? 2 : -4, bDx = capoDx ? 98 : 104;
+  return `<svg viewBox="0 0 100 88">
+    <defs>
+      <radialGradient id="mvnd${uid}" cx="50%" cy="32%" r="80%">
+        <stop offset="0%" stop-color="${tinta(cuscino, 0.16)}"/>
+        <stop offset="100%" stop-color="${tinta(cuscino, -0.14)}"/>
+      </radialGradient>
+      <linearGradient id="mvne${uid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${tinta(schienale, 0.14)}"/>
+        <stop offset="100%" stop-color="${tinta(schienale, -0.2)}"/>
+      </linearGradient>
+    </defs>
+    <g stroke="${tema('--posto-bordo')}" stroke-width="2.5" stroke-linejoin="round"${presente ? '' : ' opacity=".85"'}>
+      ${capoSx ? '<rect x="2" y="14" width="16" height="64" rx="8" fill="'+scuro+'"/>' : ''}
+      ${capoDx ? '<rect x="82" y="14" width="16" height="64" rx="8" fill="'+scuro+'"/>' : ''}
+      <rect x="${sx + 1}" y="6" width="${dx - sx - 2}" height="58" rx="10" fill="url(#mvnd${uid})"/>
+      <rect x="${bSx}" y="56" width="${bDx - bSx}" height="26" rx="9" fill="url(#mvne${uid})"/>
+    </g>
+    ${presente ? `<g fill="${tema('--posto-bordo')}" stroke="${colore}" stroke-width="2.2" stroke-linejoin="round">
+      <ellipse cx="50" cy="54" rx="23" ry="10"/><circle cx="50" cy="46" r="11"/>
+    </g>` : ''}
+  </svg>`;
+}
+const postoSVG = (colore, presente, pos) =>
+  inSerie() ? postoDivanoSVG(colore, presente, pos) : poltronaSVG(colore, presente);
+
 function disegnaPlateaM(){
   const box = $('#m-platea'); if (!box) return;
   const n = S.profili.length;
   const posti = Math.max(10, Math.ceil((n + 3) / 5) * 5);   // righe piene + qualche posto libero
+  // posizione nella fila: serve al divano per sapere dove mettere i braccioli. Sul mobile
+  // i posti vanno a capo da soli, quindi si ragiona per righe da PER_FILA.
+  const PER_FILA = 5;
+  const pos = i => {
+    if (posti <= 1) return 'solo';
+    const dentro = i % PER_FILA, ultimaDellaFila = Math.min(posti - 1, i - dentro + PER_FILA - 1);
+    if (i === i - dentro && i === ultimaDellaFila) return 'solo';
+    if (dentro === 0) return 'sx';
+    if (i === ultimaDellaFila) return 'dx';
+    return 'mid';
+  };
   let html = S.profili.map((p,i) => {
     const presente = S.presenti.has(p.slug);
     return `<div class="poltrona assegnata${presente?' presente':''}" data-slug="${esc(p.slug)}">
-      ${poltronaSVG(coloreDi(p,i), presente)}
+      ${postoSVG(coloreDi(p,i), presente, pos(i))}
       <div class="nome">${esc(p.nome)}</div>
     </div>`;
   }).join('');
   for (let i = n; i < posti; i++)
-    html += `<div class="poltrona vuota">${poltronaSVG('#000', false)}<div class="nome">&nbsp;</div></div>`;
+    html += `<div class="poltrona vuota">${postoSVG('#000', false, pos(i))}<div class="nome">&nbsp;</div></div>`;
   box.innerHTML = html;
   box.querySelectorAll('.poltrona.assegnata').forEach(el => el.onclick = () => {
     const s = el.dataset.slug;
@@ -624,7 +790,7 @@ function disegnaProfili(){
     <button class="prof ghost" data-slug="${esc(p.slug)}">
       <span class="pallino" style="background:${esc(coloreDi(p,i))}"></span>
       <span style="flex:1">${p.password ? '🔒 ' : ''}${esc(p.nome)}</span>
-      <span style="color:var(--dim); font-size:12px">${(p.lista||[]).length} film</span>
+      <span style="color:var(--dim); font-size:12px">${listaDi(p).length} ${inSerie() ? 'serie' : 'film'}</span>
     </button>`).join('');
   box.querySelectorAll('.prof').forEach(b => b.onclick = () => scegliProfilo(b.dataset.slug));
 }
@@ -645,6 +811,8 @@ function entra(slug){
   S.listaVista = 'daVedere';
   if (!S.config.tmdbKey) toast('Manca la chiave TMDB in config.json (si imposta dal PC).', true);
   $('#hdr').style.display = 'flex';
+  $('#m-modo').style.display = 'flex';
+  applicaModo();
   $('#hdr-chi').innerHTML = 'sei<b>'+esc(S.me.nome)+'</b>';
   $('#q').value = ''; $('#risultati').innerHTML = '';
   disegnaMiaLista();
@@ -656,16 +824,29 @@ function entra(slug){
 /* ══════════════════ TMDB (identico al PC) ══════════════════ */
 async function cercaFilm(q){
   const k = S.config.tmdbKey; if (!k) throw new Error('nokey');
-  const r = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${k}&language=it-IT&include_adult=false&query=${encodeURIComponent(q)}`);
+  const r = await fetch(`https://api.themoviedb.org/3/search/${inSerie()?'tv':'movie'}?api_key=${k}&language=it-IT&include_adult=false&query=${encodeURIComponent(q)}`);
   if (!r.ok) throw new Error('tmdb '+r.status);
-  return ((await r.json()).results || []).slice(0, 10);
+  return ((await r.json()).results || []).slice(0, 10)
+    .map(x => inSerie() ? {...x, title:x.name || x.original_name, release_date:x.first_air_date} : x);
 }
 async function dettagliFilm(id){
   const k = S.config.tmdbKey;
-  const r = await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${k}&language=it-IT&append_to_response=credits,external_ids,keywords`);
+  const r = await fetch(`https://api.themoviedb.org/3/${inSerie()?'tv':'movie'}/${id}?api_key=${k}&language=it-IT&append_to_response=credits,external_ids,keywords`);
   if (!r.ok) throw new Error('tmdb '+r.status);
   const j = await r.json();
-  const regista = ((j.credits||{}).crew||[]).filter(c=>c.job==='Director').map(c=>c.name).join(', ');
+  const serie = inSerie();
+  // una serie non ha un regista: il suo posto lo prende il creatore (crew.Director è vuoto)
+  const regista = serie
+    ? (j.created_by||[]).map(c=>c.name).join(', ')
+    : ((j.credits||{}).crew||[]).filter(c=>c.job==='Director').map(c=>c.name).join(', ');
+  // stagioni vere: via gli speciali (S0) e quelle annunciate ma ancora senza episodi
+  const stagioni = serie ? (j.seasons||[])
+    .filter(s => s.season_number > 0 && s.episode_count > 0)
+    .map(s => ({n:s.season_number, episodi:s.episode_count})) : null;
+  // molte serie lasciano episode_run_time vuoto: si ripiega sull'ultimo episodio uscito
+  const durataEp = serie
+    ? (((j.episode_run_time||[])[0]) || (j.last_episode_to_air||{}).runtime || null)
+    : (j.runtime || null);
   let voto = j.vote_average ? Math.round(j.vote_average*10)/10 : null, votoFonte = 'tmdb';
   const imdbId = (j.external_ids||{}).imdb_id || j.imdb_id;
   if (S.config.omdbKey && imdbId){
@@ -673,14 +854,16 @@ async function dettagliFilm(id){
       const iv = parseFloat(o.imdbRating); if (iv){ voto = iv; votoFonte = 'imdb'; } } catch(e){}
   }
   return {
-    tmdbId:j.id, titolo:j.title || j.original_title, anno:(j.release_date||'').slice(0,4),
-    uscita:j.release_date || null,
-    collezione:j.belongs_to_collection ? j.belongs_to_collection.id : null,
-    collezioneNome:j.belongs_to_collection ? j.belongs_to_collection.name : null,
-    durata:j.runtime || null, regista, generi:(j.genres||[]).map(x=>x.name),
+    tmdbId:j.id, titolo:(serie ? (j.name || j.original_name) : (j.title || j.original_title)),
+    anno:String((serie ? j.first_air_date : j.release_date) || '').slice(0,4),
+    uscita:(serie ? j.first_air_date : j.release_date) || null,
+    collezione:(!serie && j.belongs_to_collection) ? j.belongs_to_collection.id : null,
+    collezioneNome:(!serie && j.belongs_to_collection) ? j.belongs_to_collection.name : null,
+    stagioni, stato:serie ? (j.status || '') : null,
+    durata:durataEp, regista, generi:(j.genres||[]).map(x=>x.name),
     paese:(j.production_countries||[]).map(c=>c.name).join(', '),
     cast:((j.credits||{}).cast||[]).slice(0,6).map(c=>c.name),
-    keywords:((j.keywords||{}).keywords||[]).slice(0,12).map(x=>x.name),
+    keywords:(((j.keywords||{}).results) || ((j.keywords||{}).keywords) || []).slice(0,12).map(x=>x.name),
     voto, votoFonte, trama:j.overview || '',
     posterUrl:j.poster_path ? 'https://image.tmdb.org/t/p/w500'+j.poster_path : null,
     sfondoUrl:j.backdrop_path ? 'https://image.tmdb.org/t/p/w780'+j.backdrop_path : null,
@@ -705,7 +888,7 @@ async function providersFilm(tmdbId){
   if (S.providersCache.has(tmdbId)) return S.providersCache.get(tmdbId);
   let out = [];
   try {
-    const r = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}/watch/providers?api_key=${S.config.tmdbKey}`);
+    const r = await fetch(`https://api.themoviedb.org/3/${inSerie()?'tv':'movie'}/${tmdbId}/watch/providers?api_key=${S.config.tmdbKey}`);
     if (r.ok){
       const it = ((await r.json()).results || {}).IT || {};
       out = [...new Set((it.flatrate || []).map(p => normProvider(p.provider_name)))];
@@ -733,7 +916,7 @@ async function eseguiRicerca(){
     const res = await cercaFilm(q);
     if (mio !== cercaSeq) return;   // arrivata una ricerca più recente: scarto questa
     if (!res.length){ box.innerHTML = '<div class="vuoto">Nessun risultato.</div>'; return; }
-    const idsInLista = new Set((S.me.lista||[]).map(v=>v.tmdbId));
+    const idsInLista = new Set(listaDi(S.me).map(v=>v.tmdbId));
     box.innerHTML = res.map(f=>{
       const pst = f.poster_path ? 'https://image.tmdb.org/t/p/w185'+f.poster_path : '';
       const anno = (f.release_date||'').slice(0,4);
@@ -783,7 +966,7 @@ async function modaleAggiungi(id){
     $('#m-ok').disabled = true; $('#m-ok').innerHTML = '<span class="spin"></span>';
     const voce = { ...d, desiderio, conChi:comp.conChi, nonCon:comp.nonCon, aggiunto: new Date().toISOString() };
     try {
-      await mutaLista(p => { if (!(p.lista||[]).some(v=>v.tmdbId===voce.tmdbId)) p.lista.push(voce); });
+      await mutaLista(p => { const L = listaDi(p); if (!L.some(v=>v.tmdbId===voce.tmdbId)) L.push(voce); });
       chiudiModale(); disegnaMiaLista(); eseguiRicerca();
       toast(`«${voce.titolo}» aggiunto 🍿`);
     } catch(e){ $('#m-ok').disabled=false; $('#m-ok').textContent='🎬 Aggiungi'; toast('Salvataggio non riuscito: '+e.message, true); }
@@ -794,6 +977,7 @@ async function modaleAggiungi(id){
 async function mutaLista(fn){
   const fresh = JSON.parse(await fsLeggi(S.me._uri));
   fresh.lista = fresh.lista || [];
+  fresh.listaSerie = fresh.listaSerie || [];   // l'altra modalità non va persa riscrivendo
   fn(fresh);
   await fsScrivi(S.me._uri, JSON.stringify(fresh));
   fresh._uri = S.me._uri;
@@ -852,7 +1036,7 @@ function ultimaVisioneMia(tmdbId){
   return (rec && rec > d) ? rec : d;
 }
 function disegnaMiaLista(){
-  const tutte = (S.me.lista||[]).slice();
+  const tutte = listaDi(S.me).slice();
   // una voce è "da vedere" se non c'è una visione mia successiva all'aggiunta, altrimenti "già vista"
   const daVedere = tutte.filter(v => entryAttiva(v, S.me.slug));
   const visti = tutte.filter(v => !entryAttiva(v, S.me.slug));
@@ -906,7 +1090,7 @@ const nomeDi = slug => { const p = S.profili.find(x=>x.slug===slug); return p ? 
 
 /* menù di modifica di un film già in lista: priorità (desiderio) + white/black list + rimuovi */
 function modaleModifica(id){
-  const orig = (S.me.lista||[]).find(x=>x.tmdbId===id); if(!orig) return;
+  const orig = listaDi(S.me).find(x=>x.tmdbId===id); if(!orig) return;
   const visto = !entryAttiva(orig, S.me.slug);   // già visto in sala → non è più "da vedere"
   let desiderio = orig.desiderio || 3;
   const comp = { conChi:[...(orig.conChi||[])], nonCon:[...(orig.nonCon||[])] };
@@ -933,7 +1117,7 @@ function modaleModifica(id){
       $('#m-rivedi').disabled=true; $('#m-rivedi').innerHTML='<span class="spin"></span>';
       try {
         // aggiornando "aggiunto" la voce torna "da vedere" (le visioni precedenti non contano più)
-        await mutaLista(p => { const vv = (p.lista||[]).find(x=>x.tmdbId===id); if(vv) vv.aggiunto = new Date().toISOString(); });
+        await mutaLista(p => { const vv = listaDi(p).find(x=>x.tmdbId===id); if(vv) vv.aggiunto = new Date().toISOString(); });
         chiudiModale(); S.listaVista = 'daVedere'; disegnaMiaLista();
         toast(`«${orig.titolo}» di nuovo in lista ↺`);
       } catch(e){ $('#m-rivedi').disabled=false; $('#m-rivedi').textContent='↺ Rimetti in lista'; toast('Non riuscito: '+e.message, true); }
@@ -944,7 +1128,7 @@ function modaleModifica(id){
     $('#m-salva').onclick = async () => {
       $('#m-salva').disabled=true; $('#m-salva').innerHTML='<span class="spin"></span>';
       try {
-        await mutaLista(p => { const vv = (p.lista||[]).find(x=>x.tmdbId===id); if(vv){ vv.desiderio=desiderio; vv.conChi=comp.conChi; vv.nonCon=comp.nonCon; } });
+        await mutaLista(p => { const vv = listaDi(p).find(x=>x.tmdbId===id); if(vv){ vv.desiderio=desiderio; vv.conChi=comp.conChi; vv.nonCon=comp.nonCon; } });
         chiudiModale(); disegnaMiaLista();
         toast('Modifiche salvate ✓');
       } catch(e){ $('#m-salva').disabled=false; $('#m-salva').textContent='Salva'; toast('Non riuscito: '+e.message, true); }
@@ -957,7 +1141,7 @@ function modaleModifica(id){
     $('#m-si').onclick = async () => {
       $('#m-si').disabled=true; $('#m-si').innerHTML='<span class="spin"></span>';
       try {
-        await mutaLista(p => { p.lista = (p.lista||[]).filter(x=>x.tmdbId!==id); });
+        await mutaLista(p => { const L = listaDi(p); const i = L.findIndex(x=>x.tmdbId===id); if (i>=0) L.splice(i,1); });
         chiudiModale(); disegnaMiaLista(); eseguiRicerca();
         toast(`«${orig.titolo}» tolto`);
       } catch(e){ $('#m-si').disabled=false; $('#m-si').textContent='Rimuovi'; toast('Non riuscito: '+e.message, true); }
@@ -979,13 +1163,63 @@ function visioneRecensione(tmdbId, slug){
 }
 // una voce è ancora "da vedere" se non c'è una visione di quel film, con quella persona,
 // successiva al momento in cui l'ha aggiunta (così «rimettilo in lista» funziona subito)
+/* ── serie: il segnalibro (CONCEPT-serie §5c) ─────────────────────────────────
+   Dove si è arrivati NON si salva: si ricalcola dallo storico, come lo stato "visto" dei
+   film. Contano solo le serate successive all'aggiunta, così «rimettila in lista» riparte
+   da capo. Stesse funzioni del desktop. */
+function segnalibro(voce, slug){
+  const aggiunto = voce.aggiunto || '0000-01-01';
+  let s = 0, e = 0;
+  for (const v of S.storico){
+    if (v.tmdbId !== voce.tmdbId || !(v.partecipanti||[]).includes(slug)) continue;
+    if ((v.ts || v.data + 'T23:59:59') < aggiunto) continue;
+    const st = v.stagione || 1, ep = Math.max(0, ...(v.episodi || []));
+    if (st > s || (st === s && ep > e)){ s = st; e = ep; }
+  }
+  return {stagione:s, episodio:e};
+}
+function fineSerie(voce){
+  const st = voce.stagioni || [];
+  if (!st.length) return null;
+  const ultima = st[st.length - 1];
+  return {stagione:ultima.n, episodio:ultima.episodi};
+}
+function serieFinita(voce, slug){
+  const fine = fineSerie(voce); if (!fine) return false;
+  const b = segnalibro(voce, slug);
+  return b.stagione > fine.stagione || (b.stagione === fine.stagione && b.episodio >= fine.episodio);
+}
+function prossimoEpisodio(voce, slug){
+  const b = segnalibro(voce, slug), st = voce.stagioni || [];
+  let s = b.stagione || 1, e = (b.episodio || 0) + 1;
+  if (!st.length) return {stagione:s, episodio:e};
+  const trova = n => st.find(x => x.n === n);
+  if (!trova(s)) return null;
+  if (e > trova(s).episodi){ s += 1; e = 1; if (!trova(s)) return null; }
+  return {stagione:s, episodio:e};
+}
+// da dove riprende il gruppo: il punto più indietro fra i presenti
+function prossimoGruppo(voce){
+  let min = null;
+  for (const slug of S.presenti){
+    const p = S.profili.find(x => x.slug === slug); if (!p) continue;
+    const sua = listaDi(p).find(v => v.tmdbId === voce.tmdbId); if (!sua) continue;
+    const pr = prossimoEpisodio(sua, slug); if (!pr) continue;
+    if (!min || pr.stagione < min.stagione || (pr.stagione === min.stagione && pr.episodio < min.episodio)) min = pr;
+  }
+  return min || prossimoEpisodio(voce, S.me.slug);
+}
+const etichettaEp = p => p ? `S${p.stagione} E${p.episodio}` : '';
+
 function entryAttiva(voce, slug){
   const aggiunto = voce.aggiunto || '0000-01-01';
-  if (S.storico.some(v => v.tmdbId === voce.tmdbId && (v.partecipanti||[]).includes(slug)
-    && (v.ts || v.data + 'T23:59:59') >= aggiunto)) return false;
-  // anche la recensione spegne la voce, con la stessa regola sulla data
+  // la recensione vale come "visto" per un film e come "finita" per una serie
   const rec = visioneRecensione(voce.tmdbId, slug);
-  return !(rec && rec + 'T23:59:59' >= aggiunto);
+  if (rec && rec + 'T23:59:59' >= aggiunto) return false;
+  // una serie non si spegne dopo una serata: la serata sposta solo il segnalibro
+  if (inSerie()) return !serieFinita(voce, slug);
+  return !S.storico.some(v => v.tmdbId === voce.tmdbId && (v.partecipanti||[]).includes(slug)
+    && (v.ts || v.data + 'T23:59:59') >= aggiunto);
 }
 function indiceSoddisfazione(slug){
   const passo = cfgSala().passoSoddisfazione;
@@ -998,7 +1232,7 @@ function indiceSoddisfazione(slug){
   return idx;
 }
 function bonusGeneri(prof, film){
-  const pos = prof.generiPositivi || [], neg = prof.generiNegativi || [];
+  const pos = generiPos(prof), neg = generiNeg(prof);
   let g = 0;
   for (const gen of (film.generi || [])){ if (pos.includes(gen)) g += 1; else if (neg.includes(gen)) g -= 1; }
   return g;
@@ -1008,7 +1242,7 @@ function classificaM(){
   const candidati = new Map();
   for (const pr of S.profili){
     if (!setP.has(pr.slug)) continue;
-    for (const voce of (pr.lista || [])){
+    for (const voce of listaDi(pr)){
       if (!voce.tmdbId || !entryAttiva(voce, pr.slug)) continue;
       let c = candidati.get(voce.tmdbId);
       if (!c){ c = {film:{...voce}, prop:[]}; candidati.set(voce.tmdbId, c); }
@@ -1101,7 +1335,7 @@ function disegnaSalaM(){
       <div class="rango">${rango}</div>
       <div class="dentro">
         <h4>${esc(f.titolo)}</h4>
-        <div class="meta2">${esc(f.anno||'')}${f.durata?' · '+fmtMin(f.durata):''}${f.regista?' · '+esc(f.regista):''}<br>
+        <div class="meta2">${esc(f.anno||'')}${f.durata?' · '+fmtMin(f.durata)+(inSerie()?' a ep.':''):''}${f.regista?' · '+esc(f.regista):''}${inSerie()?' · riprendete da <b>'+esc(etichettaEp(prossimoGruppo(f)))+'</b>':''}<br>
           🎟 ${scelto.prop.length} ${scelto.prop.length===1?'proponente':'proponenti'} ·
           <span class="punti">🏆 ${fmtNum(scelto.S)}</span>${f.voto?` · ★ ${f.voto}`:''}${scelto.M>1?' · 💛 su misura':''}${rango>1?' · <span style="color:var(--oro2)">dalla lista completa</span>':''}</div>
       </div>
@@ -1143,13 +1377,13 @@ function modaleSchedaM(r){
 // più dispositivi registrano non si perde nulla (SPECIFICA §3.2).
 async function registraVisioneM(voce){
   let attuale = {visioni:[]};
-  const txt = await fsLeggiPercorso('storico.json');
+  const txt = await fsLeggiPercorso(PS('storico.json'));
   if (txt){ try { const j = JSON.parse(txt); if (j && Array.isArray(j.visioni)) attuale = j; } catch(e){} }
   if (!Array.isArray(attuale.visioni)) attuale.visioni = [];
   const ids = new Set(attuale.visioni.map(v => v.id));
   for (const v of S.storico) if (v.id && !ids.has(v.id)){ attuale.visioni.push(v); ids.add(v.id); }
   if (!ids.has(voce.id)) attuale.visioni.push(voce);
-  await fsScriviPercorso('storico.json', JSON.stringify(attuale));
+  await fsScriviPercorso(PS('storico.json'), JSON.stringify(attuale));
   S.storico = attuale.visioni.sort((a,b) => String(a.data||'').localeCompare(String(b.data||'')));
 }
 
@@ -1158,23 +1392,46 @@ async function registraVisioneM(voce){
 function modalePlayM(r){
   const f = r.film;
   const nomi = [...S.presenti].map(nomeDi).join(', ');
+  const serie = inSerie();
+  const da = serie ? (prossimoGruppo(f) || {stagione:1, episodio:1}) : null;
+  const stagioni = serie ? (f.stagioni || []) : [];
   apriModale(`
     <h3>Si spengono le luci…</h3>
+    ${serie ? `
+    <p class="meta" style="line-height:1.6">Stasera guardate <b style="color:var(--oro2)">«${esc(f.titolo)}»</b> con: ${esc(nomi)}.</p>
+    <label class="lab">DOVE SIETE ARRIVATI</label>
+    <div class="play-ep">
+      <label>Stagione <select class="inp" id="pl-stag">${
+        (stagioni.length ? stagioni.map(s=>s.n) : [da.stagione]).map(n =>
+          `<option value="${n}"${n===da.stagione?' selected':''}>${n}</option>`).join('')
+      }</select></label>
+      <label>dall'ep. <input class="inp" type="number" id="pl-da" min="1" value="${da.episodio}"></label>
+      <label>al <input class="inp" type="number" id="pl-a" min="1" value="${da.episodio}"></label>
+    </div>
+    <p class="meta" style="font-size:12px">La serie resta in lista: si sposta solo il segnalibro.</p>` : `
     <p class="meta" style="line-height:1.6">Il film della serata è <b style="color:var(--oro2)">«${esc(f.titolo)}»</b>.<br>
     Lo registro come <b>visto</b> per: ${esc(nomi)}.<br>
-    <span style="font-size:12px">Per i proponenti riparte il timer dell'attesa e il film esce dalle loro liste.</span></p>
+    <span style="font-size:12px">Per i proponenti riparte il timer dell'attesa e il film esce dalle loro liste.</span></p>`}
     <div class="m-az">
       <button class="ghost" id="mp-annulla">Non ancora</button>
       <button class="primario" id="mp-ok">▶ Buona visione</button>
     </div>`);
   $('#mp-annulla').onclick = chiudiModale;
   $('#mp-ok').onclick = async () => {
+    let stagione = null, episodi = null;
+    if (serie){
+      stagione = parseInt($('#pl-stag').value, 10) || 1;
+      const a = Math.max(1, parseInt($('#pl-da').value, 10) || 1);
+      const b = Math.max(a, parseInt($('#pl-a').value, 10) || a);
+      episodi = [a, b];
+    }
     $('#mp-ok').disabled = true; $('#mp-ok').innerHTML = '<span class="spin"></span>';
     const voce = {
       id:`${Date.now().toString(36)}-${S.me.slug}`, data:new Date().toISOString().slice(0,10), ts:new Date().toISOString(),
       tmdbId:f.tmdbId, titolo:f.titolo,
       partecipanti:[...S.presenti], proponenti:r.prop.map(p => p.slug)
     };
+    if (serie){ voce.stagione = stagione; voce.episodi = episodi; }
     try { await registraVisioneM(voce); }
     catch(e){ $('#mp-ok').disabled=false; $('#mp-ok').textContent='▶ Buona visione'; return toast('Registrazione non riuscita: '+e.message, true); }
     chiudiModale();
@@ -1221,7 +1478,7 @@ function modaleListaCompletaM(){
 
 function apriFiltriSala(){
   const f = S.fSala;
-  const registi = [...new Set(S.profili.flatMap(p => (p.lista||[]).map(v => v.regista).filter(Boolean)))].sort();
+  const registi = [...new Set(S.profili.flatMap(p => listaDi(p).map(v => v.regista).filter(Boolean)))].sort();
   apriModale(`
     <h3>Filtri della serata</h3>
     <div class="campo-r"><label>Durata massima</label>
@@ -1402,7 +1659,7 @@ function pannelloAggiornamento(){
 
 /* ══════════════════ PANNELLO FILTRI (bottom sheet) ══════════════════ */
 function chipsGeneri(sel, attr){
-  return GENERI_TMDB.map(g => `<button class="pchip ${sel.includes(g)?'con':''}" data-${attr}="${esc(g)}">${sel.includes(g)?'✓ ':''}${esc(g)}</button>`).join('');
+  return generiTMDB().map(g => `<button class="pchip ${sel.includes(g)?'con':''}" data-${attr}="${esc(g)}">${sel.includes(g)?'✓ ':''}${esc(g)}</button>`).join('');
 }
 function apriFiltri(){
   const f = S.filtri;
@@ -1446,7 +1703,7 @@ async function apriImpostazioni(){
   const p = S.me;
   const render = () => {
     const pos = S.me.generiPositivi || [], neg = S.me.generiNegativi || [];
-    $('#i-gen').innerHTML = GENERI_TMDB.map(g=>{
+    $('#i-gen').innerHTML = generiTMDB().map(g=>{
       const st = pos.includes(g) ? 'pos' : neg.includes(g) ? 'neg' : '';
       const col = st==='pos'?'#7d9b76':st==='neg'?'#c0504d':'';
       const seg = st==='pos'?'✓ ':st==='neg'?'✗ ':'';
@@ -1602,7 +1859,7 @@ function fasciaConsiglio(i, tot, C){
 /* ── persistenza: consigli/<slug>.json (solo il proprio file) ── */
 async function caricaConsigliM(){
   S.cgScartati = new Map();
-  const txt = await fsLeggiPercorso('consigli/' + S.me.slug + '.json');
+  const txt = await fsLeggiPercorso(PS('consigli/' + S.me.slug + '.json'));
   if (!txt) return;
   try {
     const d = JSON.parse(txt);
@@ -1614,7 +1871,7 @@ async function caricaConsigliM(){
 }
 async function salvaConsigliM(){
   // rilegge e fonde, ma senza rimettere ciò che ho tolto a mano (cgRipristinati)
-  const txt = await fsLeggiPercorso('consigli/' + S.me.slug + '.json');
+  const txt = await fsLeggiPercorso(PS('consigli/' + S.me.slug + '.json'));
   if (txt){ try {
     const d = JSON.parse(txt);
     for (const x of ((d && Array.isArray(d.scartati)) ? d.scartati : [])){
@@ -1624,7 +1881,7 @@ async function salvaConsigliM(){
     }
   } catch(e){} }
   const scartati = [...S.cgScartati.entries()].map(([tmdbId,titolo]) => ({tmdbId,titolo}));
-  await fsScriviPercorso('consigli/' + S.me.slug + '.json',
+  await fsScriviPercorso(PS('consigli/' + S.me.slug + '.json'),
     JSON.stringify({scartati, aggiornato:new Date().toISOString()}));
 }
 
@@ -1644,6 +1901,10 @@ async function arricchisciKeywordM(){
 }
 
 /* ── candidati da TMDB ── */
+const GENERI_ID_SERIE = {'Action & Adventure':10759, Animazione:16, Commedia:35, Crime:80,
+  Documentario:99, Dramma:18, Famiglia:10751, Kids:10762, Mistero:9648, News:10763,
+  Reality:10764, 'Sci-Fi & Fantasy':10765, Soap:10766, Talk:10767, 'War & Politics':10768, Western:37};
+const generiID = () => inSerie() ? GENERI_ID_SERIE : GENERI_ID;
 const GENERI_ID = {Azione:28, Avventura:12, Animazione:16, Commedia:35, Crime:80, Documentario:99,
   Dramma:18, Famiglia:10751, Fantasy:14, Storia:36, Horror:27, Musica:10402, Mistero:9648,
   Romance:10749, Fantascienza:878, 'Film TV':10770, Thriller:53, Guerra:10752, Western:37};
@@ -1670,7 +1931,7 @@ async function generaConsigliM(){
   try {
     const f = S.cgFiltri, k = S.config.tmdbKey;
     const visti = new Set(S.storico.filter(v => (v.partecipanti||[]).includes(S.me.slug)).map(v => v.tmdbId));
-    const inLista = new Set((S.me.lista||[]).map(v => v.tmdbId));
+    const inLista = new Set(listaDi(S.me).map(v => v.tmdbId));
     const recensiti = new Set(S.recensioni.filter(r => r.autore === S.me.slug).map(r => r.tmdbId));
     const escludi = id => visti.has(id) || inLista.has(id) || recensiti.has(id) || S.cgScartati.has(id);
     const grezzi = new Map();
@@ -1678,10 +1939,10 @@ async function generaConsigliM(){
     avanz('Cerco film che potrebbero piacerti…');
     const p = new URLSearchParams({api_key:k, language:'it-IT', include_adult:'false',
       sort_by:'popularity.desc', 'vote_count.gte':'150', page:'1'});
-    const generi = (f.generi.length ? f.generi : prof.top.generi).map(g => GENERI_ID[g]).filter(Boolean);
+    const generi = (f.generi.length ? f.generi : prof.top.generi).map(g => generiID()[g]).filter(Boolean);
     if (generi.length) p.set('with_genres', generi.join('|'));
     if (f.escludiNegativi){
-      const neg = (S.me.generiNegativi||[]).map(g => GENERI_ID[g]).filter(Boolean);
+      const neg = generiNeg(S.me).map(g => generiID()[g]).filter(Boolean);
       if (neg.length) p.set('without_genres', neg.join(','));
     }
     if (f.annoDa) p.set('primary_release_date.gte', f.annoDa+'-01-01');
@@ -1696,7 +1957,7 @@ async function generaConsigliM(){
     if (kw.length) p.set('with_keywords', kw.join('|'));
     for (const pag of ['1','2']){
       p.set('page', pag);
-      try { const j = await tmdbJSON('https://api.themoviedb.org/3/discover/movie?'+p);
+      try { const j = await tmdbJSON('https://api.themoviedb.org/3/discover/'+(inSerie()?'tv':'movie')+'?'+p);
         for (const m of (j.results||[])) if (!escludi(m.id) && !grezzi.has(m.id)) grezzi.set(m.id, 1);
       } catch(e){}
     }
@@ -1704,7 +1965,7 @@ async function generaConsigliM(){
     const amati = S.recensioni.filter(r => r.autore === S.me.slug && r.tmdbId != null)
       .sort((a,b) => (b.votoPersonale||0)-(a.votoPersonale||0)).slice(0,5);
     for (const r of amati){
-      try { const j = await tmdbJSON(`https://api.themoviedb.org/3/movie/${r.tmdbId}/recommendations?api_key=${k}&language=it-IT&page=1`);
+      try { const j = await tmdbJSON(`https://api.themoviedb.org/3/${inSerie()?'tv':'movie'}/${r.tmdbId}/recommendations?api_key=${k}&language=it-IT&page=1`);
         for (const m of (j.results||[]).slice(0,10)) if (!escludi(m.id) && !grezzi.has(m.id)) grezzi.set(m.id, 1);
       } catch(e){}
     }
@@ -1821,7 +2082,7 @@ function apriFiltriConsigli(){
   apriModale(`
     <h3>Filtri dei consigli</h3>
     <div class="campo-r"><label>Genere</label>
-      <select class="inp" id="cf-gen"><option value="">tutti</option>${GENERI_TMDB.map(g=>`<option${f.generi[0]===g?' selected':''}>${esc(g)}</option>`).join('')}</select></div>
+      <select class="inp" id="cf-gen"><option value="">tutti</option>${generiTMDB().map(g=>`<option${f.generi[0]===g?' selected':''}>${esc(g)}</option>`).join('')}</select></div>
     <div class="campo-r"><label>Anno</label><span><input class="inp" id="cf-annoda" type="number" placeholder="da" style="width:76px" value="${f.annoDa||''}"> – <input class="inp" id="cf-annoa" type="number" placeholder="a" style="width:76px" value="${f.annoA||''}"></span></div>
     <div class="campo-r"><label>Durata ≤</label><input class="inp" id="cf-durata" type="number" placeholder="min" style="width:90px" value="${f.durata||''}"></div>
     <div class="campo-r"><label>Voto ≥</label><input class="inp" id="cf-voto" type="number" step="0.5" min="0" max="10" placeholder="0" style="width:90px" value="${f.votoMin||''}"></div>
@@ -2116,6 +2377,9 @@ $('#q').addEventListener('keydown', e => { if (e.key === 'Enter'){ clearTimeout(
     $('#cartella-nota').innerHTML = 'Anteprima nel browser: il selettore cartelle funziona solo nell\'APK installato.';
     return;
   }
+  S.modo = LS.get('modo') === 'serie' ? 'serie' : 'film';   // prima di caricare: decide i percorsi
+  applicaModo();
+  $('#m-modo').onclick = modaleModoM;
   const saved = LS.get('tree');
   if (saved){
     $('#cartella-nota').innerHTML = '<span class="spin"></span> riapro l\'ultima cartella…';

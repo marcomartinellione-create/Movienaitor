@@ -294,7 +294,7 @@ della recensione (`ultimaVisione`, o il giorno in cui è stata scritta) e il seg
 gioco per gli altri, §6.2). Fra i visti finiscono anche i film recensiti che non sono mai
 passati dalla watch list. Vedi SPECIFICA §3.3 e §5.2 C5.
 
-## Modalità Serie TV (ramo `serie-tv`, solo desktop per ora)
+## Modalità Serie TV (ramo `serie-tv`, desktop **e** mobile)
 
 Seconda modalità, non una seconda app: casella in basso a destra (speculare al 🐞) →
 🎬 Film / 📺 Serie TV. Concept e decisioni in **CONCEPT-serie.md**, regole in SPECIFICA §14.
@@ -318,8 +318,18 @@ Seconda modalità, non una seconda app: casella in basso a destra (speculare al 
   sono stati marcati: si aggiungono man mano che danno fastidio.
 - **Reversibilità**: ramo `serie-tv` (master fermo, tag `pre-serie`), dati additivi
   (`serie/` si cancella in blocco), e la casella si nasconde da ⚙ Impostazioni.
-- **Da fare**: portare tutto sul mobile (deciso: prima il desktop), e scegliere la
-  variante dell'accento fra caldo e freddo.
+- **Sul mobile** vale tutto quanto sopra, riscritto in quel file: `PS(percorso)` al posto di
+  `P()` (là i percorsi sono stringhe), `cambiaModoM` rilegge la cartella e rientra nel
+  profilo, casella `#m-modo` in basso a destra speculare al 🐞. `mutaLista` tiene ferma
+  **anche** la lista dell'altra modalità quando riscrive il profilo: senza quella riga si
+  perderebbe la metà non attiva.
+- ⚠️ **Il plugin nativo va aggiornato** perché il mobile veda le recensioni delle serie:
+  `caricaRecensioni`/`salvaRecensione` accettano ora `base:'serie'` e `elencaJson` risolve
+  i percorsi annidati (`MvnSafPlugin.java`). Con un APK vecchio tutto il resto funziona
+  (liste, storico, Sala, consigli passano da `leggiPercorso`/`scriviPercorso`, che i
+  percorsi annidati li reggevano già): **si vedono solo le recensioni dei film**.
+  Serve una build dell'APK, che è una pubblicazione ⇒ solo su ok esplicito di Marco.
+- **Da fare**: provare la modalità sul telefono vero dopo la prossima build.
 
 ⚠️ **Gotcha trovato scrivendo queste patch**: nelle stringhe di sostituzione di
 `String.replace` la sequenza `$$` significa «un $ letterale» e si mangia un carattere.

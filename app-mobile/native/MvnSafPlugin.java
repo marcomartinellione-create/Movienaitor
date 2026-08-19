@@ -35,6 +35,7 @@ import java.nio.charset.StandardCharsets;
  *  - loadFolder({ uri })   -> { config, profili:[{name,uri,data}] }
  *  - read({ uri })         -> { data }
  *  - write({ uri, data })  -> {}
+ *  - caricaRecensioni({ uri, base? })       -> { recensioni:[...] }  (base "serie" per le serie TV)
  *  - leggiPercorso({ uri, percorso })       -> { data|null }   (percorso relativo alla cartella)
  *  - scriviPercorso({ uri, percorso, data })-> { uri }         (crea le sottocartelle)
  *  - elencaJson({ uri, cartella })          -> { files:[{nome,uri,data}] }
@@ -144,7 +145,11 @@ public class MvnSafPlugin extends Plugin {
             DocumentFile root = DocumentFile.fromTreeUri(getContext(), Uri.parse(uriStr));
             if (root == null || !root.isDirectory()) { call.reject("cartella non accessibile"); return; }
             JSArray out = new JSArray();
-            DocumentFile recDir = trovaFiglio(root, "recensioni");
+            // base: "" per i film (com'e' sempre stato), "serie" per le serie TV
+            String base = call.getString("base", "");
+            DocumentFile radice = root;
+            if (base != null && !base.isEmpty()) radice = trovaFiglio(root, base);
+            DocumentFile recDir = (radice == null) ? null : trovaFiglio(radice, "recensioni");
             if (recDir != null && recDir.isDirectory()) {
                 for (DocumentFile userDir : recDir.listFiles()) {
                     if (userDir == null || !userDir.isDirectory()) continue;
@@ -179,7 +184,10 @@ public class MvnSafPlugin extends Plugin {
         try {
             DocumentFile root = DocumentFile.fromTreeUri(getContext(), Uri.parse(uriStr));
             if (root == null) { call.reject("cartella non accessibile"); return; }
-            DocumentFile recDir = trovaOCrea(root, "recensioni");
+            String base = call.getString("base", "");
+            DocumentFile radice = root;
+            if (base != null && !base.isEmpty()) radice = trovaOCrea(root, base);
+            DocumentFile recDir = trovaOCrea(radice, "recensioni");
             DocumentFile userDir = trovaOCrea(recDir, slug);
             if (userDir == null) { call.reject("impossibile creare la cartella"); return; }
             DocumentFile file = trovaFiglio(userDir, nome);
@@ -238,7 +246,8 @@ public class MvnSafPlugin extends Plugin {
         try {
             DocumentFile root = DocumentFile.fromTreeUri(getContext(), Uri.parse(uriStr));
             JSArray out = new JSArray();
-            DocumentFile dir = (root == null) ? null : trovaFiglio(root, cartella);
+            // risolvi() cammina sui segmenti: cosi vale anche "serie/qualcosa"
+            DocumentFile dir = (root == null) ? null : risolviCartella(root, cartella);
             if (dir != null && dir.isDirectory()) {
                 for (DocumentFile f : dir.listFiles()) {
                     String name = f.getName();
@@ -332,6 +341,17 @@ public class MvnSafPlugin extends Plugin {
             boolean ok = android.provider.DocumentsContract.deleteDocument(getContext().getContentResolver(), Uri.parse(uriStr));
             JSObject o = new JSObject(); o.put("ok", ok); call.resolve(o);
         } catch (Exception e) { call.reject(e.getMessage(), e); }
+    }
+
+    // Cammina un percorso di cartelle ("a/b/c"), senza crearle. Torna null se manca un pezzo.
+    private DocumentFile risolviCartella(DocumentFile root, String percorso) {
+        DocumentFile d = root;
+        for (String parte : percorso.split("/")) {
+            if (parte.isEmpty()) continue;
+            if (d == null) return null;
+            d = trovaFiglio(d, parte);
+        }
+        return d;
     }
 
     private DocumentFile trovaFiglio(DocumentFile parent, String nome) {

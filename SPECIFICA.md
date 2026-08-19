@@ -515,7 +515,7 @@ Ispirata al pulsante "Segnala" della SustEner App, ma con lo stile della sala.
 2. Prima prova reale: cartella su Drive, chiave TMDB (+ OMDb) da incollare in Impostazioni.
 3. v1.x possibili: statistiche di gruppo, serie TV, decomposizione `src/` se il file cresce.
 
-## 14. Modalità Serie TV (2026-08-18, desktop)
+## 14. Modalità Serie TV (2026-08-18, desktop e mobile)
 
 Seconda modalità dell'app — non una seconda app. Si preme la casella in basso a destra
 (speculare al 🐞), si sceglie **🎬 Film** o **📺 Serie TV**, e la stessa identica app cambia
