@@ -358,6 +358,13 @@ header .spazio{flex:1; min-width:0}
 .rec-voto-badge{position:absolute; bottom:6px; left:6px; background:var(--velo-badge); color:var(--oro2); padding:3px 8px; border-radius:7px; font-size:12px; font-weight:600; letter-spacing:1px}
 .rec-card .corpo{padding:8px 9px}
 .rec-stag{color:var(--oro2)}
+/* fila dei gruppi di visione, sopra la platea */
+#gruppi-barra{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:22px 0 -8px; justify-content:center}
+#gruppi-barra[hidden]{display:none}
+.gruppi-et{color:var(--dim2); font-size:11.5px; letter-spacing:.1em; margin-right:2px}
+.gr-riga{display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--bordo2)}
+.gr-riga:last-child{border-bottom:none}
+.gr-nome{color:var(--crema)}
 /* riga della recensione per stagioni (solo serie TV) */
 .re-stagioni{display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin:2px 0 10px}
 .re-stagioni label{display:flex; align-items:center; gap:7px; color:var(--dim); font-size:13.5px}
@@ -736,6 +743,7 @@ header .spazio{flex:1; min-width:0}
       </div>
     </div>
 
+    <div id="gruppi-barra" hidden></div>
     <div id="platea"></div>
     <div class="riga-stato" id="riga-stato"></div>
   </main>
@@ -883,6 +891,9 @@ header .spazio{flex:1; min-width:0}
             <button class="bottone piccolo secondario" id="imp-scegli-colore">Cambia colore</button>
           </div>
         </div>
+        <div class="campo"><label>Gruppi di visione<span class="aiuto-q" tabindex="0">?<span class="tip">Quando i profili nella cartella diventano tanti, un gruppo tiene in Sala solo il tuo giro di persone: la platea e la scorta dell'host mostrano loro e basta. I gruppi sono tuoi, stanno nel tuo profilo: ognuno può avere i suoi senza disturbare gli altri. Massimo cinque.</span></span></label>
+          <div id="imp-gruppi"></div>
+          <button class="testo-link" id="imp-gruppo-nuovo">＋ nuovo gruppo</button></div>
         <div class="campo"><label>Password profilo (facoltativa)<span class="aiuto-q" tabindex="0">?<span class="tip">Serve solo a evitare che qualcuno entri per sbaglio nel tuo profilo. Non è una protezione vera: resta in chiaro nel file. Lascia vuoto per non averla.</span></span></label>
           <div style="display:flex; gap:10px">
             <input type="text" id="imp-pw" placeholder="vuota = nessuna" autocomplete="off" spellcheck="false" style="flex:1">
@@ -1235,6 +1246,7 @@ const VISTE = ['sala','catalogo','recensioni','consigli','archivio','segnalazion
 const S = {
   demo:false,
   modo:'film',           // 'film' | 'serie' — vedi CONCEPT-serie.md
+  gruppo:null,           // nome del gruppo di visione attivo (null = tutti)
   modoVisibile:true,     // casella delle modalità a video: spenta, l'app è quella di prima
   host:false,            // questo dispositivo è l'host (tab Archivio)
   me:null,               // slug
@@ -1303,6 +1315,24 @@ const UN_COSA     = () => inSerie() ? 'una serie' : 'un film';
 const IL_COSA     = () => inSerie() ? 'la serie' : 'il film';
 const NESSUN_COSA = () => inSerie() ? 'Nessuna serie' : 'Nessun film';
 const I_COSA      = () => inSerie() ? 'le serie' : 'i film';
+
+const MAX_GRUPPI = 5;
+const gruppiDi = p => (p && Array.isArray(p.gruppi)) ? p.gruppi : [];
+const mieiGruppi = () => gruppiDi(S.profili.find(p => p.slug === S.me));
+// il gruppo attivo è una preferenza di questo dispositivo, non un dato del gruppo
+const gruppoAttivo = () => mieiGruppi().find(g => g.nome === S.gruppo) || null;
+// chi si vede: tutti, oppure i membri del gruppo scelto. Io ci sono sempre — è la mia Sala.
+function visibiliInSala(){
+  const g = gruppoAttivo();
+  if (!g) return null;                       // null = nessun filtro, si vedono tutti
+  const dentro = new Set(g.membri || []);
+  if (S.me) dentro.add(S.me);
+  return dentro;
+}
+const profiliVisibili = () => {
+  const v = visibiliInSala();
+  return v ? S.profili.filter(p => v.has(p.slug)) : S.profili;
+};
 
 const mioProfilo = () => S.profili.find(p => p.slug === S.me);
 const profiloDi = slug => S.profili.find(p => p.slug === slug);
@@ -2636,6 +2666,7 @@ function gateNome(conIndietro){
 
 async function entra(){
   try { S.modoVisibile = localStorage.getItem('mvn_modo_box') !== '0'; } catch(e){}
+  try { S.gruppo = localStorage.getItem('mvn_gruppo') || null; } catch(e){}
   S.modo = await leggiModo();   // prima di caricare: i percorsi dipendono dalla modalità
   applicaModo();
   await caricaTutto();
@@ -2692,10 +2723,11 @@ function punteggioProssima(film){
 function disegnaChiArchivio(){
   const box = $('#arch-chi'); if (!box) return;
   const sel = S.archivioChi;
+  const visibili = profiliVisibili();
   const chip = (slug, etichetta, colore, on) =>
     `<button class="rec-utente${on ? ' on' : ''}" data-u="${esc(slug||'')}">${colore ? `<span class="pallino" style="background:${colore}"></span>` : ''}${esc(etichetta)}</button>`;
   box.innerHTML = chip('', '🗄 Tutto il gruppo', '', sel.size === 0) +
-    S.profili.map(p => chip(p.slug, nomeDi(p.slug), coloreDi(p.slug), sel.has(p.slug))).join('');
+    visibili.map(p => chip(p.slug, nomeDi(p.slug), coloreDi(p.slug), sel.has(p.slug))).join('');
   box.onclick = e => {
     const b = e.target.closest('[data-u]'); if (!b) return;
     const slug = b.dataset.u;
@@ -2712,7 +2744,7 @@ function disegnaArchivio(){
   const sel = S.archivioChi;
   // per ogni film candidato tengo anche CHI lo vuole (proponenti attivi)
   const mappa = new Map();
-  for (const p of S.profili) for (const v of listaDi(p)){
+  for (const p of profiliVisibili()) for (const v of listaDi(p)){
     if (!v.tmdbId || !entryAttiva(v, p.slug)) continue;
     let e = mappa.get(v.tmdbId);
     if (!e){ e = {film:v, chi:[]}; mappa.set(v.tmdbId, e); }
@@ -3351,8 +3383,37 @@ function postoDivanoSVG(colore, presente, pos){
 const postoSVG = (colore, presente, pos) =>
   inSerie() ? postoDivanoSVG(colore, presente, pos) : poltronaSVG(colore, presente);
 
+// Fila dei gruppi sopra la platea. Stessa forma dei chip «Chi» di Pronti alla visione,
+// così il gesto è già noto. Senza gruppi definiti non compare affatto.
+function disegnaGruppi(){
+  const box = $('#gruppi-barra'); if (!box) return;
+  const gruppi = mieiGruppi();
+  box.hidden = !gruppi.length;
+  if (!gruppi.length) return;
+  const chip = (nome, etichetta, on) =>
+    `<button class="rec-utente${on ? ' on' : ''}" data-g="${esc(nome)}">${esc(etichetta)}</button>`;
+  box.innerHTML = `<span class="gruppi-et">CHI VEDI</span>` +
+    chip('', '👥 Tutti', !gruppoAttivo()) +
+    gruppi.map(g => chip(g.nome, g.nome, S.gruppo === g.nome)).join('');
+  box.onclick = e => {
+    const b = e.target.closest('[data-g]'); if (!b) return;
+    scegliGruppo(b.dataset.g || null);
+  };
+}
+// Cambiando gruppo chi non si vede più non può restare seduto: resterebbe "presente"
+// di nascosto e continuerebbe a pesare sulla classifica senza che tu lo veda.
+function scegliGruppo(nome){
+  S.gruppo = nome || null;
+  try { if (S.gruppo) localStorage.setItem('mvn_gruppo', S.gruppo); else localStorage.removeItem('mvn_gruppo'); } catch(e){}
+  const visibili = visibiliInSala();
+  if (visibili) S.presenti = new Set([...S.presenti].filter(s => visibili.has(s)));
+  if (S.me) S.presenti.add(S.me);
+  S.proiettato = null;
+  disegnaGruppi(); disegnaSala(); disegnaArchivio();
+}
+
 function disegnaPlatea(){
-  const utenti = S.profili.map(p => p.slug);
+  const utenti = profiliVisibili().map(p => p.slug);
   const posti = [];
   const davanti = Math.min(utenti.length, FILA_DAVANTI);
   const inizioDavanti = Math.floor((FILA_DAVANTI - davanti) / 2);
@@ -3408,6 +3469,7 @@ function abilitaAnimazioneTV(schermo){
 }
 
 async function disegnaSala(){
+  disegnaGruppi();
   disegnaPlatea();
   const schermo = $('#schermo'), inner = $('#schermo-inner'), rosaEl = $('#rosa');
   abilitaAnimazioneTV(schermo);
@@ -4100,6 +4162,7 @@ function disegnaImpostazioni(){
   const mio = mioProfilo();
   if (mio){ $('#imp-chip').style.background = mio.colore; $('#imp-pw').value = mio.password || ''; }
   $('#imp-host').checked = S.host;
+  disegnaGruppiImp();
   $('#imp-modo-box').checked = S.modoVisibile;
   $('#imp-scegli-colore').onclick = () => {
     const p = mioProfilo(); if (!p) return;
@@ -4132,6 +4195,67 @@ function disegnaServizi(){
     if (S.host) disegnaArchivio();   // aggiorna le evidenziazioni
   };
 }
+// Elenco dei miei gruppi in Impostazioni: nome, quante persone, modifica ed elimina.
+function disegnaGruppiImp(){
+  const box = $('#imp-gruppi'); if (!box) return;
+  const gruppi = mieiGruppi();
+  const nuovo = $('#imp-gruppo-nuovo');
+  if (nuovo) nuovo.hidden = gruppi.length >= MAX_GRUPPI;
+  box.innerHTML = gruppi.length
+    ? gruppi.map((g, i) => `<div class="gr-riga">
+        <span class="gr-nome">${esc(g.nome)}</span>
+        <span class="aiuto">${(g.membri||[]).length} ${(g.membri||[]).length === 1 ? 'persona' : 'persone'}</span>
+        <span style="flex:1"></span>
+        <button class="testo-link" data-gr-mod="${i}">modifica</button>
+        <button class="testo-link pericolo" data-gr-del="${i}">elimina</button>
+      </div>`).join('')
+    : '<div class="aiuto">Nessun gruppo: li vedi tutti. Creane uno per tenere in Sala solo il tuo giro.</div>';
+}
+
+// Crea o modifica un gruppo: nome + chi ne fa parte (io ci sono sempre, non serve
+// spuntarmi). Si scrive solo il MIO profilo, come vuole la regola anti-conflitto.
+function modaleGruppo(indice){
+  const gruppi = mieiGruppi();
+  const g = indice != null ? gruppi[indice] : {nome:'', membri:[]};
+  const scelti = new Set(g.membri || []);
+  const altri = S.profili.filter(p => p.slug !== S.me);
+  apriModale(`<h3>${indice != null ? 'Modifica gruppo' : 'Nuovo gruppo di visione'}</h3>
+    <div class="m-blocco"><label>NOME</label>
+      <input type="text" id="gr-nome" maxlength="24" value="${esc(g.nome)}" placeholder="es. il venerdì, casa Elena…"></div>
+    <div class="m-blocco"><label>CHI NE FA PARTE</label>
+      <div class="compagnia" id="gr-membri">${altri.map(p =>
+        `<button type="button" class="pchip${scelti.has(p.slug) ? ' con' : ''}" data-slug="${esc(p.slug)}">${scelti.has(p.slug) ? '✓ ' : ''}${esc(p.nome)}</button>`).join('')
+        || '<span class="aiuto">Non c\'è ancora nessun altro profilo nella cartella.</span>'}</div>
+      <div class="aiuto">Tu ci sei sempre: è la tua Sala.</div></div>
+    <div class="m-azioni">
+      <button class="bottone piccolo secondario" id="gr-annulla">Annulla</button>
+      <button class="bottone piccolo" id="gr-ok">Salva</button>
+    </div>`);
+  $('#gr-membri').onclick = e => {
+    const b = e.target.closest('[data-slug]'); if (!b) return;
+    const s = b.dataset.slug;
+    if (scelti.has(s)) scelti.delete(s); else scelti.add(s);
+    b.classList.toggle('con', scelti.has(s));
+    b.textContent = (scelti.has(s) ? '✓ ' : '') + nomeDi(s);
+  };
+  $('#gr-annulla').onclick = chiudiModale;
+  $('#gr-ok').onclick = async () => {
+    const nome = $('#gr-nome').value.trim();
+    if (!nome) return toast('Dai un nome al gruppo', true);
+    if (gruppi.some((x, i) => x.nome === nome && i !== indice)) return toast('Hai già un gruppo con questo nome', true);
+    const p = mioProfilo(); if (!p) return;
+    p.gruppi = gruppiDi(p).slice();
+    const vecchio = indice != null ? p.gruppi[indice].nome : null;
+    const voce = {nome, membri:[...scelti]};
+    if (indice != null) p.gruppi[indice] = voce; else p.gruppi.push(voce);
+    try { await salvaMioProfilo(); }
+    catch(e){ return toast('Salvataggio non riuscito: '+e.message, true); }
+    if (vecchio && S.gruppo === vecchio) S.gruppo = nome;   // rinominato: resta attivo
+    chiudiModale(); disegnaGruppiImp(); disegnaGruppi(); disegnaSala(); disegnaArchivio();
+    toast('Gruppo salvato 👥');
+  };
+}
+
 function disegnaBonusGenere(){
   const p = mioProfilo(); if (!p || !$('#imp-generi-pref')) return;
   const pos = generiPos(p), neg = generiNeg(p);
@@ -4188,6 +4312,21 @@ function agganciaImpostazioni(){
     if (val) p.password = val; else delete p.password;
     await salvaMioProfilo();
     toast(val ? 'Password impostata 🔒' : 'Password rimossa');
+  };
+  $('#imp-gruppo-nuovo').onclick = () => modaleGruppo(null);
+  $('#imp-gruppi').onclick = async e => {
+    const mod = e.target.closest('[data-gr-mod]'), del = e.target.closest('[data-gr-del]');
+    if (mod) return modaleGruppo(parseInt(mod.dataset.grMod, 10));
+    if (!del) return;
+    const i = parseInt(del.dataset.grDel, 10), g = mieiGruppi()[i]; if (!g) return;
+    confermaModale(`Eliminare il gruppo «${esc(g.nome)}»? I profili restano tutti al loro posto.`, 'Elimina', async () => {
+      const p = mioProfilo(); if (!p) return;
+      p.gruppi = gruppiDi(p).slice(); p.gruppi.splice(i, 1);
+      try { await salvaMioProfilo(); } catch(e2){ return toast('Non riuscito: '+e2.message, true); }
+      if (S.gruppo === g.nome) scegliGruppo(null);
+      disegnaGruppiImp(); disegnaGruppi(); disegnaSala(); disegnaArchivio();
+      toast('Gruppo eliminato');
+    });
   };
   $('#imp-modo-box').onchange = async e => {
     S.modoVisibile = e.target.checked;

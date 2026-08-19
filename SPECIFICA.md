@@ -291,6 +291,28 @@ libera, nello stile velluto dell'app.
    degli esclusi per motivo ("3 troppo lunghi, 2 per vincoli di compagnia")
    — senza mai rivelare le liste di chi.
 
+## 6.3 Gruppi di visione (2026-08-19, desktop)
+
+I profili nella cartella possono diventare tanti — decine, in prospettiva centinaia — ma
+la platea ha 19 posti e nessuno guarda i film con tutti. Ognuno tiene nel **proprio**
+profilo fino a **cinque gruppi di visione** e sceglie quale gli compare:
+
+```jsonc
+// profili/<slug>.json
+"gruppi": [{"nome":"il venerdì", "membri":["elena","simone"]}]
+```
+
+- **Sono personali**: stanno nel proprio file, quindi due persone con giri di amici
+  diversi non si pestano i piedi e la regola anti-conflitto (§3.2) resta intatta.
+- Con un gruppo attivo la **platea** mostra solo i suoi membri e la **scorta dell'host**
+  (Pronti alla visione) si restringe ai film voluti da loro. Chi lo attiva vede sempre
+  anche sé stesso: è la sua Sala.
+- Cambiando gruppo, chi non si vede più viene **fatto alzare**: se no resterebbe presente
+  di nascosto e continuerebbe a pesare sulla classifica senza comparire.
+- Il gruppo attivo è una preferenza **del dispositivo** (non del profilo): si sceglie dai
+  chip sopra la platea, si crea e si modifica in ⚙ Impostazioni → Gruppi di visione.
+- Non tocca le formule: la classifica continua a lavorare sui presenti.
+
 ## 7. Vincoli di compagnia (white / black list)
 
 Ogni film in lista porta i vincoli **del suo proponente**:

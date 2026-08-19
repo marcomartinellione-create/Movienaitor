@@ -348,7 +348,11 @@ Seconda modalità, non una seconda app: casella in basso a destra (speculare al 
   recensioni di stagione: se no recensire la prima stagione spegnerebbe tutta la serie.
   Sul mobile la funzione non c'è ancora, ma `salvaRecensioneMobile` rispetta già il nome
   col suffisso (se no schiaccerebbe la recensione di stagione su quella intera).
-- **Da fare**: portare le recensioni per stagione sul mobile; provare la modalità sul
+- **Gruppi di visione** (desktop): `gruppiDi`/`mieiGruppi`/`gruppoAttivo`,
+  `visibiliInSala()` (Set o null = tutti) e `profiliVisibili()`. Filtrano `disegnaPlatea`
+  e la scorta dell'host; `scegliGruppo` fa alzare chi non si vede più. Massimo 5, nel
+  proprio `profili/<slug>.json`; il gruppo attivo sta in localStorage, è del dispositivo.
+- **Da fare**: portare gruppi di visione e recensioni per stagione sul mobile; provare la modalità sul
   telefono vero dopo la prossima build.
 
 ⚠️ **Gotcha delle patch (2)**: `core.autocrlf=true`, quindi dopo un `git checkout` questi
