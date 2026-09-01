@@ -267,6 +267,21 @@
   .re-sez-txt[contenteditable]:empty:before{content:attr(data-ph); color:var(--dim)}
   .re-sez-txt ul,.re-sez-txt ol,.re-testo ul,.re-testo ol{margin:6px 0 6px 22px}
   .re-sez-txt ul,.re-testo ul{list-style:disc} .re-sez-txt ol,.re-testo ol{list-style:decimal}
+
+  /* Collegamenti fra recensioni: nel testo si scrive [[Titolo]] e qui diventa pastiglia. */
+  .wlink{color:var(--oro2); border-bottom:1px dotted var(--oro); border-radius:3px; padding:0 1px}
+  .wlink.orfano{color:var(--dim); border-bottom-color:var(--linea)}
+  #wl-ac{position:fixed; z-index:70; background:var(--card); border:1px solid var(--linea); border-radius:12px;
+    box-shadow:0 10px 30px #0009; padding:4px; min-width:200px; max-width:min(86vw,340px); max-height:44vh; overflow:auto}
+  #wl-ac[hidden]{display:none}
+  .wl-v{padding:9px 12px; border-radius:9px; display:flex; flex-direction:column; gap:2px}
+  .wl-v b{color:var(--testo); font-weight:600; font-size:14.5px}
+  .wl-v small{color:var(--dim); font-size:11.5px}
+  .wl-v.on{background:var(--linea)}
+  .wl-aiuto{padding:8px 12px; color:var(--dim); font-size:12.5px}
+  .re-citata{margin:10px 0 2px; font-size:13px; color:var(--dim); border-top:1px solid var(--linea); padding-top:10px}
+  .re-citata button{background:none; border:0; color:var(--oro2); font:inherit; padding:0; margin:0 4px;
+    border-bottom:1px dotted var(--oro)}
   .re-dove-file{display:flex; gap:8px; margin:8px 0}
   .re-dove-file input{flex:1; background:var(--bg2); border:1px solid var(--linea); color:var(--testo); border-radius:9px; padding:8px 10px; font:inherit; font-size:13px}
 
@@ -467,6 +482,7 @@
   </div>
 </div>
 
+<div id="wl-ac" hidden></div>
 <div id="m-carico" hidden><div class="carico-box"><span class="spin"></span><span id="m-carico-txt">Un attimo…</span></div></div>
 <button class="bug-btn" id="m-segnala" style="display:none">🐞 Segnala</button>
 <button class="modo-btn" id="m-modo" style="display:none"><span id="m-modo-ic">🎬</span> <span id="m-modo-nome">Film</span></button>
@@ -476,7 +492,7 @@
 
 <script>
 /* ══════════════════ STATO ══════════════════ */
-const APP_VERSION = '1.7.5';
+const APP_VERSION = '1.7.6';
 const CONFIG_DEFAULT = { bonusCoralita:0.10, capCoralita:0.30, passoSoddisfazione:0.15, bonusCoppia:1.15, sogliaSpareggio:0.02 };
 const S = { treeUri:null, config:{}, profili:[], me:null, storico:[], modo:'film', gruppo:null,
   filtri:{ q:'', ordina:'aggiunto', dir:'desc', minDes:0, genere:[], annoDa:null, annoA:null },
@@ -645,7 +661,7 @@ function schermo(id){
 let toastT;
 function toast(msg, err){ const t=$('#toast'); t.textContent=msg; t.className='toast on'+(err?' err':''); clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast'+(err?' err':''),2800); }
 function apriModale(html){ $('#modale').innerHTML=html; $('#backdrop').classList.add('on'); }
-function chiudiModale(){ $('#backdrop').classList.remove('on'); }
+function chiudiModale(){ $('#backdrop').classList.remove('on'); if (typeof wlChiudi === 'function') wlChiudi(); }
 $('#backdrop').addEventListener('click', e=>{ if(e.target.id==='backdrop') chiudiModale(); });
 
 const fmtMin = m => m ? (m < 60 ? m+"'" : Math.floor(m/60)+'h'+String(m%60).padStart(2,'0')) : '—';
@@ -718,6 +734,9 @@ async function caricaRecensioniMobile(){
 }
 async function salvaRecensioneMobile(rec){
   rec.autore = S.me.slug;
+  // I paragrafi rimasti vuoti non finiscono nel file: capita spesso di mettere solo il voto
+  // e salvare, e la recensione resterebbe una fila di titoli con niente sotto.
+  if (Array.isArray(rec.sezioni)) rec.sezioni = rec.sezioni.filter(s => !sezioneVuota(s));
   rec.modificato = new Date().toISOString();
   if (!rec.creato) rec.creato = new Date().toISOString().slice(0,10);
   const suffisso = rec.stagione ? '-s' + rec.stagione : '';   // recensione di una stagione
@@ -2433,7 +2452,128 @@ function modaleScartatiM(){
 /* ══════════════════ RECENSIONI (mobile) ══════════════════ */
 const DOVE_STREAMING = ['Netflix','Prime Video','Disney+','NOW','Sky','RaiPlay','Mediaset Infinity','Apple TV+','YouTube','Crunchyroll','Paramount+','Mubi'];
 const DOVE_FISICO = ['DVD','Blu-ray','4K UHD'];
-const testoHTML = t => { t = t||''; return /<[a-z][\s\S]*>/i.test(t) ? t : esc(t).replace(/\n/g,'<br>'); };
+// Conta come HTML anche chi ha solo entita' (&nbsp; e simili): senza, verrebbero mostrate
+// alla lettera invece che come lo spazio che sono.
+const sembraHTML = t => /<[a-z][\s\S]*>|&(?:[a-z]+|#\d+);/i.test(t || '');
+const testoHTML = t => { t = t||''; return sembraHTML(t) ? t : esc(t).replace(/\n/g,'<br>'); };
+// Una sezione e' vuota se, tolti i tag, non resta niente: capita spesso di mettere solo il
+// voto e salvare, e la recensione finisce piena di titoli con il nulla sotto.
+function sezioneVuota(s){
+  const d = document.createElement('div');
+  d.innerHTML = (s && s.testo) || '';
+  return !d.textContent.replace(/\u00a0/g, ' ').trim() && !d.querySelector('img');
+}
+
+/* -- Collegamenti fra recensioni (stile wiki) --------------------------------
+   Nel testo si scrive [[Titolo]] e resta cosi' anche nel file salvato: ovunque la
+   recensione venga letta diventa un rimando che si apre al tocco. Se la recensione
+   citata non esiste il rimando resta spento: non e' un errore, e' un promemoria.
+   Vedi SPECIFICA 11e. */
+const RE_WIKI = /\[\[([^\[\]\n]{1,120})\]\]/g;
+const normTit = x => String(x == null ? '' : x).toLowerCase().normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+// prima la mia dell'opera intera, poi una mia stagione, poi quella di chiunque altro
+function recensioneDaTitolo(x){
+  const n = normTit(x); if (!n) return null;
+  const mio = S.me && S.me.slug;
+  const c = S.recensioni.filter(r => normTit((r.meta||{}).titolo) === n);
+  return c.find(r => r.autore === mio && !r.stagione) || c.find(r => r.autore === mio)
+      || c.find(r => !r.stagione) || c[0] || null;
+}
+function chipWiki(x){
+  const r = recensioneDaTitolo(x);
+  const dove = !r ? 'Nessuna recensione con questo titolo'
+    : (r.autore === (S.me && S.me.slug) ? 'Apri la tua recensione' : 'Apri la recensione di ' + nomeDi(r.autore))
+      + (r.stagione ? ' - Stagione ' + r.stagione : '');
+  return '<span class="wlink' + (r ? '' : ' orfano') + '" contenteditable="false" data-t="' +
+    esc(x) + '" title="' + esc(dove) + '">' + esc(x) + '</span>';
+}
+const conWiki = html => String(html == null ? '' : html).replace(RE_WIKI, (_, x) => chipWiki(x.trim()));
+// il viaggio contrario: dalle pastiglie del contenteditable al testo da salvare
+function senzaWiki(el){
+  const c = el.cloneNode(true);
+  c.querySelectorAll('.wlink').forEach(s =>
+    s.replaceWith(document.createTextNode('[[' + (s.dataset.t || s.textContent) + ']]')));
+  return c.innerHTML;
+}
+// chi cita questa recensione: il «puntano qui» delle wiki
+function citazioniDi(rec){
+  const n = normTit((rec.meta||{}).titolo); if (!n) return [];
+  return S.recensioni.filter(r => !(r.autore === rec.autore && r._nome === rec._nome) &&
+    (r.sezioni||[]).some(s => [...String(s.testo == null ? '' : s.testo).matchAll(RE_WIKI)]
+      .some(m => normTit(m[1]) === n)));
+}
+
+/* Suggeritore: appena si digita [[ compare l'elenco delle recensioni esistenti. Lo stato
+   sta qui fuori perche' l'editor si ridisegna spesso e il pannellino no. */
+const WL = {nodo:null, da:0, a:0, voci:[], sel:0};
+const wlAperto = () => { const b = $('#wl-ac'); return b && !b.hidden; };
+function wlChiudi(){ const b = $('#wl-ac'); if (b) b.hidden = true; WL.nodo = null; WL.voci = []; }
+function wlDisegna(){
+  const b = $('#wl-ac'); if (!b) return;
+  b.innerHTML = WL.voci.length
+    ? WL.voci.map((v, i) => '<div class="wl-v' + (i === WL.sel ? ' on' : '') + '" data-i="' + i + '"><b>' +
+        esc(v.titolo) + '</b><small>' +
+        (v.rec.autore === (S.me && S.me.slug) ? 'la tua recensione' : esc(nomeDi(v.rec.autore))) +
+        ((v.rec.meta||{}).anno ? ' - ' + esc(v.rec.meta.anno) : '') + '</small></div>').join('')
+    : '<div class="wl-aiuto">nessuna recensione con questo titolo</div>';
+}
+function wlMuovi(d){
+  if (!WL.voci.length) return;
+  WL.sel = (WL.sel + d + WL.voci.length) % WL.voci.length;
+  wlDisegna();
+  const on = $('#wl-ac .wl-v.on'); if (on) on.scrollIntoView({block:'nearest'});
+}
+// guarda dov'e' il cursore: se e' dentro un [[ aperto, mostra l'elenco filtrato
+function wlCerca(dentro){
+  const b = $('#wl-ac'); if (!b) return;
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return wlChiudi();
+  const nodo = sel.anchorNode;
+  if (!nodo || nodo.nodeType !== 3 || !dentro.contains(nodo)) return wlChiudi();
+  const m = nodo.nodeValue.slice(0, sel.anchorOffset).match(/\[\[([^\[\]]{0,60})$/);
+  if (!m) return wlChiudi();
+  WL.nodo = nodo; WL.da = sel.anchorOffset - m[0].length; WL.a = sel.anchorOffset; WL.sel = 0;
+  const q = normTit(m[1]), mio = S.me && S.me.slug;
+  const ordinate = [...S.recensioni].sort((x, y) => (x.autore === mio ? 0 : 1) - (y.autore === mio ? 0 : 1));
+  const visti = new Set(); WL.voci = [];
+  for (const r of ordinate){
+    const tit = (r.meta||{}).titolo, k = normTit(tit);
+    if (!k || visti.has(k) || (q && !k.includes(q))) continue;
+    visti.add(k); WL.voci.push({titolo:tit, rec:r});
+    if (WL.voci.length >= 8) break;
+  }
+  b.hidden = false; wlDisegna();
+  // sotto il cursore, e sopra se li' sotto non ci sta (sul telefono spesso non ci sta)
+  const r0 = sel.getRangeAt(0).cloneRange(); r0.collapse(true);
+  const rc = r0.getBoundingClientRect();
+  const pos = (rc && (rc.top || rc.left)) ? rc : nodo.parentElement.getBoundingClientRect();
+  b.style.left = Math.max(8, Math.min(pos.left, innerWidth - b.offsetWidth - 12)) + 'px';
+  b.style.top = (pos.bottom + 6 + b.offsetHeight > innerHeight
+    ? Math.max(8, pos.top - b.offsetHeight - 6) : pos.bottom + 6) + 'px';
+}
+// sostituisce il [[query digitato con la pastiglia e rimette il cursore subito dopo
+function wlInserisci(v){
+  const nodo = WL.nodo;
+  if (!v || !nodo || !nodo.parentNode) return wlChiudi();
+  const len = nodo.nodeValue.length;
+  const rng = document.createRange();
+  rng.setStart(nodo, Math.min(WL.da, len)); rng.setEnd(nodo, Math.min(WL.a, len));
+  rng.deleteContents();
+  // il frammento va costruito a mano: un Range appena creato non ha contesto di parsing
+  const tmp = document.createElement('div');
+  tmp.innerHTML = chipWiki(v.titolo);
+  const frag = document.createDocumentFragment();
+  while (tmp.firstChild) frag.appendChild(tmp.firstChild);
+  // spazio normale, non &nbsp;: nel file salvato resta un pulito [[Titolo]] e basta
+  const coda = document.createTextNode(' ');
+  frag.appendChild(coda);
+  rng.insertNode(frag);
+  const sel = window.getSelection(), r2 = document.createRange();
+  r2.setStart(coda, 1); r2.collapse(true);
+  sel.removeAllRanges(); sel.addRange(r2);
+  wlChiudi();
+}
 const doveChipM = (label, kind, on) => `<button type="button" class="pchip${on?' con':''}" data-dove="${kind}" data-val="${esc(label)}">${on?'✓ ':''}${esc(label)}</button>`;
 function doveTestoM(d){ d=d||{}; const p=[...(d.streaming||[]),...(d.fisico||[])]; let s=p.map(x=>`<span class="pchip con" style="pointer-events:none">${esc(x)}</span>`).join(' '); if(d.percorso) s+=` <span class="pchip">📂 ${esc((d.percorso.split(/[\\/]/).pop())||d.percorso)}</span>`; return s?('📺 '+s):''; }
 const miaRecMobile = id => S.recensioni.find(r => r.autore===S.me.slug && r.tmdbId===id);
@@ -2493,21 +2633,24 @@ function disegnaRecMobile(){
   lista.forEach((r,i)=>{const el=g.querySelector(`.rec-card2[data-i="${i}"]`); if(el) el.onclick=()=>editorRecMobile(r);});
 }
 function sezioneHTMLm(s,i,ed){
-  if(!ed) return `<div class="re-sez-ro"><h4>${esc(s.titolo||'')}</h4><div class="re-testo">${testoHTML(s.testo)}</div></div>`;
+  if(!ed) return `<div class="re-sez-ro"><h4>${esc(s.titolo||'')}</h4><div class="re-testo">${conWiki(testoHTML(s.testo))}</div></div>`;
   return `<div class="re-sez" data-i="${i}">
     <div class="re-sez-cap"><input class="re-sez-tit" value="${esc(s.titolo||'')}" placeholder="Titolo sezione">
       <span class="re-sez-btn"><button data-az="su" data-i="${i}">▲</button><button data-az="giu" data-i="${i}">▼</button><button data-az="del" data-i="${i}">✕</button></span></div>
-    <div class="re-sez-txt" contenteditable="true" spellcheck="true" lang="it" data-ph="Scrivi qui…">${testoHTML(s.testo)}</div>
+    <div class="re-sez-txt" contenteditable="true" spellcheck="true" lang="it" data-ph="Scrivi qui…">${conWiki(testoHTML(s.testo))}</div>
   </div>`;
 }
 function editorRecMobile(recOrig, opts={}){
   const ed=(recOrig.autore===S.me.slug)||!!opts.nuova;
   const bozza=JSON.parse(JSON.stringify(recOrig));
   bozza.meta=bozza.meta||{}; bozza.sezioni=bozza.sezioni||[]; bozza.doveVederlo=bozza.doveVederlo||{streaming:[],fisico:[],percorso:''}; delete bozza.tags;
+  // le sezioni lasciate vuote non vengono salvate: se riapro una recensione che ha solo il
+  // voto rimetto i paragrafi di partenza, altrimenti mi troverei davanti il foglio bianco
+  if (ed && !bozza.sezioni.length) bozza.sezioni = SEZIONI_DEFAULT.map(x => ({titolo:x, testo:''}));
   let voto=bozza.votoPersonale||0;
   let streamRilevato=false;   // rilevo i servizi da TMDB una volta sola all'apertura
   function leggiCampi(){ if(!ed) return;
-    bozza.sezioni=[...document.querySelectorAll('#m-re-sezioni .re-sez')].map(row=>({titolo:row.querySelector('.re-sez-tit').value, testo:row.querySelector('.re-sez-txt').innerHTML}));
+    bozza.sezioni=[...document.querySelectorAll('#m-re-sezioni .re-sez')].map(row=>({titolo:row.querySelector('.re-sez-tit').value, testo:senzaWiki(row.querySelector('.re-sez-txt'))}));
     const p=$('#m-re-perc'); if(p) bozza.doveVederlo.percorso=p.value.trim();
     const uv=$('#m-re-uv'); if(uv) bozza.ultimaVisione=uv.value||null;
     const ic=$('#m-re-incorso'); if(ic) bozza.inCorso=ic.checked;
@@ -2515,6 +2658,7 @@ function editorRecMobile(recOrig, opts={}){
   }
   function render(){
     const m=bozza.meta;
+    const citate = citazioniDi(bozza);   // «puntano qui»: chi ha scritto [[questo titolo]]
     apriModale(`
       <div class="re-head">
         <div class="re-poster">${m.posterUrl?`<img src="${esc(m.posterUrl)}" alt="">`:''}</div>
@@ -2554,19 +2698,68 @@ function editorRecMobile(recOrig, opts={}){
         <button type="button" data-cmd="indent">⇥</button>
       </div>`:''}
       <div id="m-re-sezioni">${bozza.sezioni.map((s,i)=>sezioneHTMLm(s,i,ed)).join('')}</div>
-      ${ed?`<button class="linkbtn" id="m-re-add-sez">＋ aggiungi sezione</button>`:''}
+      ${ed?`<button class="linkbtn" id="m-re-add-sez">＋ aggiungi sezione</button>
+        <p class="meta" style="font-size:12px; margin:2px 0 0">Scrivi <b>[[</b> per citare un'altra recensione: si sceglie dall'elenco e diventa un rimando.</p>`:''}
+      ${citate.length ? `<div class="re-citata">↩ Citata in ${citate.map((r, i) =>
+          `<button data-cita="${i}">${esc((r.meta||{}).titolo || '—')}${r.stagione ? ' · S'+r.stagione : ''}${
+            r.autore === S.me.slug ? '' : ' ('+esc(nomeDi(r.autore))+')'}</button>`).join('')}</div>` : ''}
       <div class="m-az" style="flex-wrap:wrap;gap:8px">
         ${ed?`${bozza.creato?`<button class="ghost" id="m-re-del" style="color:var(--rosso2)">Elimina</button>`:''}<button class="primario" id="m-re-salva">Salva</button>`:`<button class="primario" id="m-re-chiudi2">Chiudi</button>`}
       </div>`);
     $('#m-re-chiudi').onclick=chiudiModale;
     if($('#m-re-chiudi2')) $('#m-re-chiudi2').onclick=chiudiModale;
+    // ── salta a un'altra recensione (da un [[rimando]] o dal «citata in») ──
+    // Se stavo scrivendo, quello che ho scritto va salvato prima: cambiare pagina non
+    // deve costare il testo.
+    const apriRec = async (r) => {
+      if (!r) return;
+      if (r._nome && bozza._nome && r._nome === bozza._nome && r.autore === bozza.autore) return;
+      if (ed){
+        leggiCampi();
+        if (voto || bozza.sezioni.some(s => !sezioneVuota(s))){
+          try { await salvaRecensioneMobile(bozza); }
+          catch(e){ return toast('Salvataggio non riuscito: '+e.message, true); }
+        }
+      }
+      chiudiModale(); disegnaRecMobile(); editorRecMobile(r);
+    };
+    $('#m-re-sezioni').addEventListener('click', e => {
+      const w = e.target.closest('.wlink'); if (!w) return;
+      e.preventDefault();
+      const r = recensioneDaTitolo(w.dataset.t);
+      if (!r) return toast('Nessuno ha ancora recensito «'+w.dataset.t+'»', true);
+      apriRec(r);
+    });
+    $$('[data-cita]').forEach(b => b.onclick = () => apriRec(citate[+b.dataset.cita]));
     if(!ed) return;
     const dip=()=>{ document.querySelectorAll('#m-re-stelle span').forEach((el,idx)=>{const val=(idx+1)*2; el.classList.toggle('piena',voto>=val); el.classList.toggle('mezza',voto===val-1);}); $('#m-re-voto-num').textContent=voto?(voto/2)+' / 5':'nessun voto'; };
     dip();
     $('#m-re-stelle').querySelectorAll('span').forEach(el=>{ el.onclick=ev=>{const r=el.getBoundingClientRect(); const half=(ev.clientX-r.left)<r.width/2; voto=(+el.dataset.s)*2-(half?1:0); dip();}; });
     let selS=null; const salvaSel=()=>{const s=window.getSelection(); if(s.rangeCount && $('#m-re-sezioni').contains(s.anchorNode)) selS=s.getRangeAt(0).cloneRange();};
     const ripSel=()=>{ if(selS){const s=window.getSelection(); s.removeAllRanges(); s.addRange(selS);} };
-    $('#m-re-sezioni').querySelectorAll('.re-sez-txt').forEach(e2=>{ e2.addEventListener('keyup',salvaSel); e2.addEventListener('mouseup',salvaSel); e2.addEventListener('keydown',ev=>{ if(ev.key==='Tab'){ev.preventDefault(); e2.focus(); document.execCommand(ev.shiftKey?'outdent':'indent');} }); });
+    // ── suggeritore dei [[collegamenti]]: si scrive [[ e compare l'elenco ──
+    wlChiudi();   // l'editor si ridisegna spesso: il pannellino non deve restare in giro
+    const wlBox = $('#wl-ac');
+    if (wlBox) wlBox.onpointerdown = e => {   // pointerdown, non click: al tocco il cursore resta dov'e'
+      e.preventDefault();
+      const v = e.target.closest('[data-i]'); if (v) wlInserisci(WL.voci[+v.dataset.i]);
+    };
+    $('#m-re-sezioni').querySelectorAll('.re-sez-txt').forEach(e2=>{
+      e2.addEventListener('keyup',salvaSel); e2.addEventListener('mouseup',salvaSel);
+      e2.addEventListener('input', () => wlCerca(e2));
+      e2.addEventListener('blur', () => setTimeout(wlChiudi, 200));
+      e2.addEventListener('keydown',ev=>{
+        if (wlAperto()){
+          if (ev.key === 'ArrowDown'){ ev.preventDefault(); return wlMuovi(1); }
+          if (ev.key === 'ArrowUp'){ ev.preventDefault(); return wlMuovi(-1); }
+          if (ev.key === 'Escape'){ ev.preventDefault(); return wlChiudi(); }
+          if ((ev.key === 'Enter' || ev.key === 'Tab') && WL.voci.length){
+            ev.preventDefault(); return wlInserisci(WL.voci[WL.sel]);
+          }
+        }
+        if(ev.key==='Tab'){ev.preventDefault(); e2.focus(); document.execCommand(ev.shiftKey?'outdent':'indent');}
+      });
+    });
     const tb=$('#m-re-toolbar');
     if(tb){ tb.querySelectorAll('[data-cmd]').forEach(b=>{ b.addEventListener('mousedown',e=>e.preventDefault()); b.onclick=()=>{ripSel(); document.execCommand(b.dataset.cmd,false,null); salvaSel();}; });
       $('#m-re-colore').oninput=e=>{ ripSel(); document.execCommand('foreColor',false,e.target.value); }; }
@@ -2597,7 +2790,7 @@ function editorRecMobile(recOrig, opts={}){
     // passa a un'altra recensione della stessa serie salvando prima quella aperta
     const vaiAStagione = async (stagione) => {
       leggiCampi();
-      const haRoba = voto || bozza.sezioni.some(s => (s.testo||'').replace(/<[^>]*>/g,'').trim());
+      const haRoba = voto || bozza.sezioni.some(s => !sezioneVuota(s));
       if (ed && haRoba){
         try { await salvaRecensioneMobile(bozza); }
         catch(e){ return toast('Salvataggio non riuscito: '+e.message, true); }
@@ -2616,7 +2809,7 @@ function editorRecMobile(recOrig, opts={}){
       vaiAStagione(e.target.checked ? (st[0] || 1) : null);
     };
     if ($('#m-re-stag-sel')) $('#m-re-stag-sel').onchange = e => vaiAStagione(parseInt(e.target.value, 10) || 1);
-    $('#m-re-salva').onclick=async()=>{ leggiCampi(); if(!voto && !bozza.sezioni.some(s=>(s.testo||'').replace(/<[^>]*>/g,'').trim())){ toast('Metti un voto o del testo',true); return; }
+    $('#m-re-salva').onclick=async()=>{ leggiCampi(); if(!voto && !bozza.sezioni.some(s=>!sezioneVuota(s))){ toast('Metti un voto o del testo',true); return; }
       $('#m-re-salva').disabled=true; $('#m-re-salva').innerHTML='<span class="spin"></span>';
       try { await salvaRecensioneMobile(bozza); chiudiModale(); disegnaRecMobile(); toast('Recensione salvata 🎞'); }
       catch(e){ $('#m-re-salva').disabled=false; $('#m-re-salva').textContent='Salva'; toast('Salvataggio non riuscito: '+e.message,true); } };

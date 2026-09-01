@@ -149,6 +149,30 @@ Stato "da vedere/visto" e i valori derivati NON si salvano: si ricalcolano dallo
 - **Keyword TMDB**: arrivano gratis con `append_to_response=credits,external_ids,keywords`
   e vengono salvate in `meta.keywords` delle recensioni. Le recensioni vecchie si
   arricchiscono col tasto in «Per te» (`arricchisciKeyword`). Restano in inglese.
+- **Collegamenti fra recensioni** (2026-09-01, desktop **e** mobile, SPECIFICA §11e): nel testo si
+  scrive `[[Titolo]]` e resta così **nel file e nell'export .md** (sintassi Obsidian).
+  `conWiki()` lo trasforma in pastiglia al render, `senzaWiki(el)` fa il viaggio contrario
+  prima di salvare (`leggiCampi`), `recensioneDaTitolo()` risolve per titolo normalizzato
+  (`normTit`), `citazioniDi()` costruisce il «↩ Citata in». Il suggeritore che si apre
+  digitando `[[` è l'oggetto `WL` + `wlCerca/wlDisegna/wlMuovi/wlInserisci/wlChiudi`, con
+  il pannellino `#wl-ac` **fuori dal modale** (il modale si ridisegna, lui no —
+  `chiudiModale()` lo spegne). Sul mobile è lo stesso codice in `editorRecMobile`, con
+  `pointerdown` invece di `mousedown` sul pannellino (al tocco il `mousedown` arriva dopo
+  il blur, e la voce non si sceglierebbe mai).
+  - **Gotcha**: il frammento da inserire va costruito a mano (`div` d'appoggio +
+    `DocumentFragment`); `document.createRange().createContextualFragment()` su un Range
+    appena creato non ha contesto di parsing e non produce niente.
+  - **Gotcha**: dopo la pastiglia si inserisce uno **spazio normale**, non `&nbsp;`. Il
+    testo salvato tornerebbe "senza tag" e `testoHTML()` lo escaperebbe, mostrando
+    `&nbsp;` alla lettera. Per lo stesso motivo `sembraHTML()` ora riconosce come HTML
+    anche chi ha **solo entità** (era un bug latente, non introdotto qui).
+- **Sezioni vuote**: `sezioneVuota(s)` (niente testo, niente immagini — `<br>`, spazi e
+  `&nbsp;` non contano) filtra le sezioni in `salvaRecensione()`, quindi vale per ogni
+  salvataggio compreso quello automatico del salto fra stagioni/rimandi. All'apertura, se
+  una recensione non ha più sezioni, l'editor rimette `SEZIONI_DEFAULT`.
+- **Velo d'attesa**: `caricamento(acceso, testo, sotto)` accende `#carico`. Usato da
+  `cambiaModo()`, che lo alza **prima** di `applicaModo()` e lo spegne in un `finally`
+  con un minimo di mezzo secondo (se no sfarfalla). Gemello di `caricamento()` mobile.
 - **Modale protetto** (v1.2.1): `modaleProtetta()` = il modale ha classe `editor-grande`
   (solo l'editor recensioni). Clic sul backdrop ed Esc **non** lo chiudono (si perderebbe
   il lavoro): si chiude solo con Salva/Chiudi. Gli altri modali si chiudono normalmente.

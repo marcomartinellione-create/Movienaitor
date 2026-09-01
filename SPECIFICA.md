@@ -472,6 +472,39 @@ Sezione **✨ Per te**: film **mai visti** proposti in base alle proprie recensi
 - Servono almeno **3 recensioni**; le keyword delle recensioni già scritte si recuperano
   una tantum dal tasto nella sezione.
 
+## 11e. Recensioni — collegamenti e pulizia (2026-09-01, desktop e mobile)
+
+**Collegamenti stile wiki.** Dentro il testo di una sezione si scrive `[[Titolo]]` e
+quello diventa un **rimando** a una recensione esistente. Scelte:
+
+- **Sintassi esplicita, non riconoscimento automatico.** Un titolo citato di sfuggita
+  («mi ricorda un po' *Alien*») non deve diventare per forza un link: chi scrive decide
+  cosa è un rimando. In cambio scriverlo non costa niente — appena si digita `[[` compare
+  l'elenco delle recensioni esistenti (le proprie per prime, con autore e anno), si sceglie
+  con frecce/Invio o col mouse e il rimando è fatto.
+- **Nel file resta `[[Titolo]]`**, testo puro: è la stessa sintassi di Obsidian, quindi
+  l'**esportazione .md produce un link Obsidian vero** senza conversioni. Nell'editor la
+  scritta è mostrata come una pastiglia non modificabile (si cancella con un tasto solo) e
+  torna `[[Titolo]]` al salvataggio.
+- **Risoluzione per titolo**, a meno di accenti, maiuscole e punteggiatura. Se dello stesso
+  titolo esistono più recensioni vince, in ordine: la mia dell'opera intera, una mia
+  stagione, quella di chiunque altro. **Il rimando è cliccabile ovunque si legga la
+  recensione**, anche in sola lettura: al clic si apre quella citata (e se stavo scrivendo,
+  quello che avevo scritto viene salvato prima — cambiare pagina non deve costare il testo).
+- **Rimando spento** se nessuno ha ancora recensito quel titolo: resta grigio, non è un
+  errore ma un promemoria (come i link rossi delle wiki).
+- **«↩ Citata in»**: in fondo a ogni recensione, l'elenco di chi la cita — il *«puntano
+  qui»* delle wiki, ricavato al volo dai testi, senza indici da mantenere.
+- Sul **telefono** funziona uguale: si digita `[[`, l'elenco compare sopra la tastiera e si
+  sceglie al tocco; i rimandi si aprono toccandoli. Non c'è l'export .md (non c'è nemmeno
+  sul mobile in generale), ma i file scritti dal telefono e dal PC sono gli stessi.
+
+**Sezioni vuote.** Al salvataggio le sezioni **senza testo vengono eliminate**: capitava
+spesso di mettere solo il voto e salvare, e la recensione restava una fila di titoli con
+niente sotto. Riaprendo una recensione che ha solo il voto ricompaiono i paragrafi di
+partenza, così non ci si trova davanti il foglio bianco. Vuoto significa vuoto davvero:
+tag, spazi unificatori e `<br>` non contano.
+
 ## 11c. Segnalazioni — bug e idee (v1.2.0)
 
 Ispirata al pulsante "Segnala" della SustEner App, ma con lo stile della sala.
@@ -627,6 +660,15 @@ un modale protetto proprio per non perdere il lavoro).
   averla vista» (§3.3) vale solo per la recensione dell'intera serie. Se no bastasse
   scrivere della prima stagione per far sparire la serie dalla lista.
 - L'opzione è per serie: non tutte meritano quel dettaglio.
+
+### 14.3-quater Il velo del cambio modalità (2026-09-01, desktop)
+
+Cambiare modalità rilegge tutto da capo. Fra la palette nuova, già applicata, e i dati
+ancora vecchi c'è un istante in cui la pagina appartiene a due modalità diverse: sopra ci
+va un **velo d'attesa** (sfocatura, girandola dorata, «Si apre la sala…» / «Si accende il
+salotto…») che impedisce di cliccare finché non ha finito. Si spegne sempre, anche se la
+rilettura fallisce, e resta su almeno mezzo secondo perché non sfarfalli. Uguale a quello
+del mobile (§app-mobile), che l'ha avuto per primo.
 
 ### 14.4 L'aspetto
 
