@@ -159,6 +159,62 @@ Stato "da vedere/visto" e i valori derivati NON si salvano: si ricalcolano dallo
   `chiudiModale()` lo spegne). Sul mobile è lo stesso codice in `editorRecMobile`, con
   `pointerdown` invece di `mousedown` sul pannellino (al tocco il `mousedown` arriva dopo
   il blur, e la voce non si sceglierebbe mai).
+  - **I rimandi attraversano le categorie** (2026-09-01): `caricaRecensioniAltrove()` legge
+    le recensioni delle macro-categorie diverse da quella attiva e le mette in `S.recAltre`
+    — **fuori** da `S.recensioni`, che deve restare la sola categoria attiva (elenco,
+    «visto», profilo del gusto). `tutteLeRecensioni()` unisce le due, `modoDi(r)` dice dove
+    vive una recensione, `distanzaRec(r)` ordina i candidati (categoria, poi autore, poi
+    opera intera vs stagione) — è così che `[[Dune]]` scritto fra i film non porta in Serie
+    TV per sbaglio. `apriRec` con una recensione di un'altra categoria fa `cambiaModo` e la
+    **ripesca dal percorso del file** (`_key` sul desktop, `_nome`+autore sul mobile):
+    dopo la rilettura gli oggetti sono nuovi e il riferimento vecchio non vale più.
+- **Le macro-categorie sono un elenco** (2026-09-01): `MODI` in `Movienaitor.html` e in
+  `app-mobile/www/index.html` — `{id, ic, nome, radice/base, desc}`. Da lì derivano `P()`,
+  `PM()` / `PS()`, `modaleModo`, `aggiornaModoUI`, `leggiModo` e i rimandi. **Aggiungerne
+  una è una riga**; restano da scrivere solo palette e aspetto della Sala. Non tornare a
+  scrivere `=== 'serie' ? … : …` per i percorsi: si romperebbe alla terza categoria.
+- **Videogiochi** (2026-09-01, **solo desktop**, SPECIFICA §15, CONCEPT-giochi.md): terza
+  voce di `MODI`. Oltre a quella riga:
+  - `CHIAVI_MODO` dice quali cassetti del profilo usa ogni categoria (`listaGiochi`,
+    `generiPositiviGiochi`…): `listaDi()` e `chiaveGeneriPos/Neg()` leggono da lì.
+  - `PAROLE` sostituisce i vecchi ternari `inSerie() ? … : …` per le parole; nell'HTML
+    `applicaParole()` legge `el.dataset[S.modo] || el.dataset.film`, quindi bastano gli
+    attributi `data-giochi` accanto ai `data-serie`.
+  - **Libreria RAWG**, non TMDB: `cercaFilm`/`dettagliFilm` hanno un ramo `inGiochi()` e
+    `dettagliGioco()` normalizza i campi. `generiRAWG()` legge una volta la tabella
+    nome→slug dei generi (servono ai consigli: «RPG» → `role-playing-games`).
+    Chiave in `S.config.rawgKey`.
+  - **`durata` per un gioco sono ORE, non minuti** (RAWG `playtime`): `fmtMin()` lo sa, e
+    il cursore della serata va 2–80 con l'etichetta «impegno massimo». Se tocchi quelle
+    parti, ricordati che la stessa chiave vuol dire due unità diverse.
+  - **Stato della partita**: `giocoFinito`/`giocoInCorso`/`serateGiocate` leggono lo
+    storico; `entryAttiva` per i giochi guarda **solo** `stato === 'finito'` e **ignora la
+    recensione** (di un gioco si scrive mentre ci si gioca). Play mostra due schede
+    `.stato-card`; `segnaVisto` scrive `stato:'finito'`.
+  - **Postazione**: `postoSediaSVG` (stessa firma e stesso viewBox degli altri due posti),
+    blocco CSS `:root[data-modo="giochi"]` per monitor e animazione di caricamento —
+    stesso aggancio `.schermo.pronto(.aperto)` di TV e sipario. `schermoAnimato()` dice
+    quali modalità hanno bisogno della copia fantasma (`spegniImmagine`).
+  - Sul **mobile** c'è tutto quanto sopra (2026-09-01): stessa riga in `MODI`, stesso
+    `CHIAVI_MODO`, stesso `dettagliGioco`, stessa `postoSediaSVG`, stesse due schede nel
+    Play. Non c'è l'export .md e non ci sono giochi di prova (il mobile non ha la demo).
+    La chiave RAWG arriva da `config.json`, che si imposta dal PC.
+- **Schermi larghi sul mobile** (2026-09-01, SPECIFICA §15.4): blocco responsive **in fondo
+  al foglio di stile**, non in mezzo — le regole di base come `.platea{--per-fila:5}` stanno
+  più in basso nel file e a parità di specificità vincerebbero loro (sbagliato una volta).
+  Tablet e telefono girato sono due media query distinte: la prima allarga, la seconda
+  recupera altezza. Lo schermo tiene 16/9 limitando la **larghezza**, non l'altezza.
+- **⚠ Due trappole che si ripresentano a ogni categoria nuova** (sbagliate due volte su due):
+  1. **L'altezza dello schermo.** `.schermo` è `flex:1`: se il pannello dei filtri è più
+     corto (i generi di una categoria sono meno di quelli dei film) lo schermo si prende la
+     differenza e **cambia misura rispetto al cinema**. Lo rimette a posto
+     `riservaFiltri()`, che misura l'altezza che avrebbero i chip dei film e la riserva in
+     `padding-bottom`. La guardia va scritta `if (S.modo === 'film') return;` — non
+     `if (!inSerie())`, che alla terza categoria smette di funzionare.
+  2. **Le miniature della ricerca.** TMDB dà un **pezzo di percorso** (`poster_path`) da
+     comporre con `image.tmdb.org/t/p/w92`, RAWG dà un **URL già intero**. Chi disegna deve
+     passare da `miniaturaRisultato(r)`, non comporre l'URL a mano: se no l'anteprima resta
+     vuota e l'immagine compare solo dopo il clic (che passa da `dettagliFilm`).
   - **Gotcha**: il frammento da inserire va costruito a mano (`div` d'appoggio +
     `DocumentFragment`); `document.createRange().createContextualFragment()` su un Range
     appena creato non ha contesto di parsing e non produce niente.

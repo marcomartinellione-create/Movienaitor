@@ -31,6 +31,67 @@
     --poltrona-scura:#28384c; --posto-vuoto:#22354a; --posto-bordo:#0a1119;
     --schermo-off:#0a1017;
   }
+  /* la postazione: notte viola, monitor, barra di caricamento. L'oro resta l'accento. */
+  :root[data-modo="giochi"]{
+    --bg:#120d1c; --bg2:#191227; --card:#221a38; --linea:#3d2c63;
+    --rosso:#4a3396; --rosso2:#8b6ff0;
+    --testo:#efe9fb; --dim:#b3a8cd; --ok:#7fb59a;
+    --su-oro:#1a1230; --sel:#2c1f47; --velo-badge:#000d;
+    --poltrona-scura:#38286b; --posto-vuoto:#2b1f4d; --posto-bordo:#0d0817;
+    --schermo-off:#0b0714;
+  }
+  :root[data-modo="giochi"] .cartellone .tenda{display:none}
+  :root[data-modo="giochi"] .cartellone{border:5px solid var(--posto-bordo);
+    box-shadow:0 0 0 1px var(--linea), 0 0 60px rgba(139,111,240,.16)}
+  /* il monitor non si accende come una TV: carica. Una barra si riempie da sinistra e
+     l'immagine appare; spegnendosi l'immagine si ritira e la barra si svuota. Stesso
+     aggancio (.pronto/.aperto) e stesse durate delle altre due modalità. */
+  :root[data-modo="giochi"] .tv-spenta{display:block; position:absolute; inset:0; z-index:5;
+    pointer-events:none}
+  :root[data-modo="giochi"] .tv-spenta::before{content:''; position:absolute; left:16%; right:16%;
+    top:50%; height:4px; margin-top:-2px; border-radius:4px; background:var(--card);
+    border:1px solid var(--linea); opacity:0}
+  :root[data-modo="giochi"] .tv-spenta i{position:absolute; left:16%; right:16%; top:50%; height:4px;
+    margin-top:-2px; border-radius:4px; opacity:0; transform-origin:left center; transform:scaleX(0);
+    background:linear-gradient(90deg,var(--oro),var(--rosso2));
+    box-shadow:0 0 14px 2px rgba(139,111,240,.7), 0 0 36px 8px rgba(201,164,92,.25)}
+  :root[data-modo="giochi"] .cartellone.pronto .tv-spenta::before{animation:caricaCulla .9s ease-out both}
+  :root[data-modo="giochi"] .cartellone.pronto.aperto .tv-spenta::before{animation:caricaCulla .85s ease-out both}
+  :root[data-modo="giochi"] .cartellone.pronto .tv-spenta i{animation:caricaSvuota .9s ease-out both}
+  :root[data-modo="giochi"] .cartellone.pronto.aperto .tv-spenta i{animation:caricaRiempie .85s ease-out both}
+  :root[data-modo="giochi"] .cartellone.pronto.aperto .cartellone-inner{
+    animation:caricaImmagineEntra .45s ease-out .42s both}
+  :root[data-modo="giochi"] .tv-uscita{position:absolute; inset:0; z-index:4; pointer-events:none;
+    animation:caricaImmagineEsce .5s ease-in both}
+  :root[data-modo="giochi"] .cartellone.pronto:not(.aperto) .msg{
+    animation:tvMessaggio .3s ease-out .62s both}
+  @keyframes caricaCulla{0%{opacity:0} 12%{opacity:1} 82%{opacity:1} 100%{opacity:0}}
+  @keyframes caricaRiempie{
+    0%{opacity:0; transform:scaleX(0)} 10%{opacity:1; transform:scaleX(.06)}
+    55%{opacity:1; transform:scaleX(.62)} 78%{opacity:1; transform:scaleX(1)}
+    100%{opacity:0; transform:scaleX(1)}}
+  @keyframes caricaSvuota{
+    0%{opacity:0; transform:scaleX(1)} 14%{opacity:1; transform:scaleX(1)}
+    70%{opacity:1; transform:scaleX(.22)} 92%{opacity:1; transform:scaleX(0)}
+    100%{opacity:0; transform:scaleX(0)}}
+  @keyframes caricaImmagineEntra{
+    0%{opacity:0; transform:translateY(8px) scale(1.015); filter:blur(5px)}
+    100%{opacity:1; transform:none; filter:none}}
+  @keyframes caricaImmagineEsce{
+    0%{opacity:1; transform:none; filter:none}
+    100%{opacity:0; transform:translateY(6px) scale(.99); filter:blur(4px)}}
+  /* Play dei videogiochi: le due schede «a che punto siete» */
+  .play-stato{display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:4px}
+  .stato-card{display:flex; flex-direction:column; gap:2px; align-items:flex-start; text-align:left;
+    padding:10px 12px; border:1px solid var(--linea); border-radius:11px; background:var(--bg2);
+    color:var(--dim); font:inherit}
+  .stato-card.on{border-color:var(--oro); background:var(--sel); color:var(--testo)}
+  .stato-card .sc-ic{font-size:16px; color:var(--oro2)}
+  .stato-card .sc-nome{font-weight:600; font-size:14.5px}
+  .stato-card .sc-desc{font-size:11.5px; color:var(--dim); line-height:1.35}
+  .badge-corso{display:inline-block; font-size:10.5px; letter-spacing:.05em; padding:1px 6px;
+    border-radius:9px; border:1px solid var(--oro); color:var(--oro2); background:var(--sel)}
+
   /* il salotto: niente sipario, la TV che si accende, i posti che si saldano in un divano */
   :root[data-modo="serie"] .cartellone .tenda{display:none}
   :root[data-modo="serie"] .cartellone{border:5px solid var(--posto-bordo)}
@@ -270,6 +331,7 @@
 
   /* Collegamenti fra recensioni: nel testo si scrive [[Titolo]] e qui diventa pastiglia. */
   .wlink{color:var(--oro2); border-bottom:1px dotted var(--oro); border-radius:3px; padding:0 1px}
+  .wlink.altrove{border-bottom-style:dashed}
   .wlink.orfano{color:var(--dim); border-bottom-color:var(--linea)}
   #wl-ac{position:fixed; z-index:70; background:var(--card); border:1px solid var(--linea); border-radius:12px;
     box-shadow:0 10px 30px #0009; padding:4px; min-width:200px; max-width:min(86vw,340px); max-height:44vh; overflow:auto}
@@ -382,6 +444,62 @@
   .upd .txt b{display:block; color:var(--testo); font-size:13.5px}
   .upd .txt span{color:var(--dim); font-size:11.5px}
   .upd .vai{flex:0 0 auto; color:var(--oro2)}
+
+  /* ══ Schermi larghi: telefono girato e tablet ══════════════════════════════════════
+     Due situazioni diverse, non una. Il TABLET ha spazio in tutte e due le direzioni:
+     basta allargare la colonna e mettere le liste su più colonne. Il TELEFONO GIRATO ha
+     spazio in larghezza ma pochissimo in altezza: lì il problema è verticale, e la Sala
+     va messa fianco a fianco perché schermo e platea ci stiano insieme senza scorrere. */
+
+  /* — tablet e finestre larghe — */
+  @media (min-width:760px){
+    .wrap{max-width:1000px; padding:14px 20px 84px}
+    /* le liste diventano una griglia: le schede sono già autonome, cambia il contenitore */
+    #mia-lista, #risultati{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:9px}
+    #mia-lista .film, #risultati .film{margin-bottom:0}
+    .rec-galleria{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+    .platea{--per-fila:8}
+    .centro{max-width:520px; margin:0 auto}
+  }
+
+  /* — la Sala fianco a fianco: schermo a sinistra, chi c'è a destra — */
+  @media (min-width:760px), (orientation:landscape) and (min-width:640px){
+    #pan-sala{display:grid; grid-template-columns:minmax(0,1.35fr) minmax(240px,1fr);
+      grid-template-areas:'tit chi' 'schermo platea' 'lista stato'; column-gap:16px; align-items:start}
+    #pan-sala > .sezione:first-of-type{grid-area:tit; margin-top:0}
+    #pan-sala > .cartellone{grid-area:schermo}
+    #pan-sala > #m-lista-completa{grid-area:lista}
+    #pan-sala > .sezione:nth-of-type(2){grid-area:chi; margin-top:0}
+    #pan-sala > .chips-gruppi{grid-area:chi; align-self:end}
+    #pan-sala > .platea{grid-area:platea}
+    #pan-sala > .stato-sala{grid-area:stato}
+  }
+
+  /* — telefono girato: l'altezza è quella che manca — */
+  @media (orientation:landscape) and (max-height:520px){
+    body{font-size:13.5px}
+    .wrap{max-width:none; padding:8px 14px 62px}
+    header{padding:5px 11px}
+    header img{width:22px; height:22px}
+    header h1{font-size:15px}
+    header .sub{display:none}          /* una riga in meno guadagnata */
+    .segmenti{position:sticky; top:0; z-index:4}
+    .seg{padding:7px 8px; font-size:12.5px}
+    .sezione{margin-top:9px}
+    /* la locandina alta rubava metà schermo: qui la scheda si stringe */
+    .film .pst{width:38px; height:56px}
+    .platea{--per-fila:9; grid-template-columns:repeat(var(--per-fila), minmax(0, 52px))}
+    /* i modali erano alti quanto lo schermo: girati devono poter scorrere */
+    #modale{max-height:92dvh; overflow-y:auto}
+    .centro{min-height:auto; padding:14px}
+    /* la Sala girata: schermo e platea insieme, senza scorrere */
+    #pan-sala{grid-template-columns:minmax(0,1.4fr) minmax(190px,1fr); column-gap:14px}
+    /* lo schermo tiene le sue proporzioni (16/9, non si toccano): per farlo stare
+       nell'altezza che resta si limita la LARGHEZZA, non l'altezza */
+    #pan-sala > .cartellone{margin:6px 0 4px; max-width:calc((100dvh - 218px) * 16 / 9)}
+    #m-segnala{transform:scale(.82); transform-origin:left bottom}
+  }
+
 </style>
 
 <div id="app">
@@ -492,11 +610,12 @@
 
 <script>
 /* ══════════════════ STATO ══════════════════ */
-const APP_VERSION = '1.7.7';
+const APP_VERSION = '1.7.8';
 const CONFIG_DEFAULT = { bonusCoralita:0.10, capCoralita:0.30, passoSoddisfazione:0.15, bonusCoppia:1.15, sogliaSpareggio:0.02 };
 const S = { treeUri:null, config:{}, profili:[], me:null, storico:[], modo:'film', gruppo:null,
   filtri:{ q:'', ordina:'aggiunto', dir:'desc', minDes:0, genere:[], annoDa:null, annoA:null },
-  recensioni:[], recUtente:null, recFiltri:{ q:'', ordina:'votoPersonale', dir:'desc' }, pan:'lista',
+  recensioni:[], recAltre:[],   // recAltre = le recensioni delle ALTRE categorie, solo per i rimandi
+  recUtente:null, recFiltri:{ q:'', ordina:'votoPersonale', dir:'desc' }, pan:'lista',
   listaVista:'daVedere',
   presenti:new Set(), fSala:{ durata:null, genere:[], regista:'' }, proiettato:null, tuttiSala:[],
   segnalazioni:[], segnStato:{}, segnEliminate:[], aggiornamento:null,
@@ -516,7 +635,28 @@ const GENERI_TMDB_SERIE = ['Action & Adventure','Animazione','Commedia','Crime',
 /* ══════════════════ MODALITÀ (film / serie TV) ══════════════════ */
 // Come sul desktop: la modalità decide da dove si leggono i dati, quale endpoint TMDB si
 // interroga e che vestito indossa l'app. Le formule non la vedono. Vedi CONCEPT-serie.md.
+// Le macro-categorie. Aggiungerne una domani e' **una riga qui**: percorsi, pannellino
+// della scelta e rimandi fra recensioni leggono tutti da questo elenco. La base vuota e'
+// quella dei film, che stanno dove sono sempre stati. Gemello di MODI sul desktop.
+const MODI = [
+  {id:'film',  ic:'🎬', nome:'Film',     base:'',
+   desc:'La sala: poltrone, sipario e il film della serata'},
+  {id:'serie', ic:'📺', nome:'Serie TV', base:'serie',
+   desc:'Il salotto: divano, TV, e si riprende da dove eravate'},
+  {id:'giochi', ic:'🎮', nome:'Videogiochi', base:'giochi',
+   desc:'La postazione: sedie, monitor, e si riprende la partita'},
+];
+// I cassetti che ogni categoria si porta dentro il profilo (gemello del desktop).
+const CHIAVI_MODO = {
+  film:   {lista:'lista',       gpos:'generiPositivi',       gneg:'generiNegativi'},
+  serie:  {lista:'listaSerie',  gpos:'generiPositiviSerie',  gneg:'generiNegativiSerie'},
+  giochi: {lista:'listaGiochi', gpos:'generiPositiviGiochi', gneg:'generiNegativiGiochi'},
+};
+const chiaviModo = () => CHIAVI_MODO[S.modo] || CHIAVI_MODO.film;
+const datiModo = id => MODI.find(m => m.id === id) || MODI[0];
+const modoValido = id => MODI.some(m => m.id === id) ? id : MODI[0].id;
 const inSerie = () => S.modo === 'serie';
+const inGiochi = () => S.modo === 'giochi';
 /* Gruppi di visione: fino a cinque, nel PROPRIO profilo, per non vedere in Sala tutti i
    profili della cartella quando diventano tanti. Chi lo attiva vede sempre sé stesso. */
 // Recensioni di serie: tutta insieme (stagione assente) oppure una per stagione.
@@ -551,20 +691,28 @@ const profiliVisibili = () => {
 };
 // le parole della modalità: con articolo e concordanza, così un testo nuovo nasce già
 // corretto in tutte e due (stesse funzioni del desktop)
-const COSA        = () => inSerie() ? 'serie' : 'film';
-const UN_COSA     = () => inSerie() ? 'una serie' : 'un film';
-const IL_COSA     = () => inSerie() ? 'la serie' : 'il film';
-const NESSUN_COSA = () => inSerie() ? 'Nessuna serie' : 'Nessun film';
-const I_COSA      = () => inSerie() ? 'le serie' : 'i film';
+const PAROLE = {
+  film:   {cosa:'film',  un:'un film',   il:'il film',  nessun:'Nessun film',   i:'i film',   fatto:'visto'},
+  serie:  {cosa:'serie', un:'una serie', il:'la serie', nessun:'Nessuna serie', i:'le serie', fatto:'vista'},
+  giochi: {cosa:'gioco', un:'un gioco',  il:'il gioco', nessun:'Nessun gioco',  i:'i giochi', fatto:'giocato'},
+};
+const parole      = () => PAROLE[S.modo] || PAROLE.film;
+const COSA        = () => parole().cosa;
+const UN_COSA     = () => parole().un;
+const IL_COSA     = () => parole().il;
+const NESSUN_COSA = () => parole().nessun;
+const I_COSA      = () => parole().i;
+const FATTO       = () => parole().fatto;
 // percorso dentro lo spazio della modalità: i film restano dove sono sempre stati
-const PS = p => inSerie() ? 'serie/' + p : p;
+const PS = p => { const b = datiModo(S.modo).base; return b ? b + '/' + p : p; };
 // la lista della modalità: il profilo resta UN file per persona
 function listaDi(p){
   if (!p) return [];
-  return inSerie() ? (p.listaSerie = p.listaSerie || []) : (p.lista = p.lista || []);
+  const k = chiaviModo().lista;
+  return (p[k] = p[k] || []);
 }
-const chiaveGeneriPos = () => inSerie() ? 'generiPositiviSerie' : 'generiPositivi';
-const chiaveGeneriNeg = () => inSerie() ? 'generiNegativiSerie' : 'generiNegativi';
+const chiaveGeneriPos = () => chiaviModo().gpos;
+const chiaveGeneriNeg = () => chiaviModo().gneg;
 const generiPos = p => (p && p[chiaveGeneriPos()]) || [];
 const generiNeg = p => (p && p[chiaveGeneriNeg()]) || [];
 const generiTMDB = () => inSerie() ? GENERI_TMDB_SERIE : GENERI_TMDB;
@@ -591,8 +739,8 @@ function applicaModo(){
   document.documentElement.dataset.modo = S.modo;
   const b = $('#m-modo');
   if (b){
-    $('#m-modo-ic').textContent = inSerie() ? '📺' : '🎬';
-    $('#m-modo-nome').textContent = inSerie() ? 'Serie TV' : 'Film';
+    $('#m-modo-ic').textContent = datiModo(S.modo).ic;
+    $('#m-modo-nome').textContent = datiModo(S.modo).nome;
   }
   applicaParoleM();
 }
@@ -606,7 +754,7 @@ function applicaParoleM(){
 }
 async function cambiaModoM(m){
   if (m === S.modo) return;
-  S.modo = (m === 'serie') ? 'serie' : 'film';
+  S.modo = modoValido(m);
   LS.set('modo', S.modo);
   applicaModo();
   S.proiettato = null;
@@ -631,12 +779,11 @@ async function cambiaModoM(m){
   toast(inSerie() ? 'Modalità serie TV 📺' : 'Modalità film 🎬');
 }
 function modaleModoM(){
-  const scheda = (m, ic, nome, desc) => `<button class="modo-card${S.modo===m?' on':''}" data-m="${m}">
-      <div class="mc-nome">${ic} ${nome}</div><div class="mc-desc">${desc}</div></button>`;
+  const scheda = m => `<button class="modo-card${S.modo===m.id?' on':''}" data-m="${m.id}">
+      <div class="mc-nome">${m.ic} ${esc(m.nome)}</div><div class="mc-desc">${esc(m.desc)}</div></button>`;
   apriModale(`<h3>Cosa si guarda</h3>
     <div class="modo-scelta">
-      ${scheda('film','🎬','Film','La sala: poltrone, sipario e il film della serata')}
-      ${scheda('serie','📺','Serie TV','Il salotto: divano, TV, e si riprende da dove eravate')}
+      ${MODI.map(scheda).join('')}
     </div>
     <p class="meta" style="font-size:12px">Ogni modalità ha le sue liste, il suo storico e le sue
       recensioni. I dati dell'altra restano dove sono.</p>
@@ -664,7 +811,12 @@ function apriModale(html){ $('#modale').innerHTML=html; $('#backdrop').classList
 function chiudiModale(){ $('#backdrop').classList.remove('on'); if (typeof wlChiudi === 'function') wlChiudi(); }
 $('#backdrop').addEventListener('click', e=>{ if(e.target.id==='backdrop') chiudiModale(); });
 
-const fmtMin = m => m ? (m < 60 ? m+"'" : Math.floor(m/60)+'h'+String(m%60).padStart(2,'0')) : '—';
+// Per film e serie sono minuti; per un videogioco sono le ORE per finirlo (RAWG playtime).
+const fmtMin = m => inGiochi()
+  ? (m ? '~'+m+' ore' : '—')
+  : (m ? (m < 60 ? m+"'" : Math.floor(m/60)+'h'+String(m%60).padStart(2,'0')) : '—');
+// L'etichetta della fonte del voto: cambia con la libreria da cui arriva.
+const fonteVoto = f => ({imdb:'IMDb', metacritic:'Metacritic', rawg:'RAWG'})[(f||{}).votoFonte] || 'TMDB';
 // data breve in formato europeo gg/mm/aaaa (deterministico)
 const dataBreve = d => { d = String(d||'').slice(0,10); const m = d.match(/^(\d{4})-(\d\d)-(\d\d)$/); return m ? `${m[3]}/${m[2]}/${m[1]}` : d; };
 const stelle = n => '★★★★★☆☆☆☆☆'.slice(5-(n||0), 10-(n||0));
@@ -722,18 +874,35 @@ async function fsElencaJson(cartella){
 
 /* ── Recensioni: strato dati (via plugin nativo SAF) ── */
 async function caricaRecensioniMobile(){
-  S.recensioni = [];
+  S.recensioni = await leggiRecensioniDi(S.modo);
+}
+// Le recensioni di una categoria, quella che sia. Tornano etichettate con `_modo`: e' cosi'
+// che un rimando sa se aprirlo vuol dire cambiare stanza.
+async function leggiRecensioniDi(idModo){
+  const out = [];
   try {
-    const res = await saf().caricaRecensioni({ uri: S.treeUri, base: inSerie() ? 'serie' : '' });
+    const res = await saf().caricaRecensioni({ uri: S.treeUri, base: datiModo(idModo).base });
     for (const f of (res.recensioni || [])){
       try { const r = JSON.parse(f.data);
-        if (r && (r.meta || Array.isArray(r.sezioni) || r.tmdbId != null)){ r.autore = f.slug; r._uri = f.uri; r._nome = f.nome; S.recensioni.push(r); }
+        if (r && (r.meta || Array.isArray(r.sezioni) || r.tmdbId != null)){ r.autore = f.slug; r._uri = f.uri; r._nome = f.nome; r._modo = idModo; out.push(r); }
       } catch(e){}
     }
   } catch(e){ /* nessuna recensione o plugin vecchio: ignoro */ }
+  return out;
+}
+// Le recensioni delle ALTRE categorie. Stanno fuori da S.recensioni di proposito: non
+// devono comparire nell'elenco, ne' contare come «visto», ne' entrare nel profilo del
+// gusto dei consigli. Servono a una cosa sola: i rimandi [[…]] fra film e serie.
+async function caricaRecensioniAltrove(){
+  S.recAltre = [];
+  for (const m of MODI){
+    if (m.id === S.modo) continue;
+    S.recAltre = S.recAltre.concat(await leggiRecensioniDi(m.id));
+  }
 }
 async function salvaRecensioneMobile(rec){
   rec.autore = S.me.slug;
+  rec._modo = S.modo;
   // I paragrafi rimasti vuoti non finiscono nel file: capita spesso di mettere solo il voto
   // e salvare, e la recensione resterebbe una fila di titoli con niente sotto.
   if (Array.isArray(rec.sezioni)) rec.sezioni = rec.sezioni.filter(s => !sezioneVuota(s));
@@ -782,6 +951,7 @@ async function caricaCartella(treeUri){
   }
   S.storico.sort((a,b)=> String(a.data||'').localeCompare(String(b.data||'')));
   await caricaRecensioniMobile();
+  await caricaRecensioniAltrove();
   await caricaSegnalazioniM();
   controllaAggiornamento();   // non blocca l'avvio
 
@@ -899,8 +1069,45 @@ function postoDivanoSVG(colore, presente, pos){
     </g>` : ''}
   </svg>`;
 }
+// Sedia da gaming: schienale alto, alette laterali, poggiatesta. Stessa firma e stesso
+// viewBox degli altri due posti — la platea non se ne accorge.
+function postoSediaSVG(colore, presente){
+  const uid = ++poltronaUid;
+  const seduta = presente ? colore : tema('--posto-vuoto');
+  const scuro = tema('--poltrona-scura');
+  const schienale = presente ? tinta(colore, -0.42) : scuro;
+  const bordo = tema('--posto-bordo');
+  return `<svg viewBox="0 0 100 88">
+    <defs>
+      <linearGradient id="mvng${uid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${tinta(schienale, 0.18)}"/>
+        <stop offset="100%" stop-color="${tinta(schienale, -0.22)}"/>
+      </linearGradient>
+      <radialGradient id="mvnh${uid}" cx="50%" cy="35%" r="80%">
+        <stop offset="0%" stop-color="${tinta(seduta, 0.16)}"/>
+        <stop offset="100%" stop-color="${tinta(seduta, -0.16)}"/>
+      </radialGradient>
+    </defs>
+    <g stroke="${bordo}" stroke-width="2.5" stroke-linejoin="round"${presente ? '' : ' opacity=".85"'}>
+      <rect x="30" y="0" width="40" height="15" rx="7" fill="${scuro}"/>
+      <path d="M22 12 q0 -4 5 -4 h46 q5 0 5 4 v44 q0 5 -5 5 h-46 q-5 0 -5 -5 z" fill="url(#mvng${uid})"/>
+      <path d="M22 16 q-9 2 -9 12 v18 q0 8 9 9 z" fill="${scuro}"/>
+      <path d="M78 16 q9 2 9 12 v18 q0 8 -9 9 z" fill="${scuro}"/>
+      <rect x="27" y="55" width="46" height="17" rx="7" fill="url(#mvnh${uid})"/>
+      <rect x="46" y="70" width="8" height="8" fill="${scuro}"/>
+      <path d="M32 86 h36" stroke="${scuro}" stroke-width="6" stroke-linecap="round" fill="none"/>
+    </g>
+    ${presente ? `<g fill="${bordo}" stroke="${colore}" stroke-width="2.2" stroke-linejoin="round">
+      <ellipse cx="50" cy="50" rx="19" ry="9"/>
+      <circle cx="50" cy="42" r="10.5"/>
+    </g>` : ''}
+    ${presente ? `<path d="M14 30 v16 M86 30 v16" stroke="${tinta(colore, 0.35)}" stroke-width="2.4"
+      stroke-linecap="round" opacity=".85"/>` : ''}
+  </svg>`;
+}
 const postoSVG = (colore, presente, pos) =>
-  inSerie() ? postoDivanoSVG(colore, presente, pos) : poltronaSVG(colore, presente);
+  inSerie() ? postoDivanoSVG(colore, presente, pos)
+    : (inGiochi() ? postoSediaSVG(colore, presente) : poltronaSVG(colore, presente));
 
 function disegnaPlateaM(){
   const box = $('#m-platea'); if (!box) return;
@@ -980,7 +1187,46 @@ function entra(slug){
 }
 
 /* ══════════════════ TMDB (identico al PC) ══════════════════ */
+// La scheda di un gioco, normalizzata sugli stessi campi di un film: chi la legge non sa
+// nemmeno che la fonte è un'altra. «durata» qui sono ORE per finirlo, non minuti.
+async function dettagliGioco(id){
+  const k = S.config.rawgKey;
+  if (!k) throw new Error('nokey');
+  const r = await fetch(`https://api.rawg.io/api/games/${id}?key=${k}`);
+  if (!r.ok) throw new Error('rawg '+r.status);
+  const g = await r.json();
+  const nomi = a => (a || []).map(x => x.name).filter(Boolean);
+  let voto = null, votoFonte = 'rawg';
+  if (g.metacritic){ voto = Math.round(g.metacritic)/10; votoFonte = 'metacritic'; }
+  else if (g.rating){ voto = Math.round(g.rating*20)/10; }
+  const ore = g.playtime || null;
+  const img = g.background_image || null;
+  return {
+    tmdbId:g.id, titolo:g.name || '', anno:String(g.released || '').slice(0,4),
+    uscita:g.released || null, collezione:null, collezioneNome:null,
+    stagioni:null, stato:null, durata:ore, oreGioco:ore,
+    regista:nomi(g.developers).slice(0,2).join(', '),
+    generi:nomi(g.genres), paese:nomi(g.publishers).slice(0,2).join(', '),
+    piattaforme:(g.platforms||[]).map(x => (x.platform||{}).name).filter(Boolean),
+    negozi:(g.stores||[]).map(x => (x.store||{}).name).filter(Boolean),
+    cast:(g.platforms||[]).map(x => (x.platform||{}).name).filter(Boolean).slice(0,6),
+    keywords:nomi(g.tags).slice(0,12), voto, votoFonte,
+    trama:(g.description_raw || '').slice(0, 900),
+    posterUrl:img, sfondoUrl:g.background_image_additional || img,
+    locandina:null, sfondo:null
+  };
+}
 async function cercaFilm(q){
+  // I videogiochi non stanno su TMDB: la loro libreria è RAWG (SPECIFICA §15.1).
+  if (inGiochi()){
+    const kg = S.config.rawgKey; if (!kg) throw new Error('nokey');
+    const rg = await fetch(`https://api.rawg.io/api/games?key=${kg}&page_size=10&search=${encodeURIComponent(q)}`);
+    if (!rg.ok) throw new Error('rawg '+rg.status);
+    return ((await rg.json()).results || []).slice(0, 10).map(g => ({
+      id:g.id, title:g.name, release_date:g.released || '', poster_path:null,
+      posterUrl:g.background_image || null
+    }));
+  }
   const k = S.config.tmdbKey; if (!k) throw new Error('nokey');
   const r = await fetch(`https://api.themoviedb.org/3/search/${inSerie()?'tv':'movie'}?api_key=${k}&language=it-IT&include_adult=false&query=${encodeURIComponent(q)}`);
   if (!r.ok) throw new Error('tmdb '+r.status);
@@ -988,6 +1234,7 @@ async function cercaFilm(q){
     .map(x => inSerie() ? {...x, title:x.name || x.original_name, release_date:x.first_air_date} : x);
 }
 async function dettagliFilm(id){
+  if (inGiochi()) return await dettagliGioco(id);
   const k = S.config.tmdbKey;
   const r = await fetch(`https://api.themoviedb.org/3/${inSerie()?'tv':'movie'}/${id}?api_key=${k}&language=it-IT&append_to_response=credits,external_ids,keywords`);
   if (!r.ok) throw new Error('tmdb '+r.status);
@@ -1106,7 +1353,7 @@ async function modaleAggiungi(id){
   apriModale(`
     <h3>${esc(d.titolo)}</h3>
     <div class="meta">${esc(d.anno||'')} · ${fmtMin(d.durata)}${d.regista?' · '+esc(d.regista):''}<br>
-      ${esc((d.generi||[]).join(', '))}${d.voto?` · ★ ${d.voto} ${d.votoFonte==='imdb'?'IMDb':'TMDB'}`:''}</div>
+      ${esc((d.generi||[]).join(', '))}${d.voto?` · ★ ${d.voto} ${fonteVoto(d)}`:''}</div>
     ${d.trama?`<div class="trama">${esc(d.trama)}</div>`:''}
     <div class="etich">QUANTO VUOI VEDERLO</div>
     <div class="picker" id="stelle">${[1,2,3,4,5].map(n=>`<span class="st${n<=desiderio?' on':''}" data-v="${n}">★</span>`).join('')}</div>
@@ -1268,7 +1515,7 @@ function modaleModifica(id){
     <div class="compagnia" id="chips">${chipsCompagnia(comp)}</div>
     <div class="m-az">
       <button class="ghost" id="m-togli" style="color:var(--rosso2);border-color:var(--rosso2)">🗑 Rimuovi</button>
-      <button class="ghost" id="m-visto" style="color:var(--ok);border-color:var(--ok)">✓ Visto</button>
+      <button class="ghost" id="m-visto" style="color:var(--ok);border-color:var(--ok)">✓ ${inGiochi() ? 'Finito' : 'Visto'}</button>
       <button class="primario" id="m-salva">Salva</button>
     </div>`}`);
   if (!visto){
@@ -1287,10 +1534,14 @@ function modaleModifica(id){
         if (!fine){ b.disabled=false; b.textContent='✓ Visto'; return toast('Di questa serie non conosco le stagioni', true); }
         voce.stagione = fine.stagione; voce.episodi = [1, fine.episodio];
       }
+      // per un gioco questo tasto è la scorciatoia «l'ho finito»: le partite in corso si
+      // registrano dalla Sala, dove si sceglie fra i due stati
+      if (inGiochi()) voce.stato = 'finito';
       try { await registraVisioneM(voce); }
       catch(e){ b.disabled=false; b.textContent='✓ Visto'; return toast('Non riuscito: '+e.message, true); }
       chiudiModale(); disegnaMiaLista(); disegnaSalaM();
-      toast(inSerie() ? `«${orig.titolo}» segnata come vista ✓` : `«${orig.titolo}» segnato come visto ✓`);
+      toast(inGiochi() ? `«${orig.titolo}» segnato come finito ✓`
+        : (inSerie() ? `«${orig.titolo}» segnata come vista ✓` : `«${orig.titolo}» segnato come visto ✓`));
     };
   }
   if (visto){
@@ -1397,8 +1648,23 @@ function prossimoGruppo(voce){
 }
 const etichettaEp = p => p ? `S${p.stagione} E${p.episodio}` : '';
 
+/* Videogiochi: due stati soli, ricalcolati dallo storico (SPECIFICA §15.2).
+   ▶ in corso = resta in lista e resta proponibile · ✓ finito = passa fra i già giocati. */
+const seratePerId = id => S.storico.filter(v => v.tmdbId === id);
+const giocoFinito = (id, slug) => seratePerId(id).some(v =>
+  v.stato === 'finito' && (!slug || (v.partecipanti||[]).includes(slug)));
+const giocoInCorso = (id, slug) => !giocoFinito(id, slug) && seratePerId(id).some(v =>
+  !slug || (v.partecipanti||[]).includes(slug));
+const serateGiocate = (id, slug) => seratePerId(id).filter(v =>
+  !slug || (v.partecipanti||[]).includes(slug)).length;
+
 function entryAttiva(voce, slug){
   const aggiunto = voce.aggiunto || '0000-01-01';
+  // Un gioco si spegne solo quando qualcuno lo segna FINITO. La recensione qui NON vale
+  // come «finito»: di un gioco si scrive anche mentre ci si sta ancora giocando.
+  if (inGiochi()) return !seratePerId(voce.tmdbId).some(v =>
+    v.stato === 'finito' && (v.partecipanti||[]).includes(slug)
+    && (v.ts || v.data + 'T23:59:59') >= aggiunto);
   // la recensione vale come "visto" per un film e come "finita" per una serie
   const rec = visioneRecensione(voce.tmdbId, slug);
   if (rec && rec + 'T23:59:59' >= aggiunto) return false;
@@ -1490,8 +1756,10 @@ const filtriSalaAttivi = () => !!(S.fSala.durata || S.fSala.genere.length || S.f
 
 // vedi il desktop: l'animazione della TV si abilita un attimo dopo il primo disegno
 // vedi il desktop: senza una copia da animare l'immagine sparirebbe di colpo
+// vale per il salotto e per la postazione: il cinema ha il sipario, che è una transizione
+const schermoAnimato = () => inSerie() || inGiochi();
 function spegniImmagine(schermo, inner){
-  if (!inSerie() || !schermo.classList.contains('pronto') || !schermo.classList.contains('aperto')) return;
+  if (!schermoAnimato() || !schermo.classList.contains('pronto') || !schermo.classList.contains('aperto')) return;
   const fantasma = inner.cloneNode(true);
   fantasma.removeAttribute('id');
   fantasma.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
@@ -1546,14 +1814,15 @@ function disegnaSalaM(){
     // così l'accensione parte da opacity 0 e l'immagine non lampeggia prima. In film è il
     // sipario: le tende partono chiuse e si vedono scorrere dopo un attimo.
     if (!schermo.classList.contains('aperto')){
-      if (inSerie()){ schermo.classList.add('pronto'); schermo.classList.add('aperto'); }
+      if (schermoAnimato()){ schermo.classList.add('pronto'); schermo.classList.add('aperto'); }
       else setTimeout(() => schermo.classList.add('aperto'), 60);
     }
   }
   const e = ris.esclusi, fuori = e.durata+e.genere+e.regista+e.vincoli;
   stato.innerHTML = `🎞 ${ris.totale} in cartellone · ${S.presenti.size} in sala
     ${fuori ? `<br><span class="avv">esclusi: ${[e.durata&&e.durata+' per durata', e.genere&&e.genere+' per genere', e.regista&&e.regista+' per regista', e.vincoli&&e.vincoli+' per compagnia'].filter(Boolean).join(', ')}</span>` : ''}
-    <br><span style="color:var(--dim)">▶ registra ${inSerie() ? 'la serata e sposta il segnalibro' : 'il film come visto per chi è in sala'}.</span>`;
+    <br><span style="color:var(--dim)">▶ registra ${inSerie() ? 'la serata e sposta il segnalibro'
+      : (inGiochi() ? 'la partita: in corso o finita' : 'il film come visto per chi è in sala')}.</span>`;
 }
 
 function modaleSchedaM(r){
@@ -1564,7 +1833,7 @@ function modaleSchedaM(r){
       <div class="re-poster">${f.posterUrl?`<img src="${esc(f.posterUrl)}" alt="">`:''}</div>
       <div style="flex:1">
         <div class="meta">${esc(f.anno||'')}${f.durata?' · '+fmtMin(f.durata):''}${f.regista?'<br>'+esc(f.regista):''}<br>
-          ${esc((f.generi||[]).join(', ')||'—')}${f.voto?` · ★ ${f.voto} ${f.votoFonte==='imdb'?'IMDb':'TMDB'}`:''}</div>
+          ${esc((f.generi||[]).join(', ')||'—')}${f.voto?` · ★ ${f.voto} ${fonteVoto(f)}`:''}</div>
         ${r.prop ? `<div class="meta" style="margin-top:6px">🎟 Lo propongono <b style="color:var(--oro2)">${r.prop.length}</b> ${r.prop.length===1?'persona':'persone'} in sala</div>
         <div class="meta" style="color:var(--dim)">🏆 ${fmtNum(r.S)} = desiderio ${fmtNum(r.D)} × coralità ${fmtNum(r.B)} × soddisfazione ${fmtNum(r.W)} × coppia ${fmtNum(r.M)}</div>` : ''}
       </div>
@@ -1609,12 +1878,13 @@ async function registraVisioneM(voce){
 function modalePlayM(r){
   const f = r.film;
   const nomi = [...S.presenti].map(nomeDi).join(', ');
-  const serie = inSerie();
+  const serie = inSerie(), giochi = inGiochi();
+  let statoScelto = 'corso';   // videogiochi: in corso finché non si dice il contrario
   const da = serie ? (prossimoGruppo(f) || {stagione:1, episodio:1}) : null;
   const stagioni = serie ? (f.stagioni || []) : [];
   apriModale(`
-    <h3>Si spengono le luci…</h3>
-    ${serie ? `
+    <h3>${giochi ? 'Si accende la postazione…' : 'Si spengono le luci…'}</h3>
+    ${(serie || giochi) ? (serie ? `
     <p class="meta" style="line-height:1.6">Stasera guardate <b style="color:var(--oro2)">«${esc(f.titolo)}»</b> con: ${esc(nomi)}.</p>
     <label class="lab">DOVE SIETE ARRIVATI</label>
     <div class="play-ep">
@@ -1628,6 +1898,17 @@ function modalePlayM(r){
     </div>
     <button class="linkbtn" id="pl-tutta" style="margin-top:2px">l'abbiamo vista tutta</button>
     <p class="meta" style="font-size:12px">La serie resta in lista: si sposta solo il segnalibro.</p>` : `
+    <p class="meta" style="line-height:1.6">Stasera giocate a <b style="color:var(--oro2)">«${esc(f.titolo)}»</b> con: ${esc(nomi)}.</p>
+    <label class="lab">A CHE PUNTO SIETE</label>
+    <div class="play-stato">
+      <button type="button" class="stato-card on" data-stato="corso">
+        <span class="sc-ic">▶</span><span class="sc-nome">In corso</span>
+        <span class="sc-desc">Resta in lista e continua a essere proposto</span></button>
+      <button type="button" class="stato-card" data-stato="finito">
+        <span class="sc-ic">✓</span><span class="sc-nome">Finito</span>
+        <span class="sc-desc">Passa fra i già giocati, come un film visto</span></button>
+    </div>
+    <p class="meta" style="font-size:12px">In tutti e due i casi lo trovi fra i titoli da recensire.</p>`) : `
     <p class="meta" style="line-height:1.6">Il film della serata è <b style="color:var(--oro2)">«${esc(f.titolo)}»</b>.<br>
     Lo registro come <b>visto</b> per: ${esc(nomi)}.<br>
     <span style="font-size:12px">Per i proponenti riparte il timer dell'attesa e il film esce dalle loro liste.</span></p>`}
@@ -1636,6 +1917,14 @@ function modalePlayM(r){
       <button class="primario" id="mp-ok">▶ Buona visione</button>
     </div>`);
   $('#mp-annulla').onclick = chiudiModale;
+  if (giochi){
+    $$('.stato-card').forEach(b => b.onclick = () => {
+      statoScelto = b.dataset.stato;
+      $$('.stato-card').forEach(x => x.classList.toggle('on', x === b));
+      $('#mp-ok').textContent = statoScelto === 'finito' ? "✓ L'abbiamo finito" : '▶ Buona partita';
+    });
+    $('#mp-ok').textContent = '▶ Buona partita';
+  }
   if (serie){
     // gli episodi non vanno oltre quelli che la stagione scelta ha davvero
     const epDi = n => (stagioni.find(s => s.n === n) || {}).episodi || 0;
@@ -1676,10 +1965,11 @@ function modalePlayM(r){
       partecipanti:[...S.presenti], proponenti:r.prop.map(p => p.slug)
     };
     if (serie){ voce.stagione = stagione; voce.episodi = episodi; }
+    if (giochi) voce.stato = statoScelto;
     try { await registraVisioneM(voce); }
     catch(e){ $('#mp-ok').disabled=false; $('#mp-ok').textContent='▶ Buona visione'; return toast('Registrazione non riuscita: '+e.message, true); }
     chiudiModale();
-    $('#m-luci-tit').textContent = `${f.titolo} — registrato per ${voce.partecipanti.length} spettatori`;
+    $('#m-luci-tit').textContent = `${f.titolo}${giochi ? ' — '+(statoScelto === 'finito' ? 'finito' : 'in corso') : ''} — registrato per ${voce.partecipanti.length} ${giochi ? 'giocatori' : 'spettatori'}`;
     $('#m-luci').classList.add('giu');
     setTimeout(() => $('#m-luci').classList.remove('giu'), 2300);
     S.proiettato = null;
@@ -2472,21 +2762,32 @@ function sezioneVuota(s){
 const RE_WIKI = /\[\[([^\[\]\n]{1,120})\]\]/g;
 const normTit = x => String(x == null ? '' : x).toLowerCase().normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
-// prima la mia dell'opera intera, poi una mia stagione, poi quella di chiunque altro
+// Tutte le recensioni che un rimando puo' raggiungere: questa categoria e le altre. I
+// confini fra film e serie non valgono per le citazioni.
+const tutteLeRecensioni = () => S.recensioni.concat(S.recAltre || []);
+const modoDi = r => (r && r._modo) || S.modo;
+// Quanto e' "lontana" una recensione da chi sta scrivendo: vince la piu' vicina. Prima
+// conta la categoria (restare dove si e'), poi l'autore, poi l'opera intera sulla stagione.
+const distanzaRec = r => (modoDi(r) === S.modo ? 0 : 4) +
+  (r.autore === (S.me && S.me.slug) ? 0 : 2) + (r.stagione ? 1 : 0);
 function recensioneDaTitolo(x){
   const n = normTit(x); if (!n) return null;
-  const mio = S.me && S.me.slug;
-  const c = S.recensioni.filter(r => normTit((r.meta||{}).titolo) === n);
-  return c.find(r => r.autore === mio && !r.stagione) || c.find(r => r.autore === mio)
-      || c.find(r => !r.stagione) || c[0] || null;
+  const c = tutteLeRecensioni().filter(r => normTit((r.meta||{}).titolo) === n);
+  if (!c.length) return null;
+  return c.slice().sort((a, b) => distanzaRec(a) - distanzaRec(b))[0];
 }
 function chipWiki(x){
   const r = recensioneDaTitolo(x);
+  // se la recensione citata vive in un'altra categoria lo si vede prima di toccarla:
+  // aprirla vuol dire cambiare stanza, e non deve essere una sorpresa
+  const altrove = r && modoDi(r) !== S.modo ? datiModo(modoDi(r)) : null;
   const dove = !r ? 'Nessuna recensione con questo titolo'
     : (r.autore === (S.me && S.me.slug) ? 'Apri la tua recensione' : 'Apri la recensione di ' + nomeDi(r.autore))
-      + (r.stagione ? ' - Stagione ' + r.stagione : '');
-  return '<span class="wlink' + (r ? '' : ' orfano') + '" contenteditable="false" data-t="' +
-    esc(x) + '" title="' + esc(dove) + '">' + esc(x) + '</span>';
+      + (r.stagione ? ' - Stagione ' + r.stagione : '')
+      + (altrove ? ' - e\' fra ' + altrove.nome + ': si cambia stanza' : '');
+  return '<span class="wlink' + (r ? '' : ' orfano') + (altrove ? ' altrove' : '') +
+    '" contenteditable="false" data-t="' + esc(x) + '" title="' + esc(dove) + '">' +
+    (altrove ? altrove.ic + ' ' : '') + esc(x) + '</span>';
 }
 const conWiki = html => String(html == null ? '' : html).replace(RE_WIKI, (_, x) => chipWiki(x.trim()));
 // il viaggio contrario: dalle pastiglie del contenteditable al testo da salvare
@@ -2497,9 +2798,10 @@ function senzaWiki(el){
   return c.innerHTML;
 }
 // chi cita questa recensione: il «puntano qui» delle wiki
+// guarda in tutte le categorie, cosi' un film sa di essere citato da una serie
 function citazioniDi(rec){
   const n = normTit((rec.meta||{}).titolo); if (!n) return [];
-  return S.recensioni.filter(r => !(r.autore === rec.autore && r._nome === rec._nome) &&
+  return tutteLeRecensioni().filter(r => !(r.autore === rec.autore && r._nome === rec._nome && modoDi(r) === modoDi(rec)) &&
     (r.sezioni||[]).some(s => [...String(s.testo == null ? '' : s.testo).matchAll(RE_WIKI)]
       .some(m => normTit(m[1]) === n)));
 }
@@ -2513,9 +2815,10 @@ function wlDisegna(){
   const b = $('#wl-ac'); if (!b) return;
   b.innerHTML = WL.voci.length
     ? WL.voci.map((v, i) => '<div class="wl-v' + (i === WL.sel ? ' on' : '') + '" data-i="' + i + '"><b>' +
-        esc(v.titolo) + '</b><small>' +
+        (modoDi(v.rec) !== S.modo ? datiModo(modoDi(v.rec)).ic + ' ' : '') + esc(v.titolo) + '</b><small>' +
         (v.rec.autore === (S.me && S.me.slug) ? 'la tua recensione' : esc(nomeDi(v.rec.autore))) +
-        ((v.rec.meta||{}).anno ? ' - ' + esc(v.rec.meta.anno) : '') + '</small></div>').join('')
+        ((v.rec.meta||{}).anno ? ' - ' + esc(v.rec.meta.anno) : '') +
+        (modoDi(v.rec) !== S.modo ? ' - fra ' + esc(datiModo(modoDi(v.rec)).nome) : '') + '</small></div>').join('')
     : '<div class="wl-aiuto">nessuna recensione con questo titolo</div>';
 }
 function wlMuovi(d){
@@ -2534,8 +2837,8 @@ function wlCerca(dentro){
   const m = nodo.nodeValue.slice(0, sel.anchorOffset).match(/\[\[([^\[\]]{0,60})$/);
   if (!m) return wlChiudi();
   WL.nodo = nodo; WL.da = sel.anchorOffset - m[0].length; WL.a = sel.anchorOffset; WL.sel = 0;
-  const q = normTit(m[1]), mio = S.me && S.me.slug;
-  const ordinate = [...S.recensioni].sort((x, y) => (x.autore === mio ? 0 : 1) - (y.autore === mio ? 0 : 1));
+  const q = normTit(m[1]);
+  const ordinate = tutteLeRecensioni().slice().sort((x, y) => distanzaRec(x) - distanzaRec(y));
   const visti = new Set(); WL.voci = [];
   for (const r of ordinate){
     const tit = (r.meta||{}).titolo, k = normTit(tit);
@@ -2701,7 +3004,8 @@ function editorRecMobile(recOrig, opts={}){
       ${ed?`<button class="linkbtn" id="m-re-add-sez">＋ aggiungi sezione</button>
         <p class="meta" style="font-size:12px; margin:2px 0 0">Scrivi <b>[[</b> per citare un'altra recensione: si sceglie dall'elenco e diventa un rimando.</p>`:''}
       ${citate.length ? `<div class="re-citata">↩ Citata in ${citate.map((r, i) =>
-          `<button data-cita="${i}">${esc((r.meta||{}).titolo || '—')}${r.stagione ? ' · S'+r.stagione : ''}${
+          `<button data-cita="${i}">${modoDi(r) !== S.modo ? datiModo(modoDi(r)).ic + ' ' : ''}${
+            esc((r.meta||{}).titolo || '—')}${r.stagione ? ' · S'+r.stagione : ''}${
             r.autore === S.me.slug ? '' : ' ('+esc(nomeDi(r.autore))+')'}</button>`).join('')}</div>` : ''}
       <div class="m-az" style="flex-wrap:wrap;gap:8px">
         ${ed?`${bozza.creato?`<button class="ghost" id="m-re-del" style="color:var(--rosso2)">Elimina</button>`:''}<button class="primario" id="m-re-salva">Salva</button>`:`<button class="primario" id="m-re-chiudi2">Chiudi</button>`}
@@ -2720,6 +3024,19 @@ function editorRecMobile(recOrig, opts={}){
           try { await salvaRecensioneMobile(bozza); }
           catch(e){ return toast('Salvataggio non riuscito: '+e.message, true); }
         }
+      }
+      const suo = modoDi(r);
+      if (suo !== S.modo){
+        // vive in un'altra categoria: si cambia stanza e la si ritrova di la'. Dopo la
+        // rilettura gli oggetti sono nuovi, quindi la si ripesca dal nome del file.
+        const chiave = r._nome, aut = r.autore;
+        chiudiModale();
+        await cambiaModoM(suo);
+        const arrivata = S.recensioni.find(x => x._nome === chiave && x.autore === aut);
+        disegnaRecMobile();
+        if (arrivata) editorRecMobile(arrivata);
+        else toast('Recensione non ritrovata dopo il cambio', true);
+        return;
       }
       chiudiModale(); disegnaRecMobile(); editorRecMobile(r);
     };
@@ -2905,7 +3222,7 @@ $('#q').addEventListener('keydown', e => { if (e.key === 'Enter'){ clearTimeout(
     $('#cartella-nota').innerHTML = 'Anteprima nel browser: il selettore cartelle funziona solo nell\'APK installato.';
     return;
   }
-  S.modo = LS.get('modo') === 'serie' ? 'serie' : 'film';   // prima di caricare: decide i percorsi
+  S.modo = modoValido(LS.get('modo'));   // prima di caricare: decide i percorsi
   S.gruppo = LS.get('gruppo') || null;
   applicaModo();
   $('#m-modo').onclick = modaleModoM;

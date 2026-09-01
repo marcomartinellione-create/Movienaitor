@@ -499,6 +499,28 @@ quello diventa un **rimando** a una recensione esistente. Scelte:
   sceglie al tocco; i rimandi si aprono toccandoli. Non c'è l'export .md (non c'è nemmeno
   sul mobile in generale), ma i file scritti dal telefono e dal PC sono gli stessi.
 
+**I rimandi attraversano le macro-categorie** (2026-09-01). Un film può citare una serie e
+viceversa, e domani anche ciò che verrà: le citazioni non si fermano al confine fra le
+stanze. Come funziona:
+
+- Oltre alle recensioni della categoria attiva, l'app tiene da parte quelle delle **altre**
+  (`S.recAltre`). Restano fuori da `S.recensioni` di proposito: non compaiono nell'elenco,
+  non contano come «visto» (§3.3) e non entrano nel profilo del gusto dei consigli (§11d).
+  Servono a una cosa sola, i rimandi.
+- Un rimando che porta **fuori categoria** si vede prima di cliccarlo: porta l'icona della
+  categoria (🎬 / 📺) e la riga tratteggiata. Aprirlo vuol dire cambiare stanza, e non deve
+  essere una sorpresa: al clic parte il velo d'attesa, si cambia modalità e la recensione
+  si apre di là. Se stavo scrivendo, il testo viene salvato prima.
+- Quando lo stesso titolo esiste in più posti vince **il più vicino**: prima la categoria in
+  cui si sta, poi l'autore (le proprie), poi l'opera intera rispetto a una singola stagione.
+  Così citare `[[Dune]]` mentre si parla di film non porta per sbaglio in Serie TV.
+- Anche **«↩ Citata in»** guarda ovunque: un film sa di essere citato da una serie.
+
+**Aggiungere una macro-categoria domani** (documentari, anime, quel che sarà) è **una riga**
+nell'elenco `MODI` (desktop e mobile): id, icona, nome, cartella e descrizione. Da lì
+leggono i percorsi dei file, il pannellino «Cosa si guarda», la casella in basso a destra e
+i rimandi fra recensioni. Restano da scrivere solo la palette e l'aspetto della Sala.
+
 **Sezioni vuote.** Al salvataggio le sezioni **senza testo vengono eliminate**: capitava
 spesso di mettere solo il voto e salvare, e la recensione restava una fila di titoli con
 niente sotto. Riaprendo una recensione che ha solo il voto ricompaiono i paragrafi di
@@ -683,3 +705,73 @@ e **freddo**, acciaio) commutabili da ⚙ Impostazioni finché non si sceglie.
 
 La casella si può **nascondere** da ⚙ Impostazioni: spenta, si torna ai film e l'app è
 indistinguibile da quella di prima. I dati dei film non vengono mai toccati.
+
+## 15. Modalità Videogiochi (2026-09-01, desktop e mobile)
+
+Terza macro-categoria, costruita ricalcando la seconda. Concept e decisioni:
+`CONCEPT-giochi.md`. Qui solo ciò che è diverso da film e serie.
+
+### 15.1 Dati e libreria
+
+- Spazio separato `giochi/` (stessa regola di `serie/`, §14.1). Nel profilo:
+  `listaGiochi`, `generiPositiviGiochi`, `generiNegativiGiochi`.
+- La libreria **non è TMDB** ma **RAWG.io** (`api.rawg.io`), chiave gratuita in
+  ⚙ Impostazioni accanto a TMDB e OMDb. È l'unica libreria di videogiochi che risponde a
+  un'app senza server: IGDB e Giant Bomb non mandano gli header CORS e vogliono OAuth.
+- I campi si normalizzano su quelli di un film, così tutto il resto dell'app non cambia:
+  `name`→titolo, `released`→anno, **`playtime`→durata (ORE, non minuti)**,
+  `developers`→regista, `publishers`→paese, `tags`→keywords,
+  `metacritic`/`rating`→voto (etichetta **Metacritic**/RAWG), `genres`→generi.
+- **Le immagini di RAWG sono orizzontali** (key art 16:9), non copertine verticali: sullo
+  schermo della Sala stanno meglio di una locandina, nelle caselle verticali vengono
+  ritagliate al centro. È il compromesso accettato in v1.
+
+### 15.2 Quando un gioco è «finito» — lo stato della partita
+
+Un gioco non si consuma in una sera come un film e non ha episodi numerati come una serie.
+Ha **due stati**, e come sempre non si salvano: si ricalcolano dallo storico.
+
+- Play chiede **«a che punto siete»** con due schede: **▶ in corso** o **✓ finito**.
+  La serata finisce in `giochi/storico.json` con il campo `stato`.
+- **In corso**: la voce **resta in lista e resta proponibile** — è quello che si vuole,
+  essere richiamati a continuarlo. Nella watch list porta la pastiglia «▶ in corso».
+- **Finito**: esce dalla lista attiva e passa fra i **già giocati**, come un film visto.
+- **In tutti e due i casi il gioco compare fra i titoli da recensire.** È la differenza
+  vera rispetto a film e serie: di un gioco si scrive anche mentre ci si sta giocando, e
+  per questo **la recensione NON vale come «finito»** (per film e serie sì, §3.3).
+- **I giochi che non finiscono mai** (Mario Kart, FIFA) non hanno bisogno di niente in
+  più: restano «in corso» per sempre.
+- Il tasto rapido della watch list, che per un film è «✓ visto», qui è **«✓ finito»**: le
+  partite in corso si registrano dalla Sala, dove si sceglie fra i due stati.
+
+### 15.3 La postazione
+
+Stessa regola del salotto (§14.4): il layout non si muove di un pixel, cambiano tre cose.
+
+| # | Cinema | Salotto | Postazione |
+|---|---|---|---|
+| 1 | poltrone singole | cuscini del divano | **sedie da gaming**: schienale alto, alette laterali, poggiatesta |
+| 2 | schermo del proiettore | TV | **monitor**: cornice sottile, piedistallo centrale, alone di luce dietro (bias light) |
+| 3 | sipario di velluto | accensione TV | **caricamento**: una barra si riempie da sinistra e l'immagine appare; spegnendosi l'immagine si ritira e la barra si svuota |
+
+Palette `:root[data-modo="giochi"]`: notte viola (`--bg #120d1c`), accento secondario
+viola acceso, **l'oro resta** come nelle altre due. Il filtro della serata diventa
+**«impegno massimo»** in ore (2–80).
+
+### 15.4 Schermi larghi: telefono girato e tablet (2026-09-01, mobile)
+
+Sono **due situazioni diverse**, e vanno trattate come tali.
+
+- **Tablet e finestre larghe** (`min-width:760px`): c'è spazio in tutte e due le direzioni.
+  La colonna si allarga a 1000px, le liste diventano una griglia a più colonne, la platea
+  passa a 8 posti per fila.
+- **Telefono girato** (`orientation:landscape` e `max-height:520px`): larghezza tanta,
+  **altezza pochissima**. Lì il problema è verticale: sparisce il sottotitolo
+  dell'intestazione, i segmenti restano appiccicati in alto, le locandine delle righe si
+  stringono, la platea va a 9 per fila e i modali possono scorrere.
+- In tutti e due i casi la **Sala va a due colonne**: schermo a sinistra, «chi c'è stasera»
+  e riga di stato a destra, così non si scorre per vedere chi c'è.
+- **Lo schermo tiene le sue proporzioni** (16/9, non si toccano): per farlo stare
+  nell'altezza che resta si limita la **larghezza**, non l'altezza —
+  `max-width:calc((100dvh - 218px) * 16 / 9)`.
+
