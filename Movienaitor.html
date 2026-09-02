@@ -1077,7 +1077,7 @@ header .spazio{flex:1; min-width:0}
 <script>
 'use strict';
 /* ════════════════════════ COSTANTI ════════════════════════ */
-const APP_VERSION = '1.7.8';
+const APP_VERSION = '1.7.9';
 const CONFIG_DEFAULT = {
   tmdbKey:'', omdbKey:'', rawgKey:'',
   bonusCoralita:0.10, capCoralita:0.30, passoSoddisfazione:0.15, bonusCoppia:1.15,
@@ -1103,6 +1103,9 @@ const FILA_DAVANTI = 9, FILA_DIETRO = 10; // platea come nel CAD
 /* ════════════════════════ UTILITÀ ════════════════════════ */
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
+// La libreria da cui arrivano le schede di questa categoria: TMDB per film e serie,
+// RAWG per i videogiochi. Compare in parecchie scritte, meglio non ripeterla a mano.
+const LIBRERIA = () => inGiochi() ? 'RAWG' : 'TMDB';
 // L'etichetta della fonte del voto: cambia con la libreria da cui arriva.
 const fonteVoto = f => ({imdb:'IMDb', metacritic:'Metacritic', rawg:'RAWG'})[(f||{}).votoFonte] || 'TMDB';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1350,7 +1353,8 @@ async function cambiaModo(m){
   // il velo va su PRIMA di cambiare vestito: fra la palette nuova e i dati riletti c'è un
   // istante in cui la pagina è di due modalità diverse, e in mezzo non si deve cliccare
   const t0 = Date.now();
-  caricamento(true, inSerie() ? 'Si accende il salotto…' : 'Si apre la sala…',
+  caricamento(true, inGiochi() ? 'Accendo la postazione…'
+                : (inSerie() ? 'Si accende il salotto…' : 'Si apre la sala…'),
               datiModo(S.modo).nome.toLowerCase());
   try {
   await ricordaModo(S.modo);
@@ -1589,14 +1593,14 @@ const demoSerie = id => DEMO_SERIE.find(s => s.tmdbId === id);
 // Giochi di prova. Stessa forma di un film: «durata» sono le ore per finirlo, «regista» lo
 // sviluppatore, «paese» l'editore — è la stessa normalizzazione che fa l'adattatore RAWG.
 const DEMO_GIOCHI = [
-  {tmdbId:3498, titolo:'It Takes Two', anno:'2021', durata:13, oreGioco:13, regista:'Hazelight Studios', paese:'Electronic Arts', generi:['Avventura','Platform'], piattaforme:['PC','PlayStation 5','Xbox Series X','Switch'], negozi:['Steam','PlayStation Store','Nintendo Store'], voto:8.8, votoFonte:'metacritic', trama:'Due genitori trasformati in bambole devono collaborare per tornare umani: si gioca obbligatoriamente in due.'},
-  {tmdbId:3328, titolo:'Hollow Knight', anno:'2017', durata:27, oreGioco:27, regista:'Team Cherry', paese:'Team Cherry', generi:['Azione','Platform','Indie'], piattaforme:['PC','Switch','PlayStation 4'], negozi:['Steam','GOG','Nintendo Store'], voto:9.0, votoFonte:'metacritic', trama:'Un piccolo cavaliere scende in un regno di insetti in rovina, fra silenzi e boss enormi.'},
-  {tmdbId:4200, titolo:'Portal 2', anno:'2011', durata:11, oreGioco:11, regista:'Valve', paese:'Valve', generi:['Puzzle','Sparatutto'], piattaforme:['PC','PlayStation 3','Xbox 360'], negozi:['Steam'], voto:9.5, votoFonte:'metacritic', trama:'Enigmi con i portali e una cooperativa che è insieme la più divertente e la più litigiosa mai scritta.'},
-  {tmdbId:5286, titolo:'Overcooked! 2', anno:'2018', durata:8, oreGioco:8, regista:'Ghost Town Games', paese:'Team17', generi:['Simulazione','Indie'], piattaforme:['PC','Switch','PlayStation 4','Xbox One'], negozi:['Steam','Nintendo Store'], voto:8.0, votoFonte:'metacritic', trama:'Cucinare in quattro urlandosi addosso mentre la cucina prende fuoco e va alla deriva.'},
-  {tmdbId:28, titolo:'Red Dead Redemption 2', anno:'2018', durata:49, oreGioco:49, regista:'Rockstar Games', paese:'Rockstar Games', generi:['Azione','Avventura'], piattaforme:['PC','PlayStation 4','Xbox One'], negozi:['Steam','Epic Games'], voto:9.6, votoFonte:'metacritic', trama:'La fine del west raccontata da una banda di fuorilegge che non ha più un posto dove stare.'},
-  {tmdbId:58175, titolo:'Mario Kart 8 Deluxe', anno:'2017', durata:20, oreGioco:20, regista:'Nintendo EPD', paese:'Nintendo', generi:['Corse','Arcade'], piattaforme:['Switch'], negozi:['Nintendo Store'], voto:9.2, votoFonte:'metacritic', trama:'Il gioco che non si finisce mai: si mette su, si litiga, si rimette su la settimana dopo.'},
-  {tmdbId:41494, titolo:'Baldur\'s Gate 3', anno:'2023', durata:75, oreGioco:75, regista:'Larian Studios', paese:'Larian Studios', generi:['GDR','Strategia'], piattaforme:['PC','PlayStation 5','Xbox Series X'], negozi:['Steam','GOG'], voto:9.6, votoFonte:'metacritic', trama:'Un gioco di ruolo enorme in cui quasi tutto quello che viene in mente si può davvero fare.'},
-  {tmdbId:10035, titolo:'Hades', anno:'2020', durata:22, oreGioco:22, regista:'Supergiant Games', paese:'Supergiant Games', generi:['Azione','Indie','GDR'], piattaforme:['PC','Switch','PlayStation 5'], negozi:['Steam','Nintendo Store'], voto:9.3, votoFonte:'metacritic', trama:'Scappare dagli inferi, morire, ricominciare — e ogni volta il racconto va avanti lo stesso.'}
+  {tmdbId:3498, titolo:'It Takes Two', anno:'2021', durata:13, oreGioco:13, regista:'Hazelight Studios', paese:'Electronic Arts', generi:['Adventure','Platformer'], piattaforme:['PC','PlayStation 5','Xbox Series X','Switch'], negozi:['Steam','PlayStation Store','Nintendo Store'], voto:8.8, votoFonte:'metacritic', trama:'Due genitori trasformati in bambole devono collaborare per tornare umani: si gioca obbligatoriamente in due.'},
+  {tmdbId:3328, titolo:'Hollow Knight', anno:'2017', durata:27, oreGioco:27, regista:'Team Cherry', paese:'Team Cherry', generi:['Action','Platformer','Indie'], piattaforme:['PC','Switch','PlayStation 4'], negozi:['Steam','GOG','Nintendo Store'], voto:9.0, votoFonte:'metacritic', trama:'Un piccolo cavaliere scende in un regno di insetti in rovina, fra silenzi e boss enormi.'},
+  {tmdbId:4200, titolo:'Portal 2', anno:'2011', durata:11, oreGioco:11, regista:'Valve', paese:'Valve', generi:['Puzzle','Shooter'], piattaforme:['PC','PlayStation 3','Xbox 360'], negozi:['Steam'], voto:9.5, votoFonte:'metacritic', trama:'Enigmi con i portali e una cooperativa che è insieme la più divertente e la più litigiosa mai scritta.'},
+  {tmdbId:5286, titolo:'Overcooked! 2', anno:'2018', durata:8, oreGioco:8, regista:'Ghost Town Games', paese:'Team17', generi:['Simulation','Indie'], piattaforme:['PC','Switch','PlayStation 4','Xbox One'], negozi:['Steam','Nintendo Store'], voto:8.0, votoFonte:'metacritic', trama:'Cucinare in quattro urlandosi addosso mentre la cucina prende fuoco e va alla deriva.'},
+  {tmdbId:28, titolo:'Red Dead Redemption 2', anno:'2018', durata:49, oreGioco:49, regista:'Rockstar Games', paese:'Rockstar Games', generi:['Action','Adventure'], piattaforme:['PC','PlayStation 4','Xbox One'], negozi:['Steam','Epic Games'], voto:9.6, votoFonte:'metacritic', trama:'La fine del west raccontata da una banda di fuorilegge che non ha più un posto dove stare.'},
+  {tmdbId:58175, titolo:'Mario Kart 8 Deluxe', anno:'2017', durata:20, oreGioco:20, regista:'Nintendo EPD', paese:'Nintendo', generi:['Racing','Arcade'], piattaforme:['Switch'], negozi:['Nintendo Store'], voto:9.2, votoFonte:'metacritic', trama:'Il gioco che non si finisce mai: si mette su, si litiga, si rimette su la settimana dopo.'},
+  {tmdbId:41494, titolo:'Baldur\'s Gate 3', anno:'2023', durata:75, oreGioco:75, regista:'Larian Studios', paese:'Larian Studios', generi:['RPG','Strategy'], piattaforme:['PC','PlayStation 5','Xbox Series X'], negozi:['Steam','GOG'], voto:9.6, votoFonte:'metacritic', trama:'Un gioco di ruolo enorme in cui quasi tutto quello che viene in mente si può davvero fare.'},
+  {tmdbId:10035, titolo:'Hades', anno:'2020', durata:22, oreGioco:22, regista:'Supergiant Games', paese:'Supergiant Games', generi:['Action','Indie','RPG'], piattaforme:['PC','Switch','PlayStation 5'], negozi:['Steam','Nintendo Store'], voto:9.3, votoFonte:'metacritic', trama:'Scappare dagli inferi, morire, ricominciare — e ogni volta il racconto va avanti lo stesso.'}
 ];
 // Il catalogo di prova della categoria attiva: una sola porta per tutte e tre.
 const demoCatalogo = () => S.modo === 'serie' ? DEMO_SERIE : (S.modo === 'giochi' ? DEMO_GIOCHI : DEMO_DB);
@@ -2529,8 +2533,17 @@ const GENERI_ID = {Azione:28, Avventura:12, Animazione:16, Commedia:35, Crime:80
 const GENERI_ID_SERIE = {'Action & Adventure':10759, Animazione:16, Commedia:35, Crime:80,
   Documentario:99, Dramma:18, Famiglia:10751, Kids:10762, Mistero:9648, News:10763,
   Reality:10764, 'Sci-Fi & Fantasy':10765, Soap:10766, Talk:10767, 'War & Politics':10768, Western:37};
-const generiTMDB = () => inSerie() ? GENERI_TMDB_SERIE : GENERI_TMDB;
-const generiID   = () => inSerie() ? GENERI_ID_SERIE   : GENERI_ID;
+// Le tassonomie TMDB valgono per film e serie; i generi dei giochi arrivano da RAWG e non
+// hanno una tabella di id da mappare (i consigli dei giochi usano generiRAWG()).
+// I generi di RAWG arrivano in inglese dall'API, come già le keyword di TMDB: l'elenco
+// qui sotto usa gli stessi nomi, se no i chip non combacerebbero con quelli delle schede.
+const GENERI_RAWG = ['Action','Adventure','RPG','Shooter','Strategy','Simulation','Puzzle',
+  'Arcade','Platformer','Racing','Sports','Fighting','Indie','Casual','Family','Card',
+  'Board Games','Educational','Massively Multiplayer'];
+// generiTMDB() torna un ELENCO di nomi (i chip dei generi preferiti);
+// generiID() torna una MAPPA nome→id di TMDB, che per i giochi non esiste.
+const generiTMDB = () => inGiochi() ? GENERI_RAWG : (inSerie() ? GENERI_TMDB_SERIE : GENERI_TMDB);
+const generiID   = () => inGiochi() ? {} : (inSerie() ? GENERI_ID_SERIE   : GENERI_ID);
 
 async function tmdbJSON(url){
   const r = await fetch(url);
@@ -2753,7 +2766,7 @@ function modaleScartati(){
     <h3>🚫 Film esclusi dai consigli</h3>
     <p style="color:var(--dim); font-size:13.5px">${righe.length
       ? 'Non te li propongo più in «Per te». Togli l\'esclusione per rimetterli in gioco.'
-      : `Non hai escluso ${inSerie() ? 'nessuna serie' : 'nessun film'}. Quando in «Per te» premi «Non mi interessa», ${IL_COSA()} finisce qui.`}</p>
+      : `Non hai escluso ${NESSUN_COSA().toLowerCase()}. Quando in «Per te» premi «Non mi interessa», ${IL_COSA()} finisce qui.`}</p>
     ${righe.length ? `<div class="sc-lista" id="sc-lista">${righe.map(([id, tit]) => `
       <div class="sc-riga" data-sc="${id}">
         <span class="t">${esc(tit)}</span>
@@ -3512,7 +3525,7 @@ function editorRecensione(recOrig, opts={}){
            <div class="re-dove-chips" id="re-dove-fis">${DOVE_FISICO.map(x=>doveChip(x,'fisico', (bozza.doveVederlo.fisico||[]).includes(x))).join('')}</div>
            <div class="re-dove-file"><input type="text" id="re-dove-perc" value="${esc(bozza.doveVederlo.percorso||'')}" placeholder="file o cartella sul PC (es. D:\\Film\\...)…"><button class="bottone piccolo secondario" id="re-dove-apri" title="Apri sul PC (solo app desktop)">📂 Apri</button></div>`
         : `<div class="m-meta">${bozza.ultimaVisione?'👁 '+esc(dataBreve(bozza.ultimaVisione))+'   ':''}${doveTesto(bozza.doveVederlo)}</div>`}
-      ${editabile ? `<div style="margin:2px 0 10px">${bozza.tmdbId==null?`<span style="color:var(--rosso2);font-size:12px">⚠ ${inSerie()?'nessuna serie':'nessun film'} TMDB collegat${inSerie()?'a':'o'} (niente locandina) · </span>`:''}<button class="testo-link" id="re-collega">🔗 ${bozza.tmdbId!=null?`Cambia ${COSA()} collegat${inSerie()?'a':'o'}`:'Collega a TMDB'}</button></div>` : ''}
+      ${editabile ? `<div style="margin:2px 0 10px">${bozza.tmdbId==null?`<span style="color:var(--rosso2);font-size:12px">⚠ ${NESSUN_COSA().toLowerCase()} ${LIBRERIA()} collegat${inSerie()?'a':'o'} (niente locandina) · </span>`:''}<button class="testo-link" id="re-collega">🔗 ${bozza.tmdbId!=null?`Cambia ${COSA()} collegat${inSerie()?'a':'o'}`:`Collega a ${LIBRERIA()}`}</button></div>` : ''}
       ${editabile ? `<div class="re-toolbar" id="re-toolbar">
         <button type="button" data-cmd="bold" title="Grassetto"><b>B</b></button>
         <button type="button" data-cmd="underline" title="Sottolineato"><span style="text-decoration:underline">U</span></button>
@@ -3636,7 +3649,7 @@ function editorRecensione(recOrig, opts={}){
     // rileva da TMDB i servizi streaming dove è disponibile il film (regione Italia) e
     // spunta i chip corrispondenti, senza toccare quelli già scelti a mano.
     const rilevaStreaming = async (silenzioso) => {
-      if (bozza.tmdbId == null){ if (!silenzioso) toast(`${NESSUN_COSA()} TMDB collegat${inSerie() ? 'a' : 'o'}`, true); return; }
+      if (bozza.tmdbId == null){ if (!silenzioso) toast(`${NESSUN_COSA()} ${LIBRERIA()} collegat${inSerie() ? 'a' : 'o'}`, true); return; }
       const btn = $('#re-dove-rileva'); if (btn && !silenzioso) btn.textContent = '⏳ cerco…';
       const sv = await providersFilm(bozza.tmdbId);
       if (btn) btn.textContent = '🔄 rileva da TMDB';
@@ -3659,7 +3672,7 @@ function editorRecensione(recOrig, opts={}){
       if (inElectron && window.mvnFS.apriPercorso) window.mvnFS.apriPercorso(p).then(ok => { if (!ok) toast('Percorso non trovato sul PC', true); });
       else toast('L\'apertura del file funziona solo nell\'app desktop installata', true);
     };
-    if ($('#re-collega')) $('#re-collega').onclick = () => { leggiCampi(); modaleCercaFilm(id => collegaTMDB(bozza, id), {titolo: bozza.tmdbId!=null?`Cambia ${COSA()} collegat${inSerie()?'a':'o'}`:'Collega a TMDB', sub:`Scegli ${IL_COSA()}: sovrascrive i metadati e aggiunge la locandina.`, query:(bozza.meta||{}).titolo||''}); };
+    if ($('#re-collega')) $('#re-collega').onclick = () => { leggiCampi(); modaleCercaFilm(id => collegaTMDB(bozza, id), {titolo: bozza.tmdbId!=null?`Cambia ${COSA()} collegat${inSerie()?'a':'o'}`:`Collega a ${LIBRERIA()}`, sub:`Scegli ${IL_COSA()}: sovrascrive i metadati e aggiunge la locandina.`, query:(bozza.meta||{}).titolo||''}); };
     $('#re-add-sez').onclick = () => { leggiCampi(); bozza.sezioni.push({titolo:'Nuova sezione', testo:''}); render(); };
     $('#re-sezioni').querySelectorAll('[data-az]').forEach(b => b.onclick = () => {
       leggiCampi(); const i = +b.dataset.i, az = b.dataset.az;
@@ -3710,7 +3723,7 @@ function editorRecensione(recOrig, opts={}){
 
 function modaleCercaFilm(onScegli, opts={}){
   apriModale(`<h3>${esc(opts.titolo||('Cerca '+COSA()))}</h3><p style="color:var(--dim)">${esc(opts.sub||('Cerca '+IL_COSA()+'.'))}</p>
-    <input type="text" id="rn-q" placeholder="Titolo ${inSerie() ? 'della serie' : 'del film'}…" autocomplete="off" style="width:100%;background:var(--bg2);border:1px solid var(--velluto3);color:var(--crema);padding:9px 12px;border-radius:8px">
+    <input type="text" id="rn-q" placeholder="Titolo ${IL_COSA().replace(/^(il|la) /, '')}…" autocomplete="off" style="width:100%;background:var(--bg2);border:1px solid var(--velluto3);color:var(--crema);padding:9px 12px;border-radius:8px">
     <div id="rn-ris" class="rn-ris"></div>
     <div class="m-azioni"><button class="bottone piccolo secondario" id="rn-chiudi">Annulla</button></div>`);
   $('#rn-chiudi').onclick = chiudiModale;
@@ -3736,7 +3749,7 @@ function modaleNuovaRecensione(){
 }
 // Aggancia una recensione (magari importata senza id) a un film TMDB: sovrascrive i metadati e aggiunge la locandina.
 async function collegaTMDB(bozza, id){
-  apriModale(`<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero i dati ${inSerie() ? 'della serie' : 'del film'}.</p>`);
+  apriModale(`<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero i dati ${inSerie() ? 'della serie' : (inGiochi() ? 'del gioco' : 'del film')}.</p>`);
   let d; try { d = await dettagliFilm(id); } catch(e){ return apriModale(`<h3>Ahi</h3><p style="color:var(--dim)">Scheda non recuperata.</p><div class="m-azioni"><button class="bottone piccolo" onclick="chiudiModale()">Chiudi</button></div>`); }
   salvaImmagini(d).then(() => { S.urlCache.clear(); });
   bozza.tmdbId = d.tmdbId;
@@ -3748,7 +3761,7 @@ async function collegaTMDB(bozza, id){
 async function avviaEditorDaTMDB(id){
   const mia = miaRecensione(id);
   if (mia) return editorRecensione(mia);
-  apriModale(`<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero i dati ${inSerie() ? 'della serie' : 'del film'}.</p>`);
+  apriModale(`<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero i dati ${inSerie() ? 'della serie' : (inGiochi() ? 'del gioco' : 'del film')}.</p>`);
   let d; try { d = await dettagliFilm(id); } catch(e){ return apriModale(`<h3>Ahi</h3><p style="color:var(--dim)">Scheda non recuperata.</p><div class="m-azioni"><button class="bottone piccolo" onclick="chiudiModale()">Chiudi</button></div>`); }
   salvaImmagini(d).then(()=>{ S.urlCache.clear(); });
   const rec = { tmdbId:d.tmdbId, votoPersonale:0, doveVederlo:{streaming:[],fisico:[],percorso:''}, ultimaVisione:ultimaVisioneDi(d.tmdbId, S.me) || oggiISO(),

@@ -204,6 +204,27 @@ Stato "da vedere/visto" e i valori derivati NON si salvano: si ricalcolano dallo
   più in basso nel file e a parità di specificità vincerebbero loro (sbagliato una volta).
   Tablet e telefono girato sono due media query distinte: la prima allarga, la seconda
   recupera altezza. Lo schermo tiene 16/9 limitando la **larghezza**, non l'altezza.
+- **⚠⚠ LA REGOLA PIÙ IMPORTANTE quando si aggiunge una categoria** (imparata male, con una
+  versione pubblicata rotta): **cercare `inSerie()` in tutto il file e guardarli uno per uno.**
+  Ogni ramo scritto «se è serie … altrimenti …» manda la categoria nuova nel ramo dei FILM.
+  Sul mobile ne erano rimasti cinque che decidevano **dati**, non parole, e il risultato è
+  stato «un casino un po' ovunque»:
+  1. `caricaCartella` leggeva `res.storico` (che è quello dei film) per tutto ciò che non
+     era serie → in modalità giochi si vedeva lo storico dei film: i giochi finiti dal PC
+     restavano in lista e le recensioni proponevano film. **Era la causa di quasi tutto.**
+  2. `salvaRecensioneMobile` scriveva con `base: inSerie() ? 'serie' : ''` → le recensioni
+     dei giochi finivano nella cartella dei film.
+  3. `providersFilm` interrogava TMDB con un id RAWG.
+  4. `generaConsigli` chiedeva a TMDB anche per i giochi → consigliava film a caso.
+  5. `generiTMDB`/`generiID` restituivano le tassonomie dei film.
+  Il modo per accorgersene **prima** di pubblicare: non basta provare l'aspetto con dati
+  finti iniettati a mano — va provato il **percorso di caricamento vero**. Sul mobile si fa
+  sostituendo `window.Capacitor.Plugins.MvnSaf` con un finto plugin che serve una cartella
+  in memoria (`loadFolder`, `leggiPercorso`, `salvaRecensione`), e poi si chiama davvero
+  `caricaCartella()` per ogni modalità.
+  Attenzione anche al **tipo di ritorno** quando si aggiunge un ramo: `generiTMDB()` torna
+  un **elenco**, `generiID()` una **mappa**; averli messi tutti e due a `{}` ha rotto le
+  Impostazioni (preso da un test che attraversava tutte le viste, non da una lettura).
 - **⚠ Due trappole che si ripresentano a ogni categoria nuova** (sbagliate due volte su due):
   1. **L'altezza dello schermo.** `.schermo` è `flex:1`: se il pannello dei filtri è più
      corto (i generi di una categoria sono meno di quelli dei film) lo schermo si prende la
