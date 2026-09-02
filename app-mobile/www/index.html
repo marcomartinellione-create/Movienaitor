@@ -539,7 +539,7 @@
     <section class="schermo" id="sc-app">
       <button class="upd" id="m-upd" hidden></button>
       <div class="segmenti" id="segmenti">
-        <button class="seg" data-pan="sala">🎬 Sala</button>
+        <button class="seg" data-pan="sala"><span data-film="🎬 Sala" data-serie="📺 Sala" data-giochi="🎮 Sala">🎬 Sala</span></button>
         <button class="seg on" data-pan="lista">🔖 Lista</button>
         <button class="seg" data-pan="recensioni">📝 Recensioni</button>
         <button class="seg" data-pan="consigli">✨ Per te</button>
@@ -610,7 +610,7 @@
 
 <script>
 /* ══════════════════ STATO ══════════════════ */
-const APP_VERSION = '1.7.9';
+const APP_VERSION = '1.7.10';
 const CONFIG_DEFAULT = { bonusCoralita:0.10, capCoralita:0.30, passoSoddisfazione:0.15, bonusCoppia:1.15, sogliaSpareggio:0.02 };
 const S = { treeUri:null, config:{}, profili:[], me:null, storico:[], modo:'film', gruppo:null,
   filtri:{ q:'', ordina:'aggiunto', dir:'desc', minDes:0, genere:[], annoDa:null, annoA:null },
@@ -715,7 +715,14 @@ const chiaveGeneriPos = () => chiaviModo().gpos;
 const chiaveGeneriNeg = () => chiaviModo().gneg;
 const generiPos = p => (p && p[chiaveGeneriPos()]) || [];
 const generiNeg = p => (p && p[chiaveGeneriNeg()]) || [];
-const generiTMDB = () => inSerie() ? GENERI_TMDB_SERIE : GENERI_TMDB;
+// Le tassonomie TMDB valgono per film e serie; i generi dei giochi arrivano da RAWG e
+// non hanno una tabella di id da mappare.
+// I generi di RAWG arrivano in inglese dall'API, come già le keyword di TMDB: l'elenco
+// qui sotto usa gli stessi nomi, se no i chip non combacerebbero con quelli delle schede.
+const GENERI_RAWG = ['Action','Adventure','RPG','Shooter','Strategy','Simulation','Puzzle',
+  'Arcade','Platformer','Racing','Sports','Fighting','Indie','Casual','Family','Card',
+  'Board Games','Educational','Massively Multiplayer'];
+const generiTMDB = () => inGiochi() ? GENERI_RAWG : (inSerie() ? GENERI_TMDB_SERIE : GENERI_TMDB);
 // valore corrente di un token: gli SVG scrivono i colori nell'attributo, non li ereditano
 const tema = (nome, ripiego = '#000') =>
   (getComputedStyle(document.documentElement).getPropertyValue(nome) || ripiego).trim() || ripiego;
@@ -747,7 +754,7 @@ function applicaModo(){
 // i testi fissi portano le due varianti addosso (data-film / data-serie)
 function applicaParoleM(){
   for (const el of document.querySelectorAll('[data-film]')){
-    const testo = inSerie() ? (el.dataset.serie || el.dataset.film) : el.dataset.film;
+    const testo = el.dataset[S.modo] || el.dataset.film;
     if ((el.dataset.dove || 'testo') === 'segnaposto') el.placeholder = testo;
     else el.textContent = testo;
   }
@@ -765,7 +772,7 @@ async function cambiaModoM(m){
   S.cgPool = []; S.cgLista = []; S.cgProfilo = null; S.cgFirma = '';
   S.providersCache = new Map();
   S.recUtente = null; S.listaVista = 'daVedere';
-  caricamento(true, inSerie() ? 'Apro il salotto…' : 'Apro la sala…');
+  caricamento(true, inGiochi() ? 'Accendo la postazione…' : (inSerie() ? 'Apro il salotto…' : 'Apro la sala…'));
   try {
     await caricaCartella(S.treeUri);
     // caricaCartella riporta alla scelta del profilo: rientro con quello di prima
@@ -776,7 +783,7 @@ async function cambiaModoM(m){
   } finally {
     caricamento(false);
   }
-  toast(inSerie() ? 'Modalità serie TV 📺' : 'Modalità film 🎬');
+  toast('Modalità ' + datiModo(S.modo).nome.toLowerCase() + ' ' + datiModo(S.modo).ic);
 }
 function modaleModoM(){
   const scheda = m => `<button class="modo-card${S.modo===m.id?' on':''}" data-m="${m.id}">
@@ -913,7 +920,7 @@ async function salvaRecensioneMobile(rec){
   const vecchioUri = rec._uri, vecchioNome = rec._nome;
   const salvabile = {...rec}; delete salvabile._uri; delete salvabile._nome; delete salvabile.autore;
   const res = await saf().salvaRecensione({ uri: S.treeUri, slug: S.me.slug, nome,
-    data: JSON.stringify(salvabile), base: inSerie() ? 'serie' : '' });
+    data: JSON.stringify(salvabile), base: datiModo(S.modo).base });
   if (vecchioUri && vecchioNome && vecchioNome !== nome){ try { await saf().cancellaDoc({ uri: vecchioUri }); } catch(e){} }
   rec._uri = res.uri; rec._nome = res.nome || nome;
   const i = S.recensioni.findIndex(x => x.autore === S.me.slug && x._nome === rec._nome);
@@ -942,12 +949,16 @@ async function caricaCartella(treeUri){
   S.profili.sort((a,b)=> (a.creato||'').localeCompare(b.creato||'') || a.slug.localeCompare(b.slug));
 
   S.storico = [];
-  if (inSerie()){
-    // loadFolder porta lo storico dei film: quello delle serie sta sotto serie/
-    const txt = await fsLeggiPercorso('serie/storico.json');
+  // loadFolder porta con sé lo storico dei FILM, che sta nella radice: per ogni altra
+  // categoria va letto dal suo percorso. Scritto «se non è serie allora film» questo
+  // ramo mandava la modalità videogiochi a leggere lo storico sbagliato.
+  if (S.modo === 'film'){
+    if (res.storico){
+      try { const st = JSON.parse(res.storico); if (Array.isArray(st.visioni)) S.storico = st.visioni; } catch(e){}
+    }
+  } else {
+    const txt = await fsLeggiPercorso(PS('storico.json'));
     if (txt){ try { const st = JSON.parse(txt); if (Array.isArray(st.visioni)) S.storico = st.visioni; } catch(e){} }
-  } else if (res.storico){
-    try { const st = JSON.parse(res.storico); if (Array.isArray(st.visioni)) S.storico = st.visioni; } catch(e){}
   }
   S.storico.sort((a,b)=> String(a.data||'').localeCompare(String(b.data||'')));
   await caricaRecensioniMobile();
@@ -1155,7 +1166,7 @@ function disegnaProfili(){
     <button class="prof ghost" data-slug="${esc(p.slug)}">
       <span class="pallino" style="background:${esc(coloreDi(p,i))}"></span>
       <span style="flex:1">${p.password ? '🔒 ' : ''}${esc(p.nome)}</span>
-      <span style="color:var(--dim); font-size:12px">${listaDi(p).length} ${inSerie() ? 'serie' : 'film'}</span>
+      <span style="color:var(--dim); font-size:12px">${listaDi(p).length} ${I_COSA().replace(/^(i|le) /, '')}</span>
     </button>`).join('');
   box.querySelectorAll('.prof').forEach(b => b.onclick = () => scegliProfilo(b.dataset.slug));
 }
@@ -1288,9 +1299,25 @@ const PROVIDER_ALIAS = {
   'Paramount+ with Showtime':'Paramount+', 'Mubi':'Mubi', 'Timvision':'TIMVISION'
 };
 const normProvider = nome => PROVIDER_ALIAS[nome] || nome;
+// Nomi dei negozi RAWG → etichette nostre.
+const NEGOZIO_ALIAS = {
+  'Steam':'Steam', 'PlayStation Store':'PlayStation', 'Xbox Store':'Xbox',
+  'Xbox 360 Store':'Xbox', 'Nintendo Store':'Nintendo eShop', 'Epic Games':'Epic',
+  'GOG':'GOG', 'itch.io':'itch.io', 'Google Play':'Mobile', 'App Store':'Mobile'
+};
 async function providersFilm(tmdbId){
-  if (!tmdbId || !S.config.tmdbKey) return [];
+  if (!tmdbId) return [];
   if (S.providersCache.has(tmdbId)) return S.providersCache.get(tmdbId);
+  // Un gioco non sta su TMDB: i suoi negozi li ha già dati la scheda RAWG. Senza questo
+  // ramo si interrogava TMDB con un id RAWG, e tornava qualunque cosa.
+  if (inGiochi()){
+    const v = S.profili.map(p => listaDi(p).find(x => x.tmdbId === tmdbId)).find(Boolean);
+    const out = ((v && v.negozi) || []).map(x => NEGOZIO_ALIAS[x] || x)
+      .filter((x, i, a) => a.indexOf(x) === i);
+    S.providersCache.set(tmdbId, out);
+    return out;
+  }
+  if (!S.config.tmdbKey) return [];
   let out = [];
   try {
     const r = await fetch(`https://api.themoviedb.org/3/${inSerie()?'tv':'movie'}/${tmdbId}/watch/providers?api_key=${S.config.tmdbKey}`);
@@ -1467,8 +1494,8 @@ function disegnaMiaLista(){
   $('#conta-lista').textContent = base.length ? (lista.length===base.length ? '· '+base.length : '· '+lista.length+'/'+base.length) : '';
   const fb = $('#btn-filtri'); if (fb) fb.classList.toggle('attivo', filtriAttivi());
   const box = $('#mia-lista');
-  if (!tutte.length && !visti.length){ box.innerHTML = `<div class="vuoto">Ancora ${inSerie() ? 'nessuna serie' : 'nessun film'}. Cerca qui sopra e aggiungi ${inSerie() ? 'la prima 📺' : 'il primo 🎬'}</div>`; return; }
-  if (!base.length){ box.innerHTML = `<div class="vuoto">${sonoVisti ? `Ancora ${inSerie() ? 'nessuna serie già vista' : 'nessun film già visto'} in questa lista.` : 'Niente da vedere: sono già stati visti tutti 🎉'}</div>`; return; }
+  if (!tutte.length && !visti.length){ box.innerHTML = `<div class="vuoto">Ancora ${NESSUN_COSA().toLowerCase()}. Cerca qui sopra e aggiungi ${inSerie() ? 'la prima' : 'il primo'} ${datiModo(S.modo).ic}</div>`; return; }
+  if (!base.length){ box.innerHTML = `<div class="vuoto">${sonoVisti ? `Ancora ${NESSUN_COSA().toLowerCase()} ${inGiochi() ? 'finito' : (inSerie() ? 'già vista' : 'già visto')} in questa lista.` : `Niente da ${inGiochi() ? 'giocare: sono già stati finiti tutti' : 'vedere: sono già stati visti tutti'} 🎉`}</div>`; return; }
   if (!lista.length){ box.innerHTML = `<div class="vuoto">${NESSUN_COSA()} corrisponde ai filtri.</div>`; return; }
   box.innerHTML = lista.map(v=>{
     const pst = v.posterUrl || '';
@@ -2015,13 +2042,16 @@ function apriFiltriSala(){
   const registi = [...new Set(S.profili.flatMap(p => listaDi(p).map(v => v.regista).filter(Boolean)))].sort();
   apriModale(`
     <h3>Filtri della serata</h3>
-    <div class="campo-r"><label>${inSerie() ? "Durata dell'episodio" : 'Durata massima'}</label>
+    <div class="campo-r"><label>${inGiochi() ? 'Impegno massimo' : (inSerie() ? "Durata dell'episodio" : 'Durata massima')}</label>
       <select class="inp" id="fs-dur">
-        <option value="">qualsiasi</option>${inSerie()
+        <option value="">qualsiasi</option>${inGiochi()
+          ? `<option value="5">≤ 5 ore</option><option value="10">≤ 10 ore</option><option value="20">≤ 20 ore</option>
+             <option value="40">≤ 40 ore</option><option value="60">≤ 60 ore</option>`
+          : (inSerie()
           ? `<option value="20">≤ 20'</option><option value="30">≤ 30'</option><option value="45">≤ 45'</option>
              <option value="60">≤ 1h</option><option value="90">≤ 1h 30'</option>`
           : `<option value="90">≤ 1h 30'</option><option value="105">≤ 1h 45'</option>
-             <option value="120">≤ 2h</option><option value="150">≤ 2h 30'</option><option value="180">≤ 3h</option>`}
+             <option value="120">≤ 2h</option><option value="150">≤ 2h 30'</option><option value="180">≤ 3h</option>`)}
       </select></div>
     <div class="campo-r"><label>Regista</label><input class="inp" id="fs-reg" list="fs-registi" placeholder="chiunque" value="${esc(f.regista)}" style="flex:1">
       <datalist id="fs-registi">${registi.map(r=>`<option value="${esc(r)}">`).join('')}</datalist></div>
@@ -2518,7 +2548,18 @@ async function arricchisciKeywordM(){
 const GENERI_ID_SERIE = {'Action & Adventure':10759, Animazione:16, Commedia:35, Crime:80,
   Documentario:99, Dramma:18, Famiglia:10751, Kids:10762, Mistero:9648, News:10763,
   Reality:10764, 'Sci-Fi & Fantasy':10765, Soap:10766, Talk:10767, 'War & Politics':10768, Western:37};
-const generiID = () => inSerie() ? GENERI_ID_SERIE : GENERI_ID;
+const generiID = () => inGiochi() ? {} : (inSerie() ? GENERI_ID_SERIE : GENERI_ID);
+// I generi di RAWG hanno uno slug che non si indovina dal nome ("RPG" → role-playing-games).
+let generiRawgCache = null;
+async function generiRAWG(){
+  if (generiRawgCache) return generiRawgCache;
+  generiRawgCache = new Map();
+  try {
+    const r = await fetch(`https://api.rawg.io/api/genres?key=${S.config.rawgKey}&page_size=40`);
+    if (r.ok) for (const g of ((await r.json()).results || [])) generiRawgCache.set(g.name, g.slug);
+  } catch(e){}
+  return generiRawgCache;
+}
 const GENERI_ID = {Azione:28, Avventura:12, Animazione:16, Commedia:35, Crime:80, Documentario:99,
   Dramma:18, Famiglia:10751, Fantasy:14, Storia:36, Horror:27, Musica:10402, Mistero:9648,
   Romance:10749, Fantascienza:878, 'Film TV':10770, Thriller:53, Guerra:10752, Western:37};
@@ -2537,7 +2578,8 @@ async function idKeyword(nomi){
 
 async function generaConsigliM(){
   const prof = S.cgProfilo = profiloGusto();
-  if (!S.config.tmdbKey){ toast('Manca la chiave TMDB (si imposta dal PC)', true); return; }
+  if (inGiochi() ? !S.config.rawgKey : !S.config.tmdbKey){
+    toast(`Manca la chiave ${inGiochi() ? 'RAWG' : 'TMDB'} (si imposta dal PC)`, true); return; }
   if (prof.n < 3){ S.cgPool = []; disegnaConsigliM(); return; }
   S.cgCaricamento = true; disegnaConsigliM();
   const stato = () => $('#cg-stato');
@@ -2550,6 +2592,25 @@ async function generaConsigliM(){
     const escludi = id => visti.has(id) || inLista.has(id) || recensiti.has(id) || S.cgScartati.has(id);
     const grezzi = new Map();
 
+    // I videogiochi hanno la loro libreria: senza questo ramo si chiedeva a TMDB, che di
+    // giochi non sa niente, e tornavano film a caso.
+    if (inGiochi()){
+      avanz('Cerco giochi che potrebbero piacerti…');
+      const mappa = await generiRAWG();
+      const q = new URLSearchParams({key:S.config.rawgKey, page_size:'40', ordering:'-metacritic'});
+      const gen = (f.generi.length ? f.generi : prof.top.generi).map(g => mappa.get(g)).filter(Boolean);
+      if (gen.length) q.set('genres', gen.join(','));
+      if (f.annoDa || f.annoA)
+        q.set('dates', `${f.annoDa || 1980}-01-01,${f.annoA || new Date().getFullYear()}-12-31`);
+      if (f.votoMin) q.set('metacritic', `${Math.round(f.votoMin * 10)},100`);
+      for (const pag of ['1','2']){
+        q.set('page', pag);
+        try {
+          const j = await (await fetch('https://api.rawg.io/api/games?'+q)).json();
+          for (const g of (j.results || [])) if (!escludi(g.id) && !grezzi.has(g.id)) grezzi.set(g.id, 1);
+        } catch(e){}
+      }
+    } else {
     avanz('Cerco film che potrebbero piacerti…');
     const p = new URLSearchParams({api_key:k, language:'it-IT', include_adult:'false',
       sort_by:'popularity.desc', 'vote_count.gte':'150', page:'1'});
@@ -2582,6 +2643,7 @@ async function generaConsigliM(){
       try { const j = await tmdbJSON(`https://api.themoviedb.org/3/${inSerie()?'tv':'movie'}/${r.tmdbId}/recommendations?api_key=${k}&language=it-IT&page=1`);
         for (const m of (j.results||[]).slice(0,10)) if (!escludi(m.id) && !grezzi.has(m.id)) grezzi.set(m.id, 1);
       } catch(e){}
+    }
     }
     const ids = [...grezzi.keys()].slice(0, 40);
     const film = [];
@@ -2723,7 +2785,7 @@ function modaleScartatiM(){
   const righe = [...S.cgScartati.entries()];
   apriModale(`
     <h3>🚫 Film esclusi dai consigli</h3>
-    <p class="meta">${righe.length ? 'Tocca «rimetti» per riproporlo in «Per te».' : `Non hai escluso ${inSerie() ? 'nessuna serie' : 'nessun film'}.`}</p>
+    <p class="meta">${righe.length ? 'Tocca «rimetti» per riproporlo in «Per te».' : `Non hai escluso ${NESSUN_COSA().toLowerCase()}.`}</p>
     ${righe.map(([id,tit])=>`<div class="sc-riga"><span class="t">${esc(tit)}</span><button class="linkbtn" data-rip="${id}" style="padding:2px 6px">rimetti</button></div>`).join('')}
     <div class="m-az">${righe.length?'<button class="ghost" id="sc-tutti" style="color:var(--rosso2)">Svuota</button>':''}<button class="primario" id="sc-ok">Chiudi</button></div>`);
   $('#sc-ok').onclick = chiudiModale;
@@ -2923,7 +2985,7 @@ function disegnaRecMobile(){
   const mio=sel===S.me.slug;
   $('#m-rec-nuova').style.display=mio?'':'none';
   const box=$('#m-rec-visti-box'); const nr=mio?filmVistiNonRecM():[];
-  if(nr.length){ box.style.display=''; box.querySelector('summary').textContent=`${inSerie() ? '📺 Serie viste non recensite' : '🎬 Film visti non recensiti'} (${nr.length})`;
+  if(nr.length){ box.style.display=''; box.querySelector('summary').textContent=`${datiModo(S.modo).ic} ${inGiochi() ? 'Giochi da recensire (finiti o in corso)' : (inSerie() ? 'Serie viste non recensite' : 'Film visti non recensiti')} (${nr.length})`;
     $('#m-rec-visti').innerHTML=nr.map(f=>`<button class="rec-nr" data-id="${f.tmdbId}">${esc(f.titolo)}</button>`).join('');
     $('#m-rec-visti').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>avviaEditorDaTMDBM(parseInt(b.dataset.id,10)));
   } else box.style.display='none';
