@@ -775,3 +775,107 @@ Sono **due situazioni diverse**, e vanno trattate come tali.
   nell'altezza che resta si limita la **larghezza**, non l'altezza —
   `max-width:calc((100dvh - 218px) * 16 / 9)`.
 
+
+## 16. Modalità Libri (2026-09-02, desktop e mobile)
+
+Quarta macro-categoria. Concept e decisioni: `CONCEPT-libri.md`. Qui solo ciò che è
+diverso dalle altre tre.
+
+### 16.1 Dati e libreria
+
+- Spazio separato `libri/`. Nel profilo: `listaLibri`, `generiPositiviLibri`,
+  `generiNegativiLibri`.
+- La libreria è **Open Library** (`openlibrary.org`), e **non vuole nessuna chiave**: è
+  l'unica delle quattro categorie che funziona appena installata.
+- Open Library identifica le opere con chiavi tipo `/works/OL12345W`. L'app maneggia
+  ovunque un id **numerico**: si tiene il numero e si ricompone la chiave quando serve
+  (`idLibro` / `chiaveLibro`). Così nessun'altra parte del codice cambia.
+- Campi normalizzati su quelli di un film: `title`→titolo, `first_publish_year`→anno,
+  **`number_of_pages_median`→durata (PAGINE, non minuti)**, `author_name`→regista,
+  `publisher`→paese, `subject`→generi, `ratings_average`→voto (etichetta *Open Library*).
+- I **generi** non arrivano da un'API: Open Library dà i «subject», che sono migliaia e in
+  tutte le lingue. Si riconoscono per parole chiave (`SUBJECT_LIBRI`, italiano e inglese) e
+  se ne tengono al massimo quattro.
+- I **consigli** non hanno un «discover»: si usa la ricerca per soggetto ordinata per voto,
+  scartando i libri con meno di cinque voti (una media su tre voti non dice niente).
+
+### 16.2 Le copertine che non ci sono
+
+Il punto dolente della categoria, e va conosciuto:
+
+- Chiedendo a `covers.openlibrary.org` una copertina che non esiste, **non risponde
+  errore: manda un PNG di 1×1 pixel trasparente**. L'immagine «si carica» e a video resta
+  un riquadro vuoto, indistinguibile da una copertina non ancora arrivata. Per questo tutte
+  le URL delle copertine portano **`?default=false`**, che fa rispondere 404: allora
+  l'`onerror` scatta e al suo posto si vede il segnaposto col titolo.
+- **Parecchi risultati non hanno proprio la copertina** (misurato: 6 su 10 cercando «il
+  nome della rosa»). Non sono libri veri: sono schede-moncone (una sola edizione, nessun
+  ISBN), traduzioni sparse o saggi *su* quel libro. Nella ricerca vanno **in fondo**
+  (ordinamento stabile, così il libro giusto resta primo) e mostrano il segnaposto.
+- Ripiego: quando Open Library non ce l'ha, la copertina si cerca su **Google Books**, una
+  volta sola e **solo aprendo il libro** (nell'elenco sarebbero dieci richieste a ogni
+  pausa di battitura). Attenzione: senza chiave si usa la quota **anonima**, condivisa fra
+  tutti quelli che chiamano senza chiave, e sta regolarmente esaurita — risponde 429. Con
+  una chiave propria (gratuita, in ⚙ Impostazioni) diventa affidabile. In ogni caso non può
+  far danno: o trova una copertina, o lascia le cose come stanno.
+
+### 16.3 La biblioteca e il volo del libro
+
+La stanza è uno **scaffale**: 96 dorsi sul PC, 72 sul telefono, ognuno un elemento con la
+sua altezza, il suo spessore e la sua tinta, qualcuno storto e qualche pila sdraiata. Si
+disegna **una volta sola** e poi sta fermo.
+
+Il libro scelto **esce da un dorso preciso** e vola in vetrina. Come è fatto, e perché:
+
+- **Due facce, nessuna scena 3D.** Il volume non è un oggetto a quattro facce dentro una
+  prospettiva: sono la **costa** e la **copertina**, messe una di fianco all'altra. La
+  costa sta *fuori* dal riquadro della copertina (`right:100%`), appoggiata al suo bordo
+  sinistro: è lì la cerniera, e la copertina si apre **verso destra** a partire da quel
+  bordo. Non si sovrappongono mai.
+- Le larghezze seguono **seno e coseno** di un angolo che scende da 90° a 0°: è la
+  geometria esatta di una rotazione, ottenuta con due `scaleX` che nessun browser sbaglia a
+  comporre. Più uno `skewY` che si riassorbe (lo scorcio) e una lama di luce.
+- Questo evita **per costruzione** i difetti che avevano accompagnato la versione 3D: il
+  retro non può vedersi perché **non esiste**; il libro non può essere inclinato perché
+  **non c'è prospettiva**; nessun `filter` può appiattire la scena perché **non c'è nessuna
+  scena**. Si muovono solo `transform` e `opacity`.
+- La **luce che scorre** prende gli *stessi identici fotogrammi* della copertina, quindi
+  non può staccarsene: la lama vera è un figlio che scorre dentro quel riquadro.
+- Il **posto di partenza** si pesca a caso fra i dorsi **ancora liberi** (un sacchetto:
+  `dorsiUsati`). Finché nello scaffale c'è posto nuovo due libri non escono mai dallo stesso
+  buco; finiti i posti, il sacchetto si riempie da capo. Prima era `tmdbId % 10`, e due
+  libri con id congruenti modulo dieci uscivano *sempre* dallo stesso.
+- Sul dorso ci va la **costa**, non il centro del riquadro: la costa sta fuori e a sinistra,
+  quindi il viaggio parte con uno scarto di mezza costa più mezza copertina.
+- Il volo **si rifà solo quando il libro cambia**. Un presente in più o un filtro
+  riscrivono lo schermo ma non sono un motivo per rifare l'animazione: se il libro è lo
+  stesso, si rimette dov'era (`posaFinaleLibro`).
+- La copertina **nasce chiusa e invisibile**: se nascesse visibile la si vedrebbe intera
+  per un istante, prima che il volo — che aspetta l'immagine decodificata — la riporti a
+  zero.
+- Sul **telefono** il meccanismo è lo stesso, trapiantato dal file del PC e adattato solo
+  nei nomi degli elementi. Se si corregge una delle due, si ricopia.
+
+### 16.4 «Dove vederlo» non c'è
+
+Nelle recensioni di **libri e videogiochi** il riquadro «dove vederlo» (streaming, disco,
+file sul PC, «rileva da TMDB») **non compare affatto**, e il rilevamento automatico non
+parte. Streaming e dischi non vogliono dire niente per un libro o un gioco; sarebbero gli
+store, che sono un'altra cosa e per ora non si fanno.
+
+## 17. Completamento dei videogiochi (2026-09-02, desktop e mobile)
+
+Un gioco non si finisce come un film: lo si finisce **più o meno**. La recensione se ne
+porta dietro la percentuale, in `completamento`.
+
+- Dove RAWG ha i **trofei** (`/games/{id}/achievements`) la percentuale la fanno i trofei
+  spuntati. Il chip **🏆 Platino** li spunta tutti in un colpo, e ricliccandolo li toglie.
+- **RAWG non ha il concetto di platino** — quello è PlayStation, RAWG dà la lista piatta
+  degli achievement. Il Platino qui non è un trofeo dell'elenco: è l'interruttore.
+- Dove i trofei non ci sono, la percentuale la mette a mano una **barra da 0 a 100**.
+- Il campo `totale` c'è **solo** quando la percentuale viene dai trofei: finché non c'è,
+  comanda il valore della barra. Così una barra già compilata non si azzera se più tardi
+  RAWG comincia a dare i trofei di quel gioco.
+- Il **simbolino** è un anello che si riempie con la percentuale, con dentro il numero; al
+  100% diventa tutto oro e al posto del numero c'è la coppa. Sta accanto al gioco nella
+  scheda della recensione e nel blocco dell'editor.

@@ -40,6 +40,160 @@
     --poltrona-scura:#38286b; --posto-vuoto:#2b1f4d; --posto-bordo:#0d0817;
     --schermo-off:#0b0714;
   }
+  /* la biblioteca: verde notte e legno. L'oro resta l'accento. */
+  :root[data-modo="libri"]{
+    --bg:#101711; --bg2:#16201a; --card:#1b2a21; --linea:#2f4a3a;
+    --rosso:#4d7a5a; --rosso2:#6fa583;
+    --testo:#f0ece0; --dim:#b3bda9; --ok:#7fb59a;
+    --su-oro:#16211a; --sel:#22352a; --velo-badge:rgba(10,16,12,.85);
+    --poltrona-scura:#2b4535; --posto-vuoto:#25392c; --posto-bordo:#0a100c;
+    --schermo-off:#0b120d;
+  }
+  :root[data-modo="libri"] .cartellone .tenda{display:none}
+  /* in biblioteca non c'è nessuna accensione da mostrare: c'è il volo del libro */
+  :root[data-modo="libri"] .tv-spenta{display:none}
+  /* sopra i dorsi il testo non si leggerebbe: gli si mette dietro un velo */
+  :root[data-modo="libri"] .cartellone .msg{color:var(--testo); text-shadow:0 1px 3px #000; z-index:6;
+    background:radial-gradient(ellipse 70% 42% at 50% 50%, rgba(8,12,9,.92), rgba(8,12,9,.72) 55%, transparent 78%)}
+  :root[data-modo="libri"] .cartellone{border:7px solid #241810; border-radius:4px;
+    box-shadow:inset 0 0 90px rgba(0,0,0,.7), 0 16px 38px rgba(0,0,0,.55)}
+  :root[data-modo="libri"] .cartellone .sfondo{display:none}
+  /* lo scaffale sta nel DOM DOPO il contenuto: senza questo gli finirebbe sopra */
+  :root[data-modo="libri"] .cartellone-inner{z-index:2;
+    /* Punto di vista LONTANO e CENTRATO. Da vicino e di sbieco (900px al 30%) un volume
+       girato di 90° all'altro capo dello scaffale veniva proiettato pendente, e sembrava
+       partire storto per poi raddrizzarsi. */
+    /* Niente prospettiva: il volo non è più tridimensionale, e senza prospettiva il libro
+       è perpendicolare allo schermo dovunque si trovi. */
+    }
+  :root[data-modo="libri"] .cartellone .velo{z-index:1;
+    background:linear-gradient(90deg,rgba(12,10,7,.18) 0 30%,rgba(12,10,7,.70) 58%),
+               radial-gradient(120% 90% at 50% -10%, rgba(255,214,150,.10), transparent 62%)}
+
+  /* ── il mobile ── */
+  .libreria{display:none}
+  :root[data-modo="libri"] .libreria{display:flex; position:absolute; inset:0; z-index:0;
+    flex-direction:column; justify-content:space-between; padding:2.2% 3.4%;
+    background:
+      /* le venature del legno di fondo */
+      repeating-linear-gradient(90deg, rgba(0,0,0,.14) 0 2px, transparent 2px 7px),
+      linear-gradient(180deg,#2b1e14,#1d150e 55%,#160f0a);
+    /* si anima SOLO l'opacità: è l'unica cosa che il browser sa comporre senza ridisegnare */
+    transition:opacity .6s ease; contain:paint}
+  /* i montanti laterali del mobile */
+  :root[data-modo="libri"] .libreria::before,
+  :root[data-modo="libri"] .libreria::after{content:''; position:absolute; top:0; bottom:0; width:2.4%;
+    background:linear-gradient(90deg,#3a2818,#241810 60%,#171009);
+    box-shadow:inset 0 0 20px rgba(0,0,0,.55)}
+  :root[data-modo="libri"] .libreria::before{left:0}
+  :root[data-modo="libri"] .libreria::after{right:0; background:linear-gradient(270deg,#3a2818,#241810 60%,#171009)}
+  /* La gemella sfocata: la sfocatura è FISSA, quindi viene calcolata una volta sola e resta
+     nel suo strato. A libro scelto le due si scambiano in dissolvenza — nessun filtro da
+     ricalcolare mentre il libro vola. */
+  :root[data-modo="libri"] .libreria.sfocata{opacity:0;
+    filter:blur(6px) brightness(.42) saturate(.85);
+    /* si fa promuovere a strato SUBITO, quando si entra in biblioteca: se aspettasse il
+       momento in cui diventa visibile, dipingerebbe 96 dorsi sfocati proprio mentre il
+       libro parte */
+    will-change:opacity}
+  /* Nella copia sfocata i dorsi perdono filetti ed etichetta: a 6px di sfocatura non si
+     vedono, ma costerebbero lo stesso quattro gradienti per ciascuno. Resta il volume. */
+  :root[data-modo="libri"] .libreria.sfocata .dorso{
+    background:linear-gradient(90deg, rgba(0,0,0,.42) 0 7%, var(--c) 7% 40%,
+      color-mix(in srgb, var(--c) 88%, white) 40% 55%, var(--c) 55% 84%,
+      rgba(0,0,0,.34) 84% 100%)}
+  /* niente scale sulla copia: sposterebbe i suoi dorsi rispetto a quelli della copia nitida,
+     che è quella su cui si misura la partenza del volo — e il libro partirebbe fuori posto */
+  :root[data-modo="libri"] .cartellone.aperto .libreria.sfocata{opacity:1}
+  :root[data-modo="libri"] .cartellone.aperto .libreria:not(.sfocata){opacity:0}
+
+  .ripiano{position:relative; display:flex; align-items:flex-end; gap:1.5px; height:23%; padding:0 1%}
+  /* la mensola: piano chiaro davanti, ombra sotto, come una tavola vista di taglio */
+  .ripiano::after{content:''; position:absolute; left:0; right:0; bottom:-5px; height:5px;
+    background:linear-gradient(180deg,#5a3f28,#33210f);
+    box-shadow:0 4px 7px rgba(0,0,0,.6)}
+  /* l'ombra che i volumi fanno sul fondo del ripiano */
+  .ripiano::before{content:''; position:absolute; left:0; right:0; bottom:0; height:60%;
+    background:linear-gradient(180deg,transparent,rgba(0,0,0,.4)); pointer-events:none}
+
+  /* ── il dorso ── */
+  /* Un dorso = UN elemento. Filetti della rilegatura, etichetta del titolo e volume stanno
+     tutti dentro il `background`: il browser li dipinge in un passaggio solo. Prima erano
+     tre riquadri e due ombre per ciascuno — per 96 dorsi, e tutto da rasterizzare una
+     seconda volta per la copia sfocata. */
+  .dorso, .copertina-libro .costa{
+    background:
+      linear-gradient(rgba(0,0,0,.24),rgba(0,0,0,.24)) 50% 46%/68% 16% no-repeat,
+      linear-gradient(rgba(226,196,140,.5),rgba(226,196,140,.5)) 50% 15%/76% 8% no-repeat,
+      linear-gradient(rgba(226,196,140,.34),rgba(226,196,140,.34)) 50% 36%/76% 7% no-repeat,
+      linear-gradient(180deg,rgba(255,255,255,.22),transparent) 50% 0/100% 5px no-repeat,
+      linear-gradient(90deg, rgba(0,0,0,.42) 0 7%, var(--c) 7% 26%,
+        color-mix(in srgb, var(--c) 88%, white) 26% 40%, var(--c) 40% 84%,
+        rgba(0,0,0,.34) 84% 100%)}
+  .dorso{flex:var(--w) 1 0; min-width:0; height:var(--h); border-radius:1.5px 1.5px 0 0;
+    transform:rotate(var(--rot)); transform-origin:bottom center}
+  /* La transizione sta SOLO sul volume che se ne va: dichiararla su tutti e 96 significa
+     tenerne in vita 96 durante il volo. Il ritardo la fa cadere dentro l'accensione: il
+     dorso piatto si spegne proprio mentre il volume in rilievo si illumina sopra di lui. */
+  .dorso.preso{transition:opacity .38s ease .16s}
+  /* qualche volume sdraiato sopra gli altri, come in una libreria vera */
+  .dorso.sdraiato{align-self:flex-end; height:auto; flex:var(--w) 0 0;
+    border-radius:2px; box-shadow:0 2px 5px rgba(0,0,0,.5)}
+  .pila{position:relative; align-self:flex-end; display:flex; flex-direction:column-reverse;
+    gap:2px; flex:var(--w) 0 0; margin-left:4px}
+  .pila span{height:7px; border-radius:2px; background:var(--c);
+    box-shadow:inset 0 2px 0 -1px rgba(255,255,255,.25), 0 1px 3px rgba(0,0,0,.5)}
+  /* il volume scelto lascia il suo posto vuoto */
+  :root[data-modo="libri"] .cartellone.aperto .dorso.preso{opacity:0}
+
+  /* ── il volume che vola ──
+     Due facce e nient'altro: la costa e la copertina, messe UNA DI FIANCO ALL'ALTRA. La
+     costa sta fuori dal riquadro, appoggiata al suo bordo sinistro; la copertina si apre
+     verso destra a partire da quel bordo. Così si vedono tutte e due — la copertina non
+     copre la costa — ed è quello che fa leggere il movimento come una rotazione.
+     Si scambiano restringendosi e aprendosi (lo fa fotogrammiApertura in JavaScript), e
+     questo basta a leggere come una rotazione. Qui dentro non c'è niente di tridimensionale:
+     niente preserve-3d, niente prospettiva, niente backface, nessun retro. I difetti che
+     quelle cose portavano non sono corretti — non possono proprio esistere. */
+  .copertina-libro{position:absolute; left:5%; top:50%; width:23%; aspect-ratio:2/3;
+    max-height:84%; z-index:3; transform:translateY(-50%); will-change:transform}
+  /* la copertina si apre verso destra, dalla cerniera dove finisce la costa */
+  /* Nasce chiusa e invisibile: è l'animazione ad aprirla. Se nascesse visibile si vedrebbe
+     per un istante intera, prima che il volo (che aspetta la copertina decodificata) la
+     riporti a zero — il lampo. */
+  .copertina-libro img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    display:block; z-index:2; transform-origin:left center; border-radius:1px 5px 5px 1px;
+    transform:scaleX(0); opacity:0;
+    box-shadow:0 16px 38px rgba(0,0,0,.72), inset 0 0 0 1px rgba(255,255,255,.06);
+    will-change:transform}
+  /* il taglio delle pagine, sul lato lontano dalla costa */
+  .copertina-libro img + .riflesso::after{content:''; position:absolute; right:0; top:2%; bottom:2%;
+    width:5px; border-radius:0 4px 4px 0;
+    background:repeating-linear-gradient(180deg,rgba(255,255,255,.18) 0 1px,rgba(0,0,0,.12) 1px 3px)}
+  /* la costa: stessa altezza del libro, larga quanto il dorso da cui viene */
+  /* `right:100%` la mette FUORI dal riquadro, attaccata al suo bordo sinistro: è lì la
+     cerniera del libro, e da lì la copertina si apre verso destra. Sotto non ci finisce mai. */
+  .copertina-libro .costa{position:absolute; right:100%; top:0; bottom:0; z-index:1;
+    --c:var(--tinta-costa,#6b3b2a); width:var(--spessore,14px);
+    transform-origin:right center; border-radius:2px 0 0 2px; will-change:transform}
+  .copertina-libro .costa .luce{position:absolute; inset:0; opacity:0; pointer-events:none;
+    border-radius:inherit; will-change:opacity;
+    background:linear-gradient(90deg,rgba(255,240,214,.35),rgba(255,246,228,.95) 45%,rgba(255,240,214,.4))}
+  /* la lama di luce che scorre sulla copertina mentre si apre: è il dettaglio che vende la
+     rotazione, perché su una superficie che gira la luce si sposta */
+  /* Il riquadro della luce prende gli STESSI fotogrammi della copertina: si apre con lei,
+     dello stesso tanto e nello stesso istante, quindi non se ne può staccare. La lama vera
+     è il figlio, che ci scorre dentro ed è tagliato dai suoi bordi. */
+  .copertina-libro .riflesso{position:absolute; inset:0; z-index:3; opacity:0;
+    pointer-events:none; overflow:hidden; border-radius:1px 5px 5px 1px;
+    transform-origin:left center; will-change:transform,opacity}
+  .copertina-libro .riflesso i{position:absolute; top:-10%; bottom:-10%; left:-60%; width:120%;
+    display:block; will-change:transform,opacity;
+    background:linear-gradient(105deg,transparent 34%,rgba(255,248,232,.62) 50%,transparent 66%)}
+
+  :root[data-modo="libri"] .cartellone .dentro{left:33%; right:5%; width:auto; bottom:auto; top:50%;
+    transform:translateY(-50%)}
+  :root[data-modo="libri"] .cartellone .rango{left:auto; right:5%; top:6%}
   :root[data-modo="giochi"] .cartellone .tenda{display:none}
   :root[data-modo="giochi"] .cartellone{border:5px solid var(--posto-bordo);
     box-shadow:0 0 0 1px var(--linea), 0 0 60px rgba(139,111,240,.16)}
@@ -261,6 +415,29 @@
   .rec-bar{display:flex; gap:6px; align-items:center; margin-bottom:10px; flex-wrap:wrap}
   .rec-bar #m-rec-q{flex:1; min-width:110px; background:var(--bg2); border:1px solid var(--linea); color:var(--testo); border-radius:9px; padding:8px 10px; font:inherit; font-size:13px}
   .rec-galleria{display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:10px}
+  /* completamento dei videogiochi: un anello che si riempie, d'oro quando è al 100% */
+  .compl{position:relative; display:inline-flex; align-items:center; justify-content:center;
+    width:26px; height:26px; border-radius:50%; flex:0 0 auto; vertical-align:middle;
+    background:conic-gradient(var(--oro) calc(var(--p) * 1%), rgba(255,255,255,.10) 0)}
+  .compl::before{content:''; position:absolute; inset:3px; border-radius:50%; background:var(--card)}
+  .compl b{position:relative; z-index:1; font-size:10px; font-weight:700; color:var(--dim);
+    font-style:normal; line-height:1}
+  .compl.platino{background:conic-gradient(var(--oro2) 100%, var(--oro2) 0)}
+  .compl.platino::before{background:var(--oro2)}
+  .compl.platino b{font-size:13px; color:var(--su-oro)}
+  .compl.angolo{position:absolute; top:5px; right:5px; z-index:2; width:24px; height:24px;
+    box-shadow:0 1px 5px rgba(0,0,0,.6)}
+  .compl.angolo::before{background:var(--velo-badge)}
+  .compl-testa{display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin:6px 0}
+  .compl-num{font-size:12.5px; color:var(--dim)}
+  .compl-barra{display:flex; align-items:center; gap:10px; margin:6px 0}
+  .compl-barra input[type=range]{flex:1; min-width:100px; accent-color:var(--oro)}
+  .compl-lista{max-height:170px; overflow:auto; border:1px solid var(--linea); border-radius:8px;
+    padding:4px; display:flex; flex-direction:column; gap:1px}
+  .compl-t{display:flex; align-items:flex-start; gap:7px; font-size:12.5px; color:var(--dim);
+    padding:4px 6px; border-radius:6px}
+  .compl-t.preso{color:var(--testo)}
+  .compl-t input{margin:1px 0 0; accent-color:var(--oro); flex:0 0 auto}
   .rec-card2{cursor:pointer; border-radius:10px; overflow:hidden; background:var(--card); border:1px solid var(--linea)}
   .rec-poster2{position:relative; aspect-ratio:2/3; background:var(--bg2)}
   .rec-poster2 img{width:100%; height:100%; object-fit:cover; display:block}
@@ -534,7 +711,7 @@
     <section class="schermo" id="sc-app">
       <button class="upd" id="m-upd" hidden></button>
       <div class="segmenti" id="segmenti">
-        <button class="seg" data-pan="sala"><span data-film="🎬 Sala" data-serie="📺 Sala" data-giochi="🎮 Sala">🎬 Sala</span></button>
+        <button class="seg" data-pan="sala"><span data-film="🎬 Sala" data-serie="📺 Sala" data-giochi="🎮 Sala" data-libri="📚 Sala">🎬 Sala</span></button>
         <button class="seg on" data-pan="lista">🔖 Lista</button>
         <button class="seg" data-pan="recensioni">📝 Recensioni</button>
         <button class="seg" data-pan="consigli">✨ Per te</button>
@@ -543,6 +720,10 @@
       <div id="pan-sala" hidden>
         <div class="sezione"><span class="grow">Stasera</span><button class="f-btn" id="m-btn-filtri-sala">≡ filtri</button></div>
         <div class="cartellone" id="m-schermo">
+          <!-- la biblioteca: lo scaffale nitido e la sua gemella già sfocata, che si
+               scambiano in dissolvenza quando il libro parte (vedi disegnaLibreriaM) -->
+          <div class="libreria" id="m-libreria"></div>
+          <div class="libreria sfocata" id="m-libreria-sfocata"></div>
           <div class="cartellone-inner" id="m-schermo-inner"></div>
           <div class="tenda sx"></div><div class="tenda dx"></div><div class="tv-spenta"><i></i></div>
         </div>
@@ -560,8 +741,8 @@
         <div id="risultati"></div>
         <div class="sezione"><span class="grow">La mia lista <span id="conta-lista"></span></span><button class="f-btn" id="btn-filtri">≡ filtri</button></div>
         <div class="sotto-menu" id="m-lista-tabs">
-          <button class="smtab on" data-vista="daVedere"><span data-film="Da vedere" data-giochi="Da giocare">Da vedere</span> <span class="n" id="m-conta-dav"></span></button>
-          <button class="smtab" data-vista="visti"><span data-film="Già visti" data-serie="Già viste" data-giochi="Già finiti">Già visti</span> <span class="n" id="m-conta-vis"></span></button>
+          <button class="smtab on" data-vista="daVedere"><span data-film="Da vedere" data-giochi="Da giocare" data-libri="Da leggere">Da vedere</span> <span class="n" id="m-conta-dav"></span></button>
+          <button class="smtab" data-vista="visti"><span data-film="Già visti" data-serie="Già viste" data-giochi="Già finiti" data-libri="Già letti">Già visti</span> <span class="n" id="m-conta-vis"></span></button>
         </div>
         <div id="mia-lista"></div>
       </div>
@@ -579,7 +760,7 @@
           <input id="m-rec-q" type="search" placeholder="🔎 cerca…" autocomplete="off">
           <select id="m-rec-ordina" class="inp">
             <option value="modificato">Ultima modifica</option>
-            <option value="ultimaVisione" data-film="Ultima visione" data-giochi="Ultima partita">Ultima visione</option>
+            <option value="ultimaVisione" data-film="Ultima visione" data-giochi="Ultima partita" data-libri="Ultima lettura">Ultima visione</option>
             <option value="votoPersonale">Voto</option>
             <option value="titolo">Titolo</option>
             <option value="anno">Anno</option>
@@ -600,12 +781,12 @@
 <button class="bug-btn" id="m-segnala" style="display:none">🐞 Segnala</button>
 <button class="modo-btn" id="m-modo" style="display:none"><span id="m-modo-ic">🎬</span> <span id="m-modo-nome">Film</span></button>
 <div class="backdrop" id="backdrop"><div class="modale" id="modale"></div></div>
-<div id="m-luci"><div data-film="🎬 Buona visione!" data-serie="📺 Buona visione!" data-giochi="🎮 Buona partita!">🎬 Buona visione!</div><small id="m-luci-tit"></small></div>
+<div id="m-luci"><div data-film="🎬 Buona visione!" data-serie="📺 Buona visione!" data-giochi="🎮 Buona partita!" data-libri="📚 Buona lettura!">🎬 Buona visione!</div><small id="m-luci-tit"></small></div>
 <div class="toast" id="toast"></div>
 
 <script>
 /* ══════════════════ STATO ══════════════════ */
-const APP_VERSION = '1.7.10';
+const APP_VERSION = '1.7.11';
 const CONFIG_DEFAULT = { bonusCoralita:0.10, capCoralita:0.30, passoSoddisfazione:0.15, bonusCoppia:1.15, sogliaSpareggio:0.02 };
 const S = { treeUri:null, config:{}, profili:[], me:null, storico:[], modo:'film', gruppo:null,
   filtri:{ q:'', ordina:'aggiunto', dir:'desc', minDes:0, genere:[], annoDa:null, annoA:null },
@@ -615,6 +796,7 @@ const S = { treeUri:null, config:{}, profili:[], me:null, storico:[], modo:'film
   presenti:new Set(), fSala:{ durata:null, genere:[], regista:'' }, proiettato:null, tuttiSala:[],
   segnalazioni:[], segnStato:{}, segnEliminate:[], aggiornamento:null,
   providersCache:new Map(),   // tmdbId → [servizi streaming] da TMDB (sessione)
+  trofeiCache:new Map(),      // id gioco → [trofei] da RAWG (sessione: richieste care)
   // consigli «Per te»
   cgPool:[], cgLista:[], cgProfilo:null, cgCaricamento:false, cgFirma:'',
   cgScartati:new Map(), cgRipristinati:new Set(),
@@ -640,18 +822,30 @@ const MODI = [
    desc:'Il salotto: divano, TV, e si riprende da dove eravate'},
   {id:'giochi', ic:'🎮', nome:'Videogiochi', base:'giochi',
    desc:'La postazione: sedie, monitor, e si riprende la partita'},
+  {id:'libri', ic:'📚', nome:'Libri', base:'libri',
+   desc:'La biblioteca: poltrone, lampada, e si riprende il segno'},
 ];
 // I cassetti che ogni categoria si porta dentro il profilo (gemello del desktop).
 const CHIAVI_MODO = {
   film:   {lista:'lista',       gpos:'generiPositivi',       gneg:'generiNegativi'},
   serie:  {lista:'listaSerie',  gpos:'generiPositiviSerie',  gneg:'generiNegativiSerie'},
   giochi: {lista:'listaGiochi', gpos:'generiPositiviGiochi', gneg:'generiNegativiGiochi'},
+  libri:  {lista:'listaLibri',  gpos:'generiPositiviLibri',  gneg:'generiNegativiLibri'},
 };
 const chiaviModo = () => CHIAVI_MODO[S.modo] || CHIAVI_MODO.film;
 const datiModo = id => MODI.find(m => m.id === id) || MODI[0];
 const modoValido = id => MODI.some(m => m.id === id) ? id : MODI[0].id;
 const inSerie = () => S.modo === 'serie';
 const inGiochi = () => S.modo === 'giochi';
+const inLibri = () => S.modo === 'libri';
+/* «Ha lo stato»: le categorie in cui una voce non si consuma in una sera e resta in lista
+   finché qualcuno non la segna finita — videogiochi e libri. Meta' dei rami che dicevano
+   inGiochi() parlavano in realtà di QUESTO: scritti col nome sbagliato, avrebbero mandato
+   i libri dalla parte dei film. Gemello del desktop. */
+const conStato = () => inGiochi() || inLibri();
+/* «Dove vederlo» parla di film e serie: streaming, disco, file sul PC. Per un gioco
+   o un libro non vuole dire niente — sarebbero gli store, che sono un'altra cosa. */
+const conDoveVederlo = () => !inGiochi() && !inLibri();
 /* Gruppi di visione: fino a cinque, nel PROPRIO profilo, per non vedere in Sala tutti i
    profili della cartella quando diventano tanti. Chi lo attiva vede sempre sé stesso. */
 // Recensioni di serie: tutta insieme (stagione assente) oppure una per stagione.
@@ -690,6 +884,7 @@ const PAROLE = {
   film:   {cosa:'film',  un:'un film',   il:'il film',  nessun:'Nessun film',   i:'i film',   fatto:'visto'},
   serie:  {cosa:'serie', un:'una serie', il:'la serie', nessun:'Nessuna serie', i:'le serie', fatto:'vista'},
   giochi: {cosa:'gioco', un:'un gioco',  il:'il gioco', nessun:'Nessun gioco',  i:'i giochi', fatto:'giocato'},
+  libri:  {cosa:'libro', un:'un libro',  il:'il libro', nessun:'Nessun libro',  i:'i libri',  fatto:'letto'},
 };
 const parole      = () => PAROLE[S.modo] || PAROLE.film;
 const COSA        = () => parole().cosa;
@@ -717,7 +912,43 @@ const generiNeg = p => (p && p[chiaveGeneriNeg()]) || [];
 const GENERI_RAWG = ['Action','Adventure','RPG','Shooter','Strategy','Simulation','Puzzle',
   'Arcade','Platformer','Racing','Sports','Fighting','Indie','Casual','Family','Card',
   'Board Games','Educational','Massively Multiplayer'];
-const generiTMDB = () => inGiochi() ? GENERI_RAWG : (inSerie() ? GENERI_TMDB_SERIE : GENERI_TMDB);
+// I generi dei libri non arrivano da un'API: Open Library dà i «subject», che sono
+// migliaia e in tutte le lingue. Si riconoscono per parole chiave (gemello del desktop).
+const GENERI_LIBRI = ['Romanzo','Giallo','Thriller','Fantascienza','Fantasy','Horror',
+  'Storico','Avventura','Rosa','Biografia','Saggio','Storia','Filosofia','Poesia',
+  'Classici','Ragazzi','Fumetti','Viaggi','Scienza','Umorismo'];
+const SUBJECT_LIBRI = {
+  'Romanzo':['fiction','novel','romanzo','literature'],
+  'Giallo':['mystery','detective','crime','giallo','poliziesco'],
+  'Thriller':['thriller','suspense'],
+  'Fantascienza':['science fiction','fantascienza','sci-fi','dystopia','distopia'],
+  'Fantasy':['fantasy','fantastico','magic'],
+  'Horror':['horror','ghost','orrore'],
+  'Storico':['historical fiction','romanzo storico'],
+  'Avventura':['adventure','avventura'],
+  'Rosa':['romance','love stories','rosa'],
+  'Biografia':['biography','autobiograph','memoir','biografia'],
+  'Saggio':['essay','nonfiction','non-fiction','saggio'],
+  'Storia':['history','storia','historia'],
+  'Filosofia':['philosophy','filosofia'],
+  'Poesia':['poetry','poesia','poems'],
+  'Classici':['classic','classici','classical literature'],
+  'Ragazzi':['juvenile','children','ragazzi','young adult'],
+  'Fumetti':['comic','graphic novel','fumetti','manga'],
+  'Viaggi':['travel','viaggi'],
+  'Scienza':['science','scienza','mathematics','physics'],
+  'Umorismo':['humor','humour','comic fiction','umorismo'],
+};
+function generiDaSubject(subjects){
+  const testo = (subjects || []).join(' | ').toLowerCase();
+  const out = [];
+  for (const [gen, chiavi] of Object.entries(SUBJECT_LIBRI))
+    if (chiavi.some(k => testo.includes(k))) out.push(gen);
+  return out.slice(0, 4);
+}
+// generiTMDB() torna un ELENCO di nomi; generiID() una MAPPA nome→id di TMDB.
+const generiTMDB = () => inLibri() ? GENERI_LIBRI
+  : (inGiochi() ? GENERI_RAWG : (inSerie() ? GENERI_TMDB_SERIE : GENERI_TMDB));
 // valore corrente di un token: gli SVG scrivono i colori nell'attributo, non li ereditano
 const tema = (nome, ripiego = '#000') =>
   (getComputedStyle(document.documentElement).getPropertyValue(nome) || ripiego).trim() || ripiego;
@@ -767,7 +998,8 @@ async function cambiaModoM(m){
   S.cgPool = []; S.cgLista = []; S.cgProfilo = null; S.cgFirma = '';
   S.providersCache = new Map();
   S.recUtente = null; S.listaVista = 'daVedere';
-  caricamento(true, inGiochi() ? 'Accendo la postazione…' : (inSerie() ? 'Apro il salotto…' : 'Apro la sala…'));
+  caricamento(true, inLibri() ? 'Apro la biblioteca…'
+    : (inGiochi() ? 'Accendo la postazione…' : (inSerie() ? 'Apro il salotto…' : 'Apro la sala…')));
   try {
     await caricaCartella(S.treeUri);
     // caricaCartella riporta alla scelta del profilo: rientro con quello di prima
@@ -813,12 +1045,21 @@ function apriModale(html){ $('#modale').innerHTML=html; $('#backdrop').classList
 function chiudiModale(){ $('#backdrop').classList.remove('on'); if (typeof wlChiudi === 'function') wlChiudi(); }
 $('#backdrop').addEventListener('click', e=>{ if(e.target.id==='backdrop') chiudiModale(); });
 
-// Per film e serie sono minuti; per un videogioco sono le ORE per finirlo (RAWG playtime).
-const fmtMin = m => inGiochi()
+// Per film e serie sono minuti; per un videogioco le ORE per finirlo (RAWG playtime);
+// per un libro le PAGINE. Il campo «durata» è lo stesso, l'unità la decide la categoria.
+const fmtMin = m => inLibri()
+  ? (m ? m+' pagine' : '—')
+  : (inGiochi()
   ? (m ? '~'+m+' ore' : '—')
-  : (m ? (m < 60 ? m+"'" : Math.floor(m/60)+'h'+String(m%60).padStart(2,'0')) : '—');
+  : (m ? (m < 60 ? m+"'" : Math.floor(m/60)+'h'+String(m%60).padStart(2,'0')) : '—'));
 // L'etichetta della fonte del voto: cambia con la libreria da cui arriva.
-const fonteVoto = f => ({imdb:'IMDb', metacritic:'Metacritic', rawg:'RAWG'})[(f||{}).votoFonte] || 'TMDB';
+const fonteVoto = f => ({imdb:'IMDb', metacritic:'Metacritic', rawg:'RAWG',
+  openlibrary:'Open Library'})[(f||{}).votoFonte] || 'TMDB';
+/* La copertina di un risultato di ricerca. `poster_path` è il campo di TMDB: RAWG e Open
+   Library non ce l'hanno e mettono l'indirizzo intero in `posterUrl`. Guardando solo il
+   primo, i giochi e i libri restavano senza copertina nell'elenco della ricerca. */
+const miniaturaRisultato = r => r.posterUrl
+  || (r.poster_path ? 'https://image.tmdb.org/t/p/w185' + r.poster_path : '');
 // data breve in formato europeo gg/mm/aaaa (deterministico)
 const dataBreve = d => { d = String(d||'').slice(0,10); const m = d.match(/^(\d{4})-(\d\d)-(\d\d)$/); return m ? `${m[3]}/${m[2]}/${m[1]}` : d; };
 const stelle = n => '★★★★★☆☆☆☆☆'.slice(5-(n||0), 10-(n||0));
@@ -1111,9 +1352,47 @@ function postoSediaSVG(colore, presente){
       stroke-linecap="round" opacity=".85"/>` : ''}
   </svg>`;
 }
+/* La poltrona da lettura: conchiglia rotonda che si chiude ai lati, seduta ovale davanti.
+   Stessa firma e stesso viewBox degli altri posti — la platea non se ne accorge. */
+function postoLetturaSVG(colore, presente){
+  const uid = ++poltronaUid;
+  const stoffa = presente ? colore : tema('--posto-vuoto');
+  const scuro = tema('--poltrona-scura');
+  const guscio = presente ? tinta(colore, -0.36) : scuro;
+  const bordo = tema('--posto-bordo');
+  return `<svg viewBox="0 0 100 88">
+    <defs>
+      <radialGradient id="mvnl${uid}" cx="50%" cy="30%" r="72%">
+        <stop offset="0%" stop-color="${tinta(guscio, 0.2)}"/>
+        <stop offset="100%" stop-color="${tinta(guscio, -0.22)}"/>
+      </radialGradient>
+      <radialGradient id="mvnm${uid}" cx="50%" cy="35%" r="75%">
+        <stop offset="0%" stop-color="${tinta(stoffa, 0.16)}"/>
+        <stop offset="100%" stop-color="${tinta(stoffa, -0.16)}"/>
+      </radialGradient>
+    </defs>
+    <g stroke="${bordo}" stroke-width="2.5" stroke-linejoin="round"${presente ? '' : ' opacity=".85"'}>
+      <path d="M50 4 a34 34 0 0 1 34 34 v14 a12 12 0 0 1 -12 12 h-44 a12 12 0 0 1 -12 -12
+               v-14 a34 34 0 0 1 34 -34 z" fill="url(#mvnl${uid})"/>
+      <path d="M50 14 a24 26 0 0 1 24 26 v6 a6 6 0 0 1 -6 6 h-36 a6 6 0 0 1 -6 -6
+               v-6 a24 26 0 0 1 24 -26 z" fill="none"
+            stroke="${tinta(guscio, 0.24)}" stroke-width="1.5" opacity=".65"/>
+      <ellipse cx="50" cy="63" rx="27" ry="11" fill="url(#mvnm${uid})"/>
+    </g>
+    ${presente ? `<g fill="${bordo}" stroke="${colore}" stroke-width="2.2" stroke-linejoin="round">
+      <ellipse cx="50" cy="55" rx="19" ry="8.5"/>
+      <circle cx="50" cy="45" r="11"/>
+    </g>` : ''}
+  </svg>`;
+}
+// la platea non sa quale disegno sta usando: cambia solo chi disegna il singolo posto
+const POSTI = {
+  serie: (col, pres, pos) => postoDivanoSVG(col, pres, pos),
+  giochi:(col, pres) => postoSediaSVG(col, pres),
+  libri: (col, pres) => postoLetturaSVG(col, pres),
+};
 const postoSVG = (colore, presente, pos) =>
-  inSerie() ? postoDivanoSVG(colore, presente, pos)
-    : (inGiochi() ? postoSediaSVG(colore, presente) : poltronaSVG(colore, presente));
+  (POSTI[S.modo] || ((col, pres) => poltronaSVG(col, pres)))(colore, presente, pos);
 
 function disegnaPlateaM(){
   const box = $('#m-platea'); if (!box) return;
@@ -1180,7 +1459,12 @@ function entra(slug){
   LS.set('sbloccato', slug);   // d'ora in poi si entra diretto; la password si richiede solo al cambio
   caricaConsigliM();          // qui S.me e' noto: prima non si puo' leggere il suo file
   S.listaVista = 'daVedere';
-  if (!S.config.tmdbKey) toast('Manca la chiave TMDB in config.json (si imposta dal PC).', true);
+  // La chiave che serve dipende dalla categoria: i giochi ne vogliono una loro e i libri
+  // nessuna (Open Library non la chiede). Guardando sempre TMDB, entrando in biblioteca
+  // compariva un richiamo per una chiave che lì non serve a niente.
+  const chiaveMancante = inLibri() ? '' : (inGiochi() ? (S.config.rawgKey ? '' : 'RAWG')
+                                                      : (S.config.tmdbKey ? '' : 'TMDB'));
+  if (chiaveMancante) toast(`Manca la chiave ${chiaveMancante} in config.json (si imposta dal PC).`, true);
   $('#hdr').style.display = 'flex';
   $('#m-modo').style.display = 'flex';
   applicaModo();
@@ -1222,7 +1506,90 @@ async function dettagliGioco(id){
     locandina:null, sfondo:null
   };
 }
+/* Open Library identifica le opere con chiavi tipo "/works/OL12345W". L'app maneggia
+   ovunque un id NUMERICO: si tiene il numero e si ricompone la chiave quando serve.
+   Gemello del desktop — vedi CONCEPT-libri.md §3. */
+const idLibro = key => parseInt(String(key || '').replace(/\D+/g, ''), 10) || 0;
+const chiaveLibro = id => '/works/OL' + id + 'W';
+/* `default=false` è importante: senza, una copertina che non c'è non dà errore — torna un
+   PNG di 1x1 pixel trasparente. L'immagine "si carica" e a video resta un riquadro vuoto,
+   e non c'è modo di accorgersene. Con default=false risponde 404. */
+const copertinaLibro = coverId =>
+  coverId ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg?default=false` : null;
+
+/* Le copertine che Open Library non ha si cercano su Google Books. Senza chiave si usa la
+   quota ANONIMA, condivisa con tutto il mondo e spesso gia' esaurita (risponde 429); con
+   una chiave (gratuita, si mette dal PC) diventa affidabile. In ogni caso non puo' far
+   danno: o trova una copertina, o lascia le cose come stanno. */
+async function copertinaGoogleBooks(titolo, autore){
+  if (!titolo) return null;
+  const q = `intitle:${titolo}` + (autore ? ` inauthor:${autore}` : '');
+  const k = S.config.googleKey || '';
+  const u = 'https://www.googleapis.com/books/v1/volumes?maxResults=3&printType=books'
+    + (k ? '&key=' + encodeURIComponent(k) : '') + '&q=' + encodeURIComponent(q);
+  try {
+    const r = await fetch(u);
+    if (!r.ok) return null;
+    for (const v of ((await r.json()).items || [])){
+      const im = (v.volumeInfo || {}).imageLinks || {};
+      const url = im.thumbnail || im.smallThumbnail;
+      if (url) return url.replace(/^http:/, 'https:').replace(/&edge=curl/g, '');
+    }
+  } catch(e){}
+  return null;
+}
+
+async function dettagliLibro(id){
+  const campi = 'key,title,author_name,first_publish_year,number_of_pages_median,' +
+                'cover_i,ratings_average,ratings_count,subject,publisher,first_sentence';
+  const r = await fetch(`https://openlibrary.org/search.json?q=key:${encodeURIComponent(chiaveLibro(id))}&limit=1&fields=${campi}`);
+  if (!r.ok) throw new Error('openlibrary '+r.status);
+  const l = ((await r.json()).docs || [])[0];
+  if (!l) throw new Error('libro non trovato');
+  // la trama sta nell'opera, che è una seconda chiamata: se non risponde si ripiega
+  // sull'incipit, che l'elenco ha già dato
+  let trama = '', copertinaId = l.cover_i || null;
+  try {
+    const w = await (await fetch(`https://openlibrary.org${chiaveLibro(id)}.json`)).json();
+    const d = w && w.description;
+    trama = (typeof d === 'string' ? d : (d && d.value) || '') || '';
+    if (!copertinaId && Array.isArray(w && w.covers)) copertinaId = w.covers.find(x => x > 0) || null;
+  } catch(e){}
+  if (!trama) trama = ((l.first_sentence || [])[0]) || '';
+  let img = copertinaLibro(copertinaId);
+  if (!img) img = await copertinaGoogleBooks(l.title, (l.author_name || [])[0]);
+  return {
+    tmdbId:id, titolo:l.title || '', anno:String(l.first_publish_year || ''),
+    uscita:l.first_publish_year ? String(l.first_publish_year)+'-01-01' : null,
+    collezione:null, collezioneNome:null, stagioni:null, stato:null,
+    durata:l.number_of_pages_median || null,        // «durata» qui sono PAGINE
+    pagine:l.number_of_pages_median || null,
+    regista:(l.author_name || []).slice(0,2).join(', '),          // l'autore
+    generi:generiDaSubject(l.subject),
+    paese:(l.publisher || []).slice(0,1).join(', '),              // l'editore
+    cast:(l.author_name || []).slice(0,4),
+    keywords:(l.subject || []).slice(0,12),
+    voto:l.ratings_average ? Math.round(l.ratings_average * 20) / 10 : null,
+    votoFonte:'openlibrary',
+    trama:String(trama).slice(0, 900),
+    posterUrl:img, sfondoUrl:img, locandina:null, sfondo:null
+  };
+}
+
 async function cercaFilm(q){
+  // I libri stanno su Open Library, che non vuole nessuna chiave.
+  if (inLibri()){
+    const campi = 'key,title,author_name,first_publish_year,cover_i';
+    const r = await fetch(`https://openlibrary.org/search.json?limit=10&fields=${campi}&q=${encodeURIComponent(q)}`);
+    if (!r.ok) throw new Error('openlibrary '+r.status);
+    const trovati = ((await r.json()).docs || []).slice(0, 10).map(l => ({
+      id:idLibro(l.key), title:l.title, release_date:String(l.first_publish_year || ''),
+      poster_path:null, posterUrl:copertinaLibro(l.cover_i)
+    }));
+    // chi non ha copertina va in fondo: sono quasi sempre schede-moncone o saggi SU quel
+    // libro, e riempirebbero mezzo elenco coprendo quello giusto (ordinamento stabile)
+    return trovati.filter(x => x.posterUrl).concat(trovati.filter(x => !x.posterUrl));
+  }
   // I videogiochi non stanno su TMDB: la loro libreria è RAWG (SPECIFICA §15.1).
   if (inGiochi()){
     const kg = S.config.rawgKey; if (!kg) throw new Error('nokey');
@@ -1240,6 +1607,7 @@ async function cercaFilm(q){
     .map(x => inSerie() ? {...x, title:x.name || x.original_name, release_date:x.first_air_date} : x);
 }
 async function dettagliFilm(id){
+  if (inLibri()) return await dettagliLibro(id);
   if (inGiochi()) return await dettagliGioco(id);
   const k = S.config.tmdbKey;
   const r = await fetch(`https://api.themoviedb.org/3/${inSerie()?'tv':'movie'}/${id}?api_key=${k}&language=it-IT&append_to_response=credits,external_ids,keywords`);
@@ -1303,6 +1671,9 @@ const NEGOZIO_ALIAS = {
 async function providersFilm(tmdbId){
   if (!tmdbId) return [];
   if (S.providersCache.has(tmdbId)) return S.providersCache.get(tmdbId);
+  // Un libro non ha negozi, e non sta su TMDB: chiedere lì con un id Open Library
+  // tornerebbe la scheda di un film a caso.
+  if (inLibri()){ S.providersCache.set(tmdbId, []); return []; }
   // Un gioco non sta su TMDB: i suoi negozi li ha già dati la scheda RAWG. Senza questo
   // ramo si interrogava TMDB con un id RAWG, e tornava qualunque cosa.
   if (inGiochi()){
@@ -1345,7 +1716,7 @@ async function eseguiRicerca(){
     if (!res.length){ box.innerHTML = '<div class="vuoto">Nessun risultato.</div>'; return; }
     const idsInLista = new Set(listaDi(S.me).map(v=>v.tmdbId));
     box.innerHTML = res.map(f=>{
-      const pst = f.poster_path ? 'https://image.tmdb.org/t/p/w185'+f.poster_path : '';
+      const pst = miniaturaRisultato(f);
       const anno = (f.release_date||'').slice(0,4);
       const gia = idsInLista.has(f.id);
       return `<div class="film">
@@ -1490,7 +1861,7 @@ function disegnaMiaLista(){
   const fb = $('#btn-filtri'); if (fb) fb.classList.toggle('attivo', filtriAttivi());
   const box = $('#mia-lista');
   if (!tutte.length && !visti.length){ box.innerHTML = `<div class="vuoto">Ancora ${NESSUN_COSA().toLowerCase()}. Cerca qui sopra e aggiungi ${inSerie() ? 'la prima' : 'il primo'} ${datiModo(S.modo).ic}</div>`; return; }
-  if (!base.length){ box.innerHTML = `<div class="vuoto">${sonoVisti ? `Ancora ${NESSUN_COSA().toLowerCase()} ${inGiochi() ? 'finito' : (inSerie() ? 'già vista' : 'già visto')} in questa lista.` : `Niente da ${inGiochi() ? 'giocare: sono già stati finiti tutti' : 'vedere: sono già stati visti tutti'} 🎉`}</div>`; return; }
+  if (!base.length){ box.innerHTML = `<div class="vuoto">${sonoVisti ? `Ancora ${NESSUN_COSA().toLowerCase()} ${conStato() ? 'finito' : (inSerie() ? 'già vista' : 'già visto')} in questa lista.` : `Niente da ${inLibri() ? 'leggere: sono già stati finiti tutti' : (inGiochi() ? 'giocare: sono già stati finiti tutti' : 'vedere: sono già stati visti tutti')} 🎉`}</div>`; return; }
   if (!lista.length){ box.innerHTML = `<div class="vuoto">${NESSUN_COSA()} corrisponde ai filtri.</div>`; return; }
   box.innerHTML = lista.map(v=>{
     const pst = v.posterUrl || '';
@@ -1537,7 +1908,7 @@ function modaleModifica(id){
     <div class="compagnia" id="chips">${chipsCompagnia(comp)}</div>
     <div class="m-az">
       <button class="ghost" id="m-togli" style="color:var(--rosso2);border-color:var(--rosso2)">🗑 Rimuovi</button>
-      <button class="ghost" id="m-visto" style="color:var(--ok);border-color:var(--ok)">✓ ${inGiochi() ? 'Finito' : 'Visto'}</button>
+      <button class="ghost" id="m-visto" style="color:var(--ok);border-color:var(--ok)">✓ ${conStato() ? 'Finito' : 'Visto'}</button>
       <button class="primario" id="m-salva">Salva</button>
     </div>`}`);
   if (!visto){
@@ -1556,13 +1927,13 @@ function modaleModifica(id){
         if (!fine){ b.disabled=false; b.textContent='✓ Visto'; return toast('Di questa serie non conosco le stagioni', true); }
         voce.stagione = fine.stagione; voce.episodi = [1, fine.episodio];
       }
-      // per un gioco questo tasto è la scorciatoia «l'ho finito»: le partite in corso si
-      // registrano dalla Sala, dove si sceglie fra i due stati
-      if (inGiochi()) voce.stato = 'finito';
+      // per un gioco o un libro questo tasto è la scorciatoia «l'ho finito»: quelli in
+      // corso si registrano dalla Sala, dove si sceglie fra i due stati
+      if (conStato()) voce.stato = 'finito';
       try { await registraVisioneM(voce); }
       catch(e){ b.disabled=false; b.textContent='✓ Visto'; return toast('Non riuscito: '+e.message, true); }
       chiudiModale(); disegnaMiaLista(); disegnaSalaM();
-      toast(inGiochi() ? `«${orig.titolo}» segnato come finito ✓`
+      toast(conStato() ? `«${orig.titolo}» segnato come finito ✓`
         : (inSerie() ? `«${orig.titolo}» segnata come vista ✓` : `«${orig.titolo}» segnato come visto ✓`));
     };
   }
@@ -1590,7 +1961,7 @@ function modaleModifica(id){
   }
   $('#m-togli').onclick = () => {
     apriModale(`<h3>Togliere dalla lista?</h3><p class="meta">${visto
-      ? `«${esc(orig.titolo)}» sparirà dai tuoi ${inGiochi() ? 'già giocati' : (inSerie() ? 'già viste' : 'già visti')}. Le serate a cui hanno partecipato altri restano nel loro storico.`
+      ? `«${esc(orig.titolo)}» sparirà dai tuoi ${inLibri() ? 'già letti' : (inGiochi() ? 'già giocati' : (inSerie() ? 'già viste' : 'già visti'))}. Le serate a cui hanno partecipato altri restano nel loro storico.`
       : `«${esc(orig.titolo)}» sparirà dalla tua lista.`}</p>
       <div class="m-az"><button class="ghost" id="m-no">Annulla</button><button class="primario" id="m-si">Rimuovi</button></div>`);
     $('#m-no').onclick = () => modaleModifica(id);
@@ -1682,9 +2053,10 @@ const serateGiocate = (id, slug) => seratePerId(id).filter(v =>
 
 function entryAttiva(voce, slug){
   const aggiunto = voce.aggiunto || '0000-01-01';
-  // Un gioco si spegne solo quando qualcuno lo segna FINITO. La recensione qui NON vale
-  // come «finito»: di un gioco si scrive anche mentre ci si sta ancora giocando.
-  if (inGiochi()) return !seratePerId(voce.tmdbId).some(v =>
+  // Un gioco e un libro si spengono solo quando qualcuno li segna FINITI. La recensione
+  // qui NON vale come «finito»: se ne scrive anche mentre si sta ancora giocando o
+  // leggendo. Scritto inGiochi(), un libro si sarebbe spento alla prima recensione.
+  if (conStato()) return !seratePerId(voce.tmdbId).some(v =>
     v.stato === 'finito' && (v.partecipanti||[]).includes(slug)
     && (v.ts || v.data + 'T23:59:59') >= aggiunto);
   // la recensione vale come "visto" per un film e come "finita" per una serie
@@ -1779,7 +2151,9 @@ const filtriSalaAttivi = () => !!(S.fSala.durata || S.fSala.genere.length || S.f
 // vedi il desktop: l'animazione della TV si abilita un attimo dopo il primo disegno
 // vedi il desktop: senza una copia da animare l'immagine sparirebbe di colpo
 // vale per il salotto e per la postazione: il cinema ha il sipario, che è una transizione
-const schermoAnimato = () => inSerie() || inGiochi();
+// il cinema ha il sipario (una transizione CSS); salotto, postazione e biblioteca hanno
+// un'accensione a fotogrammi, e quindi anche uno spegnimento da mostrare
+const schermoAnimato = () => inSerie() || inGiochi() || inLibri();
 function spegniImmagine(schermo, inner){
   if (!schermoAnimato() || !schermo.classList.contains('pronto') || !schermo.classList.contains('aperto')) return;
   const fantasma = inner.cloneNode(true);
@@ -1787,8 +2161,291 @@ function spegniImmagine(schermo, inner){
   fantasma.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
   fantasma.classList.add('tv-uscita');
   inner.parentNode.insertBefore(fantasma, inner.nextSibling);
-  setTimeout(() => fantasma.remove(), 1000);
+  // Il libro rifà la stessa strada al contrario: stessi fotogrammi, letti all'indietro.
+  const copia = fantasma.querySelector('.copertina-libro');
+  if (inLibri() && copia && ultimoVolo){
+    const {dx, dy, scala} = ultimoVolo;
+    copia.getAnimations().forEach(a => a.cancel());
+    const opz = {duration:1250, easing:'cubic-bezier(.4,0,.6,1)', fill:'both', direction:'reverse'};
+    copia.animate(viaggioDelVolume(dx, dy, scala), opz);
+    const cs = copia.querySelector('.costa'), fr = copia.querySelector('img');
+    if (cs) cs.animate(fotogrammiApertura('costa'), opz);
+    if (fr) fr.animate(fotogrammiApertura('copertina'), opz);
+    const luceCopia = copia.querySelector('.costa .luce');
+    if (luceCopia) luceCopia.animate(luceDellaCosta, opz);
+  }
+  setTimeout(() => fantasma.remove(), 1300);
 }
+// sul telefono lo scaffale è più stretto: meno dorsi, stessa aria
+const RIPIANI = 4, DORSI_PER_RIPIANO = 18;
+function semeCaso(seme){                       // generatore ripetibile, sempre lo stesso
+  let x = seme || 1;
+  return () => (x = (x * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+}
+function disegnaLibreriaM(){
+  const box = $('#m-libreria'); if (!box || !inLibri()) return;
+  if (box.dataset.fatto) return;               // si disegna una volta sola
+  const r = semeCaso(20260902);
+  const tinte = ['#6b3b2a','#7a5230','#4d5f43','#3f4d62','#6d4a5e','#8a6a3a','#42504a','#5a3f4a'];
+  let html = '';
+  for (let i = 0; i < RIPIANI; i++){
+    let dorsi = '';
+    for (let j = 0; j < DORSI_PER_RIPIANO; j++){
+      const alt = 62 + Math.round(r() * 34);            // quanto è alto il volume
+      const spess = 7 + Math.round(r() * 16);           // e quanto è spesso (in proporzione)
+      const col = tinte[Math.floor(r() * tinte.length)];
+      const inclina = r() < 0.07 ? (r() < 0.5 ? -7 : 7) : 0;   // qualcuno storto, come sempre
+      dorsi += `<span class="dorso" style="--h:${alt}%; --w:${spess}; --c:${col}; --rot:${inclina}deg"></span>`;
+      // ogni tanto una pila di volumi sdraiati, come in una libreria vera
+      if (r() < 0.09 && j > 1 && j < DORSI_PER_RIPIANO - 2){
+        const strati = 2 + Math.round(r() * 2);
+        let pila = '';
+        for (let k = 0; k < strati; k++) pila += `<span style="--c:${tinte[Math.floor(r()*tinte.length)]}"></span>`;
+        dorsi += `<span class="pila" style="--w:${14 + Math.round(r()*10)}">${pila}</span>`;
+      }
+    }
+    html += `<div class="ripiano">${dorsi}</div>`;
+  }
+  box.innerHTML = html;
+  dorsiUsati.clear();          // scaffale nuovo, posti tutti liberi
+  // la gemella già sfocata: si dissolve al posto della nitida invece di sfocarsi dal vivo
+  const sfocata = $('#m-libreria-sfocata');
+  if (sfocata) sfocata.innerHTML = html;
+  box.dataset.fatto = '1';
+}
+
+/* ── Il volo del libro ─────────────────────────────────────────────────────────────
+   Due animazioni che vanno insieme:
+     1. il VIAGGIO — il volume si sposta dal ripiano al suo posto, ingrandendosi. Solo
+        traslazione e scala: nessuna rotazione, quindi il libro resta sempre dritto.
+     2. l'APERTURA — la costa si assottiglia e la copertina si apre, tutte e due
+        ancorate allo stesso bordo. Le larghezze seguono il seno e il coseno di un
+        angolo che va da 90° a 0°: è quello che dà l'impressione della rotazione, senza
+        che ci sia nessuna scena in tre dimensioni.
+   Vedi CONCEPT-libri.md §6. */
+const TEMPO_VOLO = 1900, CURVA_VOLO = 'cubic-bezier(.33,.02,.22,1)';
+// quando comincia l'apertura, in frazione del volo: prima il libro esce e basta
+const INIZIO_APERTURA = 0.42;
+
+// Il viaggio: dal dorso nel ripiano fino al posto della vetrina.
+function viaggioDelVolume(dx, dy, sc){
+  const posa = (x, y, s) => `translateY(-50%) translate(${x}px, ${y}px) scale(${s})`;
+  return [
+    {offset:0,    transform:posa(dx, dy, sc)},                    // fermo nel ripiano
+    {offset:0.22, transform:posa(dx, dy, sc)},                    // si accende, ancora fermo
+    {offset:0.44, transform:posa(dx * 0.86, dy * 0.86, sc * 1.9)},// si sfila e viene avanti
+    {offset:0.74, transform:posa(dx * 0.30, dy * 0.30, 0.72)},    // attraversa
+    {offset:0.92, transform:posa(0, 0, 1.02)},                    // arriva, con un respiro
+    {offset:1,    transform:posa(0, 0, 1)},
+  ];
+}
+
+/* L'apertura. Un angolo immaginario scende da 90° (di costola) a 0° (di fronte):
+   la copertina è larga quanto il suo coseno, la costa quanto il suo seno. È la stessa
+   geometria di una rotazione vera, ottenuta però con due `scaleX` — che nessun browser
+   sbaglia a comporre.
+   Lo `skewY` che si riassorbe è lo scorcio: quando un rettangolo gira, il bordo lontano
+   scivola. Pochi gradi bastano perché l'occhio legga «sta girando». */
+function fotogrammiApertura(quale){
+  const passi = [];
+  const N = 12;
+  for (let i = 0; i <= N; i++){
+    const p = i / N;                                   // avanzamento dell'apertura
+    const off = +(INIZIO_APERTURA + p * (0.95 - INIZIO_APERTURA)).toFixed(4);
+    const ang = (1 - p) * 90 * Math.PI / 180;          // da 90° a 0°
+    if (quale === 'copertina'){
+      const larg = Math.cos(ang);                      // si apre
+      const scorcio = -3.4 * Math.sin(ang);            // il bordo lontano scivola
+      passi.push({offset:off, opacity: p > 0.02 ? 1 : 0,
+        transform:`scaleX(${larg.toFixed(4)}) skewY(${scorcio.toFixed(2)}deg)`});
+    } else {
+      const larg = Math.sin(ang);                      // si assottiglia
+      passi.push({offset:off, opacity: larg < 0.04 ? 0 : 1,
+        transform:`scaleX(${larg.toFixed(4)})`});
+    }
+  }
+  // prima che l'apertura cominci, le due facce stanno ferme come sono
+  const fermo = quale === 'copertina'
+    ? {offset:0, opacity:0, transform:'scaleX(0) skewY(-3.4deg)'}
+    : {offset:0, opacity:1, transform:'scaleX(1)'};
+  const finale = quale === 'copertina'
+    ? {offset:1, opacity:1, transform:'none'}
+    : {offset:1, opacity:0, transform:'scaleX(0)'};
+  return [fermo, {...fermo, offset:INIZIO_APERTURA}, ...passi, finale];
+}
+
+/* Il riflesso: una lama di luce che scorre sulla copertina mentre si apre. È il dettaglio
+   che vende la rotazione — su una superficie che gira la luce si sposta. */
+// La lama scorre DENTRO il riquadro della luce, che intanto si apre insieme alla
+// copertina: è in coordinate della copertina, quindi non se ne stacca mai.
+const fotogrammiRiflesso = [
+  {offset:0,                opacity:0,    transform:'translateX(-10%)'},
+  {offset:INIZIO_APERTURA,  opacity:0,    transform:'translateX(-10%)'},
+  {offset:0.62,             opacity:0.85, transform:'translateX(40%)'},
+  {offset:0.84,             opacity:0.25, transform:'translateX(85%)'},
+  {offset:1,                opacity:0,    transform:'translateX(105%)'},
+];
+
+/* L'accensione: un velo di luce sopra la costa, animato in `opacity` — non un filtro,
+   che il browser non compone in modo affidabile. */
+const luceDellaCosta = [
+  {offset:0,    opacity:0.22},
+  {offset:0.13, opacity:0.68},
+  {offset:0.24, opacity:0.34},
+  {offset:0.48, opacity:0.12},
+  {offset:1,    opacity:0},
+];
+// Mentre la copertina arriva dalla rete il volume resta nel ripiano e «respira»: si capisce
+// che è quello il libro scelto, e il volo comincia quando c'è davvero qualcosa da mostrare.
+const luceInAttesa = [
+  {opacity:0.10}, {opacity:0.40}, {opacity:0.10},
+];
+/* Il testo entra con il libro, non su un tempo suo: il volo può partire tardi (aspetta la
+   copertina) e un'animazione a tempo fisso arriverebbe scollegata. */
+const testoConIlLibro = [
+  {offset:0,    opacity:0, transform:'translateY(-50%) translateX(14px)'},
+  {offset:0.68, opacity:0, transform:'translateY(-50%) translateX(14px)'},
+  {offset:1,    opacity:1, transform:'translateY(-50%)'},
+];
+// Il numero di rango non è centrato verticalmente come il testo: se gli si desse la stessa
+// traslazione salterebbe di mezza altezza. A lui basta la dissolvenza.
+const rangoConIlLibro = [
+  {offset:0, opacity:0}, {offset:0.68, opacity:0}, {offset:1, opacity:1},
+];
+
+// L'ultimo volo, per rifarlo al contrario quando il libro torna nello scaffale.
+let ultimoVolo = null;
+/* I posti dello scaffale già usati. Il libro si pesca a caso fra quelli ANCORA LIBERI, e
+   il posto pescato esce dal sacchetto: finché nello scaffale c'è posto nuovo due libri non
+   escono mai dallo stesso buco. Quando i posti finiscono, il sacchetto si riempie da capo.
+   Tiene gli elementi e non gli indici: lo scaffale si disegna una volta sola, quindi i
+   dorsi restano sempre gli stessi oggetti. */
+let dorsiUsati = new Set();
+// Qual è il libro già in vetrina: il volo si rifà solo quando cambia. Cambiare un presente
+// o un filtro riscrive lo schermo, ma non è un motivo per rifare l'animazione da capo.
+let libroInVetrina = null;
+
+/* Il libro si mette subito dove il volo lo lascerebbe. Serve quando lo schermo si ridisegna
+   ma il libro è lo stesso: gli elementi sono nuovi (nascono chiusi), e senza questo
+   resterebbero invisibili. */
+function posaFinaleLibro(){
+  const cop = $('#m-schermo .copertina-libro'); if (!cop) return;
+  cop.style.transform = 'translateY(-50%)';
+  const fr = cop.querySelector('img');
+  if (fr){ fr.style.transform = 'none'; fr.style.opacity = '1'; }
+  const cs = cop.querySelector('.costa');
+  if (cs){ cs.style.transform = 'scaleX(0)'; cs.style.opacity = '0'; }
+  const rf = cop.querySelector('.riflesso'); if (rf) rf.style.opacity = '0';
+  const info = $('#m-schermo .dentro');
+  if (info){ info.style.opacity = '1'; info.style.transform = 'translateY(-50%)'; }
+  const rango = $('#m-schermo .rango'); if (rango) rango.style.opacity = '1';
+  // il posto vuoto nello scaffale resta quello di prima: il libro non è tornato indietro
+}
+
+/* Sceglie il volume che si stacca dallo scaffale e arma il volo. Torna `false` se non ci
+   e' riuscito — scaffale non ancora disegnato, misure a zero: allora il libro va messo in
+   posa a mano, se no, nascendo chiuso, non si vedrebbe mai. */
+function scegliDorso(){
+  const box = $('#m-libreria'); if (!box) return false;
+  const dorsi = [...box.querySelectorAll('.dorso')];
+  const cop = $('#m-schermo .copertina-libro');
+  if (!dorsi.length || !cop) return false;
+  // La posizione d'arrivo si misura a volo fermo: se un volo precedente è ancora in corso
+  // il rettangolo sarebbe quello trasformato, non quello a riposo.
+  cop.getAnimations().forEach(a => a.cancel());
+  const ra = cop.getBoundingClientRect();
+  if (!ra.width) return false;
+  const rb = box.getBoundingClientRect();
+  const arrivoX = ra.left + ra.width/2, arrivoY = ra.top + ra.height/2;
+  // Il volume deve venire da LONTANO: se si sceglie quello che sta già dove atterra la
+  // copertina, il libro non esce da nessuna parte e sembra solo che l'immagine si apra.
+  const lontani = dorsi.filter(d => {
+    // i volumi appoggiati storti non possono partire: il libro nascerebbe di sbieco
+    // rispetto al dorso che sostituisce, e si vedrebbe fuori asse
+    if ((d.style.getPropertyValue('--rot') || '0deg').trim() !== '0deg') return false;
+    const r = d.getBoundingClientRect();
+    return r.width > 6 && Math.abs(r.left + r.width/2 - arrivoX) > rb.width * 0.34;
+  });
+  const base = lontani.length ? lontani : dorsi;
+  // Si pesca a caso fra i posti ancora liberi (vedi `dorsiUsati`). Prima il posto era
+  // `tmdbId % 10`: due libri con id congruenti modulo dieci uscivano sempre dallo stesso.
+  let liberi = base.filter(x => !dorsiUsati.has(x));
+  if (!liberi.length){ dorsiUsati.clear(); liberi = base; }   // finiti i posti, si ricomincia
+  const d = liberi[Math.floor(Math.random() * liberi.length)];
+  dorsiUsati.add(d);
+  // il posto vuoto si segna su tutt'e due le copie dello scaffale
+  const i = dorsi.indexOf(d), sfocata = $('#m-libreria-sfocata');
+  for (const cont of [box, sfocata]){
+    if (!cont) continue;
+    cont.querySelectorAll('.dorso.preso').forEach(x => x.classList.remove('preso'));
+    const q = cont.querySelectorAll('.dorso')[i];
+    if (q) q.classList.add('preso');
+  }
+  const rd = d.getBoundingClientRect();
+  if (!rd.width) return false;
+  // Il volo si esprime in scostamenti dalla posizione d'arrivo: così l'animazione usa solo
+  // `transform`, che il browser compone senza rifare il layout — ed è fluida.
+  const sc = $('#m-schermo');
+  const scala = Math.max(0.05, rd.height / ra.height);
+  sc.style.setProperty('--dx', Math.round(rd.left + rd.width/2 - arrivoX) + 'px');
+  sc.style.setProperty('--dy', Math.round(rd.top + rd.height/2 - arrivoY) + 'px');
+  sc.style.setProperty('--sc', scala.toFixed(3));
+  // Lo spessore della costa è in coordinate del volume «a riposo»: durante il volo tutto
+  // viene ridotto di --sc, quindi va diviso, se no la costa sarebbe un filo invisibile.
+  const spessore = Math.max(8, Math.round(rd.width / scala));
+  sc.style.setProperty('--spessore', spessore + 'px');
+  // il taglio delle pagine legge lo spessore dal volume stesso
+  cop.style.setProperty('--spessore', spessore + 'px');
+  sc.style.setProperty('--tinta-costa', getComputedStyle(d).getPropertyValue('--c') || '#6b3b2a');
+  // Sul dorso nello scaffale ci deve andare la COSTA, che sta fuori dal riquadro e alla sua
+  // sinistra: senza questo scarto il libro partirebbe di mezza copertina più in là.
+  // Lo scarto è metà costa più metà copertina, in scala di partenza.
+  const scartoCosta = (spessore / 2 + ra.width / 2) * scala;
+  const dx = Math.round(rd.left + rd.width/2 - arrivoX + scartoCosta);
+  const dy = Math.round(rd.top + rd.height/2 - arrivoY);
+  ultimoVolo = {dx, dy, scala};
+  const passi = viaggioDelVolume(dx, dy, scala);
+  // Il libro si mette SUBITO nella posa di partenza, così non lampeggia mai in posizione;
+  // il volo però comincia un giro dopo. Nello stesso istante disegnaSala sta ancora
+  // generando le poltrone e la rosa, e quel lavoro si mangerebbe i primi fotogrammi.
+  cop.getAnimations().forEach(a => a.cancel());
+  cop.style.transform = passi[0].transform;
+  let partito = false;
+  const costa = cop.querySelector('.costa');
+  const luce = costa && costa.querySelector('.luce');
+  // Mentre la copertina arriva dalla rete il volume resta nel ripiano e «respira»: si
+  // capisce che è quello il libro scelto, e il volo comincia quando c'è da mostrare.
+  const attesa = luce && luce.animate(luceInAttesa,
+    {duration:1150, iterations:Infinity, easing:'ease-in-out'});
+  const parti = () => {
+    if (partito || !cop.isConnected) return;
+    partito = true;
+    if (attesa) attesa.cancel();
+    cop.style.transform = '';
+    const opz = {duration:TEMPO_VOLO, easing:CURVA_VOLO, fill:'both'};
+    cop.animate(passi, opz);                                     // il viaggio
+    if (costa) costa.animate(fotogrammiApertura('costa'), opz);  // la costa si assottiglia
+    const fronte = cop.querySelector('img');
+    if (fronte) fronte.animate(fotogrammiApertura('copertina'), opz);
+    const rifl = cop.querySelector('.riflesso');
+    if (rifl){
+      rifl.animate(fotogrammiApertura('copertina'), opz);   // si apre insieme alla copertina
+      const lama = rifl.querySelector('i');
+      if (lama) lama.animate(fotogrammiRiflesso, opz);      // e la luce ci scorre dentro
+    }
+    if (luce) luce.animate(luceDellaCosta, opz);
+    // il testo arriva insieme al libro
+    const opzTesto = {duration:TEMPO_VOLO, easing:'ease-out', fill:'both'};
+    const info = $('#m-schermo .dentro'); if (info) info.animate(testoConIlLibro, opzTesto);
+    const rango = $('#m-schermo .rango'); if (rango) rango.animate(rangoConIlLibro, opzTesto);
+  };
+  // Il via lo dà disegnaSala quando la copertina è arrivata ed è decodificata. Il tetto è
+  // una rete di sicurezza: se la rete è lenta o l'immagine manca, si parte lo stesso.
+  cop._parti = parti;
+  setTimeout(parti, 2200);
+  return true;
+}
+
 function disegnaSalaM(){
   disegnaPlateaM();   // le poltrone in velluto, come sul desktop
   $('#m-conta-pres').textContent = S.presenti.size ? '· '+S.presenti.size : '';
@@ -1798,6 +2455,7 @@ function disegnaSalaM(){
   const aggiornaLC = n => { if (btnLC){ btnLC.disabled = !n; btnLC.textContent = n ? `📋 Lista completa (${n})` : '📋 Lista completa'; } };
   // schermo.classList `aperto` apre le tende (sipario); l'inner si rifà ad ogni render
   if (!S.presenti.size){
+    if (inLibri()){ disegnaLibreriaM(); libroInVetrina = null; }
     spegniImmagine(schermo, inner);
     schermo.classList.remove('aperto');
     inner.innerHTML = '<div class="msg">La sala è vuota…<br><span style="font-size:12px; color:var(--dim)">tocca le poltrone di chi c\'è stasera</span></div>';
@@ -1814,6 +2472,7 @@ function disegnaSalaM(){
     const e = ris.esclusi;
     const motivi = [e.durata && e.durata+' troppo lunghi', e.genere && e.genere+' di altro genere',
       e.regista && e.regista+' di altri registi', e.vincoli && e.vincoli+' per vincoli di compagnia'].filter(Boolean).join(' · ');
+    if (inLibri()){ disegnaLibreriaM(); libroInVetrina = null; }
     spegniImmagine(schermo, inner);
     schermo.classList.remove('aperto');
     inner.innerHTML = `<div class="msg">Niente in cartellone stasera<br><span style="font-size:12px">${esc(motivi || 'le liste dei presenti sono vuote')}</span></div>`;
@@ -1822,6 +2481,7 @@ function disegnaSalaM(){
     const sf = f.sfondoUrl || f.posterUrl || '';
     inner.innerHTML = `
       ${sf ? `<img class="sfondo" src="${esc(sf)}" alt="">` : ''}<div class="velo"></div>
+      ${inLibri() ? '<div class="copertina-libro"><i class="costa"><b class="luce"></b></i><img alt=""><b class="riflesso"><i></i></b></div>' : ''}
       <div class="rango">${rango}</div>
       <div class="dentro">
         <h4>${esc(f.titolo)}</h4>
@@ -1832,6 +2492,24 @@ function disegnaSalaM(){
       <button class="play" id="m-play" title="Segna questo film come visto stasera">▶</button>`;
     inner.onclick = () => modaleSchedaM(scelto);
     $('#m-play').onclick = e => { e.stopPropagation(); modalePlayM(scelto); };
+    // In biblioteca: si disegna lo scaffale e parte il volo — ma SOLO se il libro è
+    // cambiato. Se è lo stesso di prima (un presente in più, un filtro) il libro si
+    // rimette dov'era, senza rifare tutto il viaggio.
+    if (inLibri()){
+      disegnaLibreriaM();
+      const stesso = libroInVetrina === f.tmdbId && schermo.classList.contains('aperto');
+      if (stesso || !scegliDorso()) posaFinaleLibro();
+      libroInVetrina = f.tmdbId;
+      // la copertina è il libro stesso: il volo comincia quando l'immagine è arrivata ED
+      // è decodificata, se no il libro volerebbe vuoto
+      const volume = $('#m-schermo .copertina-libro');
+      const copImg = volume && volume.querySelector('img');
+      if (copImg && f.posterUrl){
+        copImg.src = f.posterUrl;
+        const via = () => { if (volume._parti) volume._parti(); };
+        (copImg.decode ? copImg.decode() : Promise.resolve()).then(via, via);
+      } else if (volume && volume._parti) volume._parti();
+    }
     // Accensione: in serie .pronto e .aperto vanno insieme, nello stesso tick dell'immagine,
     // così l'accensione parte da opacity 0 e l'immagine non lampeggia prima. In film è il
     // sipario: le tende partono chiuse e si vedono scorrere dopo un attimo.
@@ -1844,7 +2522,8 @@ function disegnaSalaM(){
   stato.innerHTML = `🎞 ${ris.totale} in cartellone · ${S.presenti.size} in sala
     ${fuori ? `<br><span class="avv">esclusi: ${[e.durata&&e.durata+' per durata', e.genere&&e.genere+' per genere', e.regista&&e.regista+' per regista', e.vincoli&&e.vincoli+' per compagnia'].filter(Boolean).join(', ')}</span>` : ''}
     <br><span style="color:var(--dim)">▶ registra ${inSerie() ? 'la serata e sposta il segnalibro'
-      : (inGiochi() ? 'la partita: in corso o finita' : 'il film come visto per chi è in sala')}.</span>`;
+      : (inLibri() ? 'la lettura: in corso o finita'
+      : (inGiochi() ? 'la partita: in corso o finita' : 'il film come visto per chi è in sala'))}.</span>`;
 }
 
 function modaleSchedaM(r){
@@ -1900,12 +2579,12 @@ async function registraVisioneM(voce){
 function modalePlayM(r){
   const f = r.film;
   const nomi = [...S.presenti].map(nomeDi).join(', ');
-  const serie = inSerie(), giochi = inGiochi();
-  let statoScelto = 'corso';   // videogiochi: in corso finché non si dice il contrario
+  const serie = inSerie(), giochi = conStato();   // «giochi» = ha lo stato in corso/finito
+  let statoScelto = 'corso';   // in corso finché non si dice il contrario
   const da = serie ? (prossimoGruppo(f) || {stagione:1, episodio:1}) : null;
   const stagioni = serie ? (f.stagioni || []) : [];
   apriModale(`
-    <h3>${giochi ? 'Si accende la postazione…' : 'Si spengono le luci…'}</h3>
+    <h3>${inLibri() ? 'Il libro del gruppo…' : (giochi ? 'Si accende la postazione…' : 'Si spengono le luci…')}</h3>
     ${(serie || giochi) ? (serie ? `
     <p class="meta" style="line-height:1.6">Stasera guardate <b style="color:var(--oro2)">«${esc(f.titolo)}»</b> con: ${esc(nomi)}.</p>
     <label class="lab">DOVE SIETE ARRIVATI</label>
@@ -1920,7 +2599,7 @@ function modalePlayM(r){
     </div>
     <button class="linkbtn" id="pl-tutta" style="margin-top:2px">l'abbiamo vista tutta</button>
     <p class="meta" style="font-size:12px">La serie resta in lista: si sposta solo il segnalibro.</p>` : `
-    <p class="meta" style="line-height:1.6">Stasera giocate a <b style="color:var(--oro2)">«${esc(f.titolo)}»</b> con: ${esc(nomi)}.</p>
+    <p class="meta" style="line-height:1.6">${inLibri() ? 'Leggete' : 'Stasera giocate a'} <b style="color:var(--oro2)">«${esc(f.titolo)}»</b> ${inLibri() ? 'in' : 'con'}: ${esc(nomi)}.</p>
     <label class="lab">A CHE PUNTO SIETE</label>
     <div class="play-stato">
       <button type="button" class="stato-card on" data-stato="corso">
@@ -1928,24 +2607,27 @@ function modalePlayM(r){
         <span class="sc-desc">Resta in lista e continua a essere proposto</span></button>
       <button type="button" class="stato-card" data-stato="finito">
         <span class="sc-ic">✓</span><span class="sc-nome">Finito</span>
-        <span class="sc-desc">Passa fra i già giocati, come un film visto</span></button>
+        <span class="sc-desc">Passa fra i ${inLibri() ? 'già letti' : 'già giocati'}, come un film visto</span></button>
     </div>
-    <p class="meta" style="font-size:12px">In tutti e due i casi lo trovi fra i titoli da recensire.</p>`) : `
+    <p class="meta" style="font-size:12px">In tutti e due i casi lo trovi fra i titoli da recensire: ${
+      inLibri() ? 'di un libro si può scrivere anche mentre lo si sta leggendo'
+                : 'di un gioco si può scrivere anche mentre ci si sta ancora giocando'}.</p>`) : `
     <p class="meta" style="line-height:1.6">Il film della serata è <b style="color:var(--oro2)">«${esc(f.titolo)}»</b>.<br>
     Lo registro come <b>visto</b> per: ${esc(nomi)}.<br>
     <span style="font-size:12px">Per i proponenti riparte il timer dell'attesa e il film esce dalle loro liste.</span></p>`}
     <div class="m-az">
       <button class="ghost" id="mp-annulla">Non ancora</button>
-      <button class="primario" id="mp-ok">▶ ${giochi ? 'Buona partita' : 'Buona visione'}</button>
+      <button class="primario" id="mp-ok">${inLibri() ? '📖 Buona lettura' : (giochi ? '▶ Buona partita' : '▶ Buona visione')}</button>
     </div>`);
   $('#mp-annulla').onclick = chiudiModale;
   if (giochi){
     $$('.stato-card').forEach(b => b.onclick = () => {
       statoScelto = b.dataset.stato;
       $$('.stato-card').forEach(x => x.classList.toggle('on', x === b));
-      $('#mp-ok').textContent = statoScelto === 'finito' ? "✓ L'abbiamo finito" : '▶ Buona partita';
+      $('#mp-ok').textContent = statoScelto === 'finito' ? "✓ L'abbiamo finito"
+        : (inLibri() ? '📖 Buona lettura' : '▶ Buona partita');
     });
-    $('#mp-ok').textContent = '▶ Buona partita';
+    $('#mp-ok').textContent = inLibri() ? '📖 Buona lettura' : '▶ Buona partita';
   }
   if (serie){
     // gli episodi non vanno oltre quelli che la stagione scelta ha davvero
@@ -2037,16 +2719,19 @@ function apriFiltriSala(){
   const registi = [...new Set(S.profili.flatMap(p => listaDi(p).map(v => v.regista).filter(Boolean)))].sort();
   apriModale(`
     <h3>Filtri della serata</h3>
-    <div class="campo-r"><label>${inGiochi() ? 'Impegno massimo' : (inSerie() ? "Durata dell'episodio" : 'Durata massima')}</label>
+    <div class="campo-r"><label>${inLibri() ? 'Lunghezza massima' : (inGiochi() ? 'Impegno massimo' : (inSerie() ? "Durata dell'episodio" : 'Durata massima'))}</label>
       <select class="inp" id="fs-dur">
-        <option value="">qualsiasi</option>${inGiochi()
+        <option value="">qualsiasi</option>${inLibri()
+          ? `<option value="150">≤ 150 pagine</option><option value="250">≤ 250 pagine</option><option value="400">≤ 400 pagine</option>
+             <option value="600">≤ 600 pagine</option><option value="900">≤ 900 pagine</option>`
+          : (inGiochi()
           ? `<option value="5">≤ 5 ore</option><option value="10">≤ 10 ore</option><option value="20">≤ 20 ore</option>
              <option value="40">≤ 40 ore</option><option value="60">≤ 60 ore</option>`
           : (inSerie()
           ? `<option value="20">≤ 20'</option><option value="30">≤ 30'</option><option value="45">≤ 45'</option>
              <option value="60">≤ 1h</option><option value="90">≤ 1h 30'</option>`
           : `<option value="90">≤ 1h 30'</option><option value="105">≤ 1h 45'</option>
-             <option value="120">≤ 2h</option><option value="150">≤ 2h 30'</option><option value="180">≤ 3h</option>`)}
+             <option value="120">≤ 2h</option><option value="150">≤ 2h 30'</option><option value="180">≤ 3h</option>`))}
       </select></div>
     <div class="campo-r"><label>Regista</label><input class="inp" id="fs-reg" list="fs-registi" placeholder="chiunque" value="${esc(f.regista)}" style="flex:1">
       <datalist id="fs-registi">${registi.map(r=>`<option value="${esc(r)}">`).join('')}</datalist></div>
@@ -2543,7 +3228,8 @@ async function arricchisciKeywordM(){
 const GENERI_ID_SERIE = {'Action & Adventure':10759, Animazione:16, Commedia:35, Crime:80,
   Documentario:99, Dramma:18, Famiglia:10751, Kids:10762, Mistero:9648, News:10763,
   Reality:10764, 'Sci-Fi & Fantasy':10765, Soap:10766, Talk:10767, 'War & Politics':10768, Western:37};
-const generiID = () => inGiochi() ? {} : (inSerie() ? GENERI_ID_SERIE : GENERI_ID);
+// né i giochi né i libri hanno gli id dei generi di TMDB: per loro la mappa è vuota
+const generiID = () => (inGiochi() || inLibri()) ? {} : (inSerie() ? GENERI_ID_SERIE : GENERI_ID);
 // I generi di RAWG hanno uno slug che non si indovina dal nome ("RPG" → role-playing-games).
 let generiRawgCache = null;
 async function generiRAWG(){
@@ -2573,7 +3259,9 @@ async function idKeyword(nomi){
 
 async function generaConsigliM(){
   const prof = S.cgProfilo = profiloGusto();
-  if (inGiochi() ? !S.config.rawgKey : !S.config.tmdbKey){
+  // i libri arrivano da Open Library, che non vuole nessuna chiave
+  const chiaveMancante = inLibri() ? false : (inGiochi() ? !S.config.rawgKey : !S.config.tmdbKey);
+  if (chiaveMancante){
     toast(`Manca la chiave ${inGiochi() ? 'RAWG' : 'TMDB'} (si imposta dal PC)`, true); return; }
   if (prof.n < 3){ S.cgPool = []; disegnaConsigliM(); return; }
   S.cgCaricamento = true; disegnaConsigliM();
@@ -2587,9 +3275,25 @@ async function generaConsigliM(){
     const escludi = id => visti.has(id) || inLista.has(id) || recensiti.has(id) || S.cgScartati.has(id);
     const grezzi = new Map();
 
-    // I videogiochi hanno la loro libreria: senza questo ramo si chiedeva a TMDB, che di
-    // giochi non sa niente, e tornavano film a caso.
-    if (inGiochi()){
+    // Open Library non ha un «discover», ma ha la ricerca per soggetto: si chiedono i libri
+    // dei generi che piacciono di più, e il punteggio lo calcola l'app come sempre. Senza
+    // questo ramo si chiederebbe a TMDB, che di libri non sa niente.
+    if (inLibri()){
+      avanz('Cerco libri che potrebbero piacerti…');
+      const generi = (f.generi.length ? f.generi : prof.top.generi).slice(0, 3);
+      const chiavi = generi.length ? generi.map(g => (SUBJECT_LIBRI[g] || [g])[0]) : ['fiction'];
+      for (const ch of chiavi){
+        try {
+          const u = `https://openlibrary.org/search.json?limit=25&sort=rating&fields=key,ratings_count&subject=${encodeURIComponent(ch)}`;
+          const j = await (await fetch(u)).json();
+          for (const d of (j.docs || [])){
+            const id = idLibro(d.key);
+            // sotto una manciata di voti la media non dice niente
+            if (id && (d.ratings_count || 0) >= 5 && !escludi(id) && !grezzi.has(id)) grezzi.set(id, 1);
+          }
+        } catch(e){}
+      }
+    } else if (inGiochi()){
       avanz('Cerco giochi che potrebbero piacerti…');
       const mappa = await generiRAWG();
       const q = new URLSearchParams({key:S.config.rawgKey, page_size:'40', ordering:'-metacritic'});
@@ -2980,7 +3684,7 @@ function disegnaRecMobile(){
   const mio=sel===S.me.slug;
   $('#m-rec-nuova').style.display=mio?'':'none';
   const box=$('#m-rec-visti-box'); const nr=mio?filmVistiNonRecM():[];
-  if(nr.length){ box.style.display=''; box.querySelector('summary').textContent=`${datiModo(S.modo).ic} ${inGiochi() ? 'Giochi da recensire (finiti o in corso)' : (inSerie() ? 'Serie viste non recensite' : 'Film visti non recensiti')} (${nr.length})`;
+  if(nr.length){ box.style.display=''; box.querySelector('summary').textContent=`${datiModo(S.modo).ic} ${inLibri() ? 'Libri da recensire (finiti o in corso)' : (inGiochi() ? 'Giochi da recensire (finiti o in corso)' : (inSerie() ? 'Serie viste non recensite' : 'Film visti non recensiti'))} (${nr.length})`;
     $('#m-rec-visti').innerHTML=nr.map(f=>`<button class="rec-nr" data-id="${f.tmdbId}">${esc(f.titolo)}</button>`).join('');
     $('#m-rec-visti').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>avviaEditorDaTMDBM(parseInt(b.dataset.id,10)));
   } else box.style.display='none';
@@ -2988,7 +3692,7 @@ function disegnaRecMobile(){
   const lista=recFiltrateM(sel); const g=$('#m-rec-galleria');
   if(!lista.length){ g.innerHTML=`<div class="rec-vuoto">${mio?'Non hai ancora recensioni.<br>Tocca «✍ Nuova».':esc(nomeDi(sel))+' non ha recensioni.'}</div>`; return; }
   g.innerHTML=lista.map((r,i)=>{const m=r.meta||{};const pst=m.posterUrl||'';return `<div class="rec-card2${r.inCorso?' in-corso':''}" data-i="${i}">
-    <div class="rec-poster2">${pst?`<img src="${esc(pst)}" loading="lazy" alt="">`:`<div class="seg2">${esc(m.titolo||'')}</div>`}${r.inCorso?'<div class="rec-incorso-b">✍</div>':''}${r.votoPersonale?`<div class="rec-voto-b">${stelleLetterbox(r.votoPersonale)}</div>`:''}</div>
+    <div class="rec-poster2">${pst?`<img src="${esc(pst)}" loading="lazy" alt="">`:`<div class="seg2">${esc(m.titolo||'')}</div>`}${r.inCorso?'<div class="rec-incorso-b">✍</div>':''}${badgeCompletamento(pctCompletamento(r),{angolo:true})}${r.votoPersonale?`<div class="rec-voto-b">${stelleLetterbox(r.votoPersonale)}</div>`:''}</div>
     <div class="corpo"><h5>${esc(m.titolo||'Film')}</h5><div class="sub2">${r.stagione?`<b style="color:var(--oro2)">S${r.stagione}</b> · `:''}${esc(m.anno||'')}</div></div></div>`;}).join('');
   lista.forEach((r,i)=>{const el=g.querySelector(`.rec-card2[data-i="${i}"]`); if(el) el.onclick=()=>editorRecMobile(r);});
 }
@@ -3000,6 +3704,41 @@ function sezioneHTMLm(s,i,ed){
     <div class="re-sez-txt" contenteditable="true" spellcheck="true" lang="it" data-ph="Scrivi qui…">${conWiki(testoHTML(s.testo))}</div>
   </div>`;
 }
+/* I trofei di un gioco, da RAWG. Chi non ne ha torna una lista vuota, ed è quello il
+   segnale che si deve usare la barra a mano. Gemello del desktop. */
+async function trofeiGioco(id){
+  if (id == null) return [];
+  if (S.trofeiCache.has(id)) return S.trofeiCache.get(id);
+  const k = S.config.rawgKey;
+  if (!k) return [];
+  const out = [];
+  let url = `https://api.rawg.io/api/games/${id}/achievements?key=${k}&page_size=40`;
+  for (let p = 0; p < 3 && url; p++){
+    let d;
+    try { const r = await fetch(url); if (!r.ok) break; d = await r.json(); } catch(e){ break; }
+    for (const tr of (d.results || [])) out.push({id:String(tr.id), nome:tr.name || '—'});
+    url = d.next || null;
+  }
+  S.trofeiCache.set(id, out);
+  return out;
+}
+/* `totale` c'è solo quando la percentuale viene dai trofei: finché non c'è, comanda il
+   valore messo a mano con la barra. */
+function pctCompletamento(rec){
+  const cm = rec && rec.completamento;
+  if (!cm) return null;
+  if (cm.totale) return Math.round(((cm.presi || []).length / cm.totale) * 100);
+  return typeof cm.pct === 'number' ? Math.round(cm.pct) : null;
+}
+function badgeCompletamento(pct, opts = {}){
+  if (pct == null) return '';
+  const p = Math.max(0, Math.min(100, Math.round(pct)));
+  const pieno = p >= 100;
+  const tit = pieno ? 'Platino: completato al 100%' : `Completato al ${p}%`;
+  return `<span class="compl${pieno ? ' platino' : ''}${opts.angolo ? ' angolo' : ''}"`
+    + ` style="--p:${p}" title="${tit}"><b>${pieno ? '🏆' : p}</b></span>`;
+}
+
 function editorRecMobile(recOrig, opts={}){
   const ed=(recOrig.autore===S.me.slug)||!!opts.nuova;
   const bozza=JSON.parse(JSON.stringify(recOrig));
@@ -3009,6 +3748,63 @@ function editorRecMobile(recOrig, opts={}){
   if (ed && !bozza.sezioni.length) bozza.sezioni = SEZIONI_DEFAULT.map(x => ({titolo:x, testo:''}));
   let voto=bozza.votoPersonale||0;
   let streamRilevato=false;   // rilevo i servizi da TMDB una volta sola all'apertura
+  // `null` = non ancora chiesti a RAWG; lista vuota = questo gioco non ha trofei
+  let trofei=null, trofeiChiesti=false;
+  const complStato=()=>bozza.completamento||{};
+  const presiOra=()=>(complStato().presi||[]);
+  const pctOra=()=>{ const cm=complStato();
+    if (cm.totale) return Math.round((presiOra().length/cm.totale)*100);
+    return Math.round(cm.pct||0); };
+  function complHTML(){
+    if (trofei===null) return `<p class="meta" style="font-size:12px">⏳ cerco i trofei su RAWG…</p>`;
+    const presi=new Set(presiOra()), p=pctOra();
+    if (!trofei.length) return `<div class="compl-barra">
+        ${ed?`<input type="range" id="m-compl-range" min="0" max="100" step="1" value="${p}">`:''}
+        <span class="compl-num" id="m-compl-num">${p}%</span>${badgeCompletamento(p)}
+      </div><p class="meta" style="font-size:12px">${S.config.rawgKey
+        ? 'Di questo gioco RAWG non ha i trofei: la percentuale la metti tu.'
+        : 'Senza chiave RAWG i trofei non si possono chiedere: la percentuale la metti tu.'}</p>`;
+    return `<div class="compl-testa">
+        ${ed?`<button type="button" class="ghost" id="m-plat" style="padding:4px 9px; font-size:12px">🏆 Platino</button>`:''}
+        <span class="compl-num" id="m-compl-num">${p}% · ${presi.size}/${trofei.length} trofei</span>
+        ${badgeCompletamento(p)}
+      </div>
+      <div class="compl-lista" id="m-trofei">${trofei.map(tr =>
+        `<label class="compl-t${presi.has(tr.id)?' preso':''}"><input type="checkbox" data-t="${esc(tr.id)}"${
+          presi.has(tr.id)?' checked':''}${ed?'':' disabled'}>${esc(tr.nome)}</label>`).join('')}</div>`;
+  }
+  // si aggiorna solo la testa: ridisegnare l'elenco a ogni spunta perderebbe lo scorrimento
+  function complTesta(){
+    const box=$('#m-compl'); if(!box) return;
+    const p=pctOra(), num=$('#m-compl-num');
+    if (num) num.textContent = (trofei&&trofei.length) ? `${p}% · ${presiOra().length}/${trofei.length} trofei` : `${p}%`;
+    const vecchio=box.querySelector('.compl'); if (vecchio) vecchio.outerHTML=badgeCompletamento(p);
+  }
+  function agganciaCompl(){
+    const box=$('#m-compl'); if(!box) return;
+    if (!trofeiChiesti){ trofeiChiesti=true;
+      trofeiGioco(bozza.tmdbId).then(l=>{ trofei=l; const b=$('#m-compl'); if(!b) return;
+        b.innerHTML=complHTML(); agganciaCompl(); });
+      return; }
+    if (!ed || trofei===null) return;
+    const range=$('#m-compl-range');
+    if (range) range.oninput=()=>{ bozza.completamento={pct:+range.value, presi:[], totale:0}; complTesta(); };
+    const plat=$('#m-plat');
+    if (plat) plat.onclick=()=>{
+      const tutti=presiOra().length>=trofei.length;
+      bozza.completamento={presi: tutti?[]:trofei.map(x=>x.id), totale:trofei.length, pct: tutti?0:100};
+      box.querySelectorAll('#m-trofei input[data-t]').forEach(cb=>{
+        cb.checked=!tutti; cb.closest('.compl-t').classList.toggle('preso',!tutti); });
+      complTesta(); };
+    const lista=$('#m-trofei');
+    if (lista) lista.onchange=e=>{
+      const cb=e.target.closest('input[data-t]'); if(!cb) return;
+      const presi=[...presiOra()], i=presi.indexOf(cb.dataset.t);
+      if (cb.checked){ if(i<0) presi.push(cb.dataset.t); } else if (i>=0) presi.splice(i,1);
+      bozza.completamento={presi, totale:trofei.length, pct:Math.round((presi.length/trofei.length)*100)};
+      cb.closest('.compl-t').classList.toggle('preso', cb.checked);
+      complTesta(); };
+  }
   function leggiCampi(){ if(!ed) return;
     bozza.sezioni=[...document.querySelectorAll('#m-re-sezioni .re-sez')].map(row=>({titolo:row.querySelector('.re-sez-tit').value, testo:senzaWiki(row.querySelector('.re-sez-txt'))}));
     const p=$('#m-re-perc'); if(p) bozza.doveVederlo.percorso=p.value.trim();
@@ -3039,14 +3835,16 @@ function editorRecMobile(recOrig, opts={}){
       </div>` : ''}
       ${ed
         ?`<div class="re-riga2"><label>Ultima visione <input type="date" id="m-re-uv" value="${esc(bozza.ultimaVisione||'')}"></label>
-            <label class="re-incorso2"><input type="checkbox" id="m-re-incorso"${bozza.inCorso?' checked':''}> ✍ In corso</label></div>
+            <label class="re-incorso2"><input type="checkbox" id="m-re-incorso"${bozza.inCorso?' checked':''}> ✍ In corso</label></div>`
+          + (!conDoveVederlo() ? '' : `
           <div class="etich">DOVE VEDERLO</div>
           <div class="etich sotto">Streaming <button class="linkbtn" id="m-re-rileva" style="padding:2px 4px; font-size:12px">🔄 rileva</button></div>
           <div class="compagnia" id="m-re-strm">${DOVE_STREAMING.map(x=>doveChipM(x,'streaming',(bozza.doveVederlo.streaming||[]).includes(x))).join('')}</div>
           <div class="etich sotto">Fisico</div>
           <div class="compagnia" id="m-re-fis">${DOVE_FISICO.map(x=>doveChipM(x,'fisico',(bozza.doveVederlo.fisico||[]).includes(x))).join('')}</div>
-          <div class="re-dove-file"><input type="text" id="m-re-perc" value="${esc(bozza.doveVederlo.percorso||'')}" placeholder="percorso file sul PC (nota)"></div>`
-        :`<div class="meta">${bozza.ultimaVisione?'👁 '+esc(dataBreve(bozza.ultimaVisione))+'  ':''}${doveTestoM(bozza.doveVederlo)}</div>`}
+          <div class="re-dove-file"><input type="text" id="m-re-perc" value="${esc(bozza.doveVederlo.percorso||'')}" placeholder="percorso file sul PC (nota)"></div>`)
+        :`<div class="meta">${bozza.ultimaVisione?'👁 '+esc(dataBreve(bozza.ultimaVisione))+'  ':''}${conDoveVederlo() ? doveTestoM(bozza.doveVederlo) : ''}</div>`}
+      ${inGiochi()?`<div class="etich">COMPLETAMENTO</div><div id="m-compl">${complHTML()}</div>`:''}
       ${ed?`<div style="margin:4px 0 8px">${bozza.tmdbId==null?'<span style="color:var(--rosso2);font-size:12px">⚠ nessun film collegato · </span>':''}<button class="linkbtn" id="m-re-collega" style="padding:2px 0">🔗 ${bozza.tmdbId!=null?'Cambia film':'Collega a TMDB'}</button></div>`:''}
       ${ed?`<div class="re-toolbar" id="m-re-toolbar">
         <button type="button" data-cmd="bold"><b>B</b></button>
@@ -3139,6 +3937,7 @@ function editorRecMobile(recOrig, opts={}){
       $('#m-re-colore').oninput=e=>{ ripSel(); document.execCommand('foreColor',false,e.target.value); }; }
     const dv=bozza.doveVederlo;
     const clic=(sel,ch)=>{ const box=$(sel); if(!box) return; box.onclick=e=>{ const b=e.target.closest('[data-dove]'); if(!b) return; const v=b.dataset.val, arr=dv[ch]=dv[ch]||[]; const i=arr.indexOf(v); if(i>=0) arr.splice(i,1); else arr.push(v); const on=arr.includes(v); b.classList.toggle('con',on); b.textContent=(on?'✓ ':'')+v; }; };
+    if (inGiochi()) agganciaCompl();
     clic('#m-re-strm','streaming'); clic('#m-re-fis','fisico');
     // rileva da TMDB i servizi streaming dove è disponibile il film (Italia) e spunta i
     // chip corrispondenti, senza toccare quelli già scelti a mano.
@@ -3157,7 +3956,7 @@ function editorRecMobile(recOrig, opts={}){
       if(!silenzioso) toast('Rilevati: '+noti.join(', ')+' 📺');
     };
     if($('#m-re-rileva')) $('#m-re-rileva').onclick=()=>rilevaStreaming(false);
-    if(!streamRilevato && bozza.tmdbId!=null && !(dv.streaming||[]).length){ streamRilevato=true; rilevaStreaming(true); }
+    if(conDoveVederlo() && !streamRilevato && bozza.tmdbId!=null && !(dv.streaming||[]).length){ streamRilevato=true; rilevaStreaming(true); }
     if($('#m-re-collega')) $('#m-re-collega').onclick=()=>{ leggiCampi(); modaleCercaFilmM(id=>collegaTMDBM(bozza,id), {titolo:bozza.tmdbId!=null?'Cambia film':'Collega a TMDB', query:(bozza.meta||{}).titolo||''}); };
     $('#m-re-add-sez').onclick=()=>{ leggiCampi(); bozza.sezioni.push({titolo:'Nuova sezione',testo:''}); render(); };
     $('#m-re-sezioni').querySelectorAll('[data-az]').forEach(b=>b.onclick=()=>{ leggiCampi(); const i=+b.dataset.i, az=b.dataset.az; if(az==='del') bozza.sezioni.splice(i,1); else if(az==='su'&&i>0)[bozza.sezioni[i-1],bozza.sezioni[i]]=[bozza.sezioni[i],bozza.sezioni[i-1]]; else if(az==='giu'&&i<bozza.sezioni.length-1)[bozza.sezioni[i+1],bozza.sezioni[i]]=[bozza.sezioni[i],bozza.sezioni[i+1]]; render(); });
@@ -3200,7 +3999,7 @@ function modaleCercaFilmM(onScegli, opts={}){
   $('#rnm-x').onclick=chiudiModale; let t=null;
   const cerca=()=>{ clearTimeout(t); const q=$('#rnm-q').value.trim(); if(q.length<2){$('#rnm-ris').innerHTML='';return;}
     t=setTimeout(async()=>{ try{ const res=await cercaFilm(q);
-      $('#rnm-ris').innerHTML=res.map(f=>`<div class="rn-item" data-id="${f.id}">${f.poster_path?`<img src="https://image.tmdb.org/t/p/w92${f.poster_path}">`:'<div class="rn-mini"></div>'}<div><div>${esc(f.title)}</div><div style="color:var(--dim);font-size:12px">${(f.release_date||'').slice(0,4)}</div></div></div>`).join('')||'<div style="color:var(--dim);padding:8px">Nessun risultato</div>';
+      $('#rnm-ris').innerHTML=res.map(f=>`<div class="rn-item" data-id="${f.id}">${miniaturaRisultato(f)?`<img src="${esc(miniaturaRisultato(f))}" loading="lazy" alt="">`:'<div class="rn-mini"></div>'}<div><div>${esc(f.title)}</div><div style="color:var(--dim);font-size:12px">${(f.release_date||'').slice(0,4)}</div></div></div>`).join('')||'<div style="color:var(--dim);padding:8px">Nessun risultato</div>';
       $('#rnm-ris').querySelectorAll('.rn-item').forEach(el=>el.onclick=()=>onScegli(parseInt(el.dataset.id,10)));
     }catch(e){ $('#rnm-ris').innerHTML=`<div style="color:var(--dim);padding:8px">${e.message==='nokey'?'Manca la chiave TMDB':'Ricerca non riuscita'}</div>`; } },350); };
   $('#rnm-q').oninput=cerca; if(opts.query){ $('#rnm-q').value=opts.query; cerca(); }
