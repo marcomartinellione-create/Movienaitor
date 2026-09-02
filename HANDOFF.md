@@ -2,9 +2,11 @@
 
 > Manuale operativo per continuare a lavorare sul progetto. Contesto rapido +
 > convenzioni + workflow. Per le regole di prodotto e le formule vedi **SPECIFICA.md**.
-> **Stato: v1.7.5** (desktop) — modalità Serie TV su desktop e mobile, gruppi di
-> visione, recensioni per stagione, e il flash all'accensione della TV corretto. L'APK
-> segue con la stessa cifra. Cartella progetto: `D:\4 - Programmi\Movienaitor`.
+> **Stato: v1.7.11** (desktop e mobile) — quattro macro-categorie: Film, Serie TV,
+> Videogiochi, Libri. In più: completamento dei videogiochi nelle recensioni (trofei
+> RAWG), copertine dei libri con ripiego su Google Books, e il volo del libro rifatto a
+> due facce. L'APK segue con la stessa cifra.
+> Cartella progetto: `D: - Programmi\Movienaitor`.
 
 ## Cos'è
 
@@ -365,6 +367,18 @@ utenti scarica la nuova versione al prossimo avvio.
 
 ## Gotcha
 
+- **Controlla SEMPRE la sintassi prima di provare a mano.** I due file sono HTML con
+  dentro un unico `<script>` enorme: un errore di sintassi non dà nessun sintomo utile,
+  l'app semplicemente non parte e in console c'è solo `Unexpected token`. Estrai lo script
+  e passalo a `node --check` — trova la riga esatta in un secondo. È costato un giro
+  aggiungendo un ramo a un ternario annidato senza chiudere la parentesi.
+- **`inGiochi()` è quasi sempre il nome sbagliato.** Metà dei rami scritti così non
+  parlano di videogiochi: parlano di categorie **con lo stato** in corso/finito, e i libri
+  sono la seconda. Usa `conStato()`. Scritto `inGiochi()`, un libro finirebbe dalla parte
+  dei film: nessun «finito», nessuna scelta in Sala, e la recensione che lo spegne.
+- **Le due animazioni della biblioteca sono la STESSA.** Il volo del libro sul telefono è
+  estratto dal file del PC e adattato solo nei nomi degli elementi: se ne correggi una,
+  ricopiala nell'altra invece di riscriverla.
 - **localStorage NON persiste su `app://mvn`** (Electron): profilo/host/stato finestra
   vanno nel config di sistema, non in localStorage.
 - **PowerShell qui è 5.1**: niente heredoc `<<`, niente `&&`. Per messaggi di commit
