@@ -446,10 +446,10 @@
   .upd .vai{flex:0 0 auto; color:var(--oro2)}
 
   /* ══ Schermi larghi: telefono girato e tablet ══════════════════════════════════════
-     Due situazioni diverse, non una. Il TABLET ha spazio in tutte e due le direzioni:
-     basta allargare la colonna e mettere le liste su più colonne. Il TELEFONO GIRATO ha
-     spazio in larghezza ma pochissimo in altezza: lì il problema è verticale, e la Sala
-     va messa fianco a fianco perché schermo e platea ci stiano insieme senza scorrere. */
+     La Sala resta quella del PC: **schermo sopra, posti sotto a tutta larghezza**. Erano
+     finiti in una colonna di lato, e di lato non hanno senso — al cinema le poltrone
+     stanno davanti allo schermo, non accanto. Della larghezza in più si serve la platea,
+     che allarga le file come quelle vere del PC (9+10 poltrone). */
 
   /* — tablet e finestre larghe — */
   @media (min-width:760px){
@@ -458,21 +458,17 @@
     #mia-lista, #risultati{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:9px}
     #mia-lista .film, #risultati .film{margin-bottom:0}
     .rec-galleria{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
-    .platea{--per-fila:8}
     .centro{max-width:520px; margin:0 auto}
   }
 
-  /* — la Sala fianco a fianco: schermo a sinistra, chi c'è a destra — */
+  /* — la Sala, in orizzontale: come sul PC — */
   @media (min-width:760px), (orientation:landscape) and (min-width:640px){
-    #pan-sala{display:grid; grid-template-columns:minmax(0,1.35fr) minmax(240px,1fr);
-      grid-template-areas:'tit chi' 'schermo platea' 'lista stato'; column-gap:16px; align-items:start}
-    #pan-sala > .sezione:first-of-type{grid-area:tit; margin-top:0}
-    #pan-sala > .cartellone{grid-area:schermo}
-    #pan-sala > #m-lista-completa{grid-area:lista}
-    #pan-sala > .sezione:nth-of-type(2){grid-area:chi; margin-top:0}
-    #pan-sala > .chips-gruppi{grid-area:chi; align-self:end}
-    #pan-sala > .platea{grid-area:platea}
-    #pan-sala > .stato-sala{grid-area:stato}
+    /* lo schermo al centro, non a tutta pagina: tiene 16/9 e non diventa smisurato */
+    #m-schermo{margin-left:auto; margin-right:auto; max-width:min(100%, calc(62dvh * 16 / 9))}
+    #m-lista-completa{display:block; max-width:420px; margin-left:auto; margin-right:auto}
+    /* le file di poltrone si allargano, come la platea del PC */
+    .platea{--per-fila:11; grid-template-columns:repeat(var(--per-fila), minmax(0, 60px)); justify-content:center}
+    .stato-sala{text-align:center}
   }
 
   /* — telefono girato: l'altezza è quella che manca — */
@@ -488,15 +484,14 @@
     .sezione{margin-top:9px}
     /* la locandina alta rubava metà schermo: qui la scheda si stringe */
     .film .pst{width:38px; height:56px}
-    .platea{--per-fila:9; grid-template-columns:repeat(var(--per-fila), minmax(0, 52px))}
+    /* file lunghe e poltrone piccole: ci sta più platea nella riga */
+    .platea{--per-fila:14; grid-template-columns:repeat(var(--per-fila), minmax(0, 44px))}
     /* i modali erano alti quanto lo schermo: girati devono poter scorrere */
     #modale{max-height:92dvh; overflow-y:auto}
     .centro{min-height:auto; padding:14px}
-    /* la Sala girata: schermo e platea insieme, senza scorrere */
-    #pan-sala{grid-template-columns:minmax(0,1.4fr) minmax(190px,1fr); column-gap:14px}
     /* lo schermo tiene le sue proporzioni (16/9, non si toccano): per farlo stare
        nell'altezza che resta si limita la LARGHEZZA, non l'altezza */
-    #pan-sala > .cartellone{margin:6px 0 4px; max-width:calc((100dvh - 218px) * 16 / 9)}
+    #m-schermo{margin:6px auto 4px; max-width:min(100%, calc(46dvh * 16 / 9))}
     #m-segnala{transform:scale(.82); transform-origin:left bottom}
   }
 
@@ -527,7 +522,7 @@
     <!-- 2) CHI SEI -->
     <section class="schermo" id="sc-chi">
       <div class="centro">
-        <div class="bollo">🎬</div>
+        <div class="bollo" id="gate-bollo">🎬</div>
         <div><h1 style="font-size:18px">CHI SEI?</h1><p class="sub">Scegli il tuo profilo</p></div>
         <div class="lista-profili" id="lista-profili"></div>
         <button class="ghost grande" id="btn-indietro" style="display:none">← Torna alla mia lista</button>
@@ -565,8 +560,8 @@
         <div id="risultati"></div>
         <div class="sezione"><span class="grow">La mia lista <span id="conta-lista"></span></span><button class="f-btn" id="btn-filtri">≡ filtri</button></div>
         <div class="sotto-menu" id="m-lista-tabs">
-          <button class="smtab on" data-vista="daVedere">Da vedere <span class="n" id="m-conta-dav"></span></button>
-          <button class="smtab" data-vista="visti">Già visti <span class="n" id="m-conta-vis"></span></button>
+          <button class="smtab on" data-vista="daVedere"><span data-film="Da vedere" data-giochi="Da giocare">Da vedere</span> <span class="n" id="m-conta-dav"></span></button>
+          <button class="smtab" data-vista="visti"><span data-film="Già visti" data-serie="Già viste" data-giochi="Già finiti">Già visti</span> <span class="n" id="m-conta-vis"></span></button>
         </div>
         <div id="mia-lista"></div>
       </div>
@@ -584,7 +579,7 @@
           <input id="m-rec-q" type="search" placeholder="🔎 cerca…" autocomplete="off">
           <select id="m-rec-ordina" class="inp">
             <option value="modificato">Ultima modifica</option>
-            <option value="ultimaVisione">Ultima visione</option>
+            <option value="ultimaVisione" data-film="Ultima visione" data-giochi="Ultima partita">Ultima visione</option>
             <option value="votoPersonale">Voto</option>
             <option value="titolo">Titolo</option>
             <option value="anno">Anno</option>
@@ -605,7 +600,7 @@
 <button class="bug-btn" id="m-segnala" style="display:none">🐞 Segnala</button>
 <button class="modo-btn" id="m-modo" style="display:none"><span id="m-modo-ic">🎬</span> <span id="m-modo-nome">Film</span></button>
 <div class="backdrop" id="backdrop"><div class="modale" id="modale"></div></div>
-<div id="m-luci"><div>🎬 Buona visione!</div><small id="m-luci-tit"></small></div>
+<div id="m-luci"><div data-film="🎬 Buona visione!" data-serie="📺 Buona visione!" data-giochi="🎮 Buona partita!">🎬 Buona visione!</div><small id="m-luci-tit"></small></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1388,7 +1383,7 @@ async function modaleAggiungi(id){
     <div class="compagnia" id="chips">${chipsCompagnia(comp)}</div>
     <div class="m-az">
       <button class="ghost" id="m-annulla">Annulla</button>
-      <button class="primario" id="m-ok">🎬 Aggiungi</button>
+      <button class="primario" id="m-ok">${datiModo(S.modo).ic} Aggiungi</button>
     </div>`);
   const dip = () => $('#stelle').querySelectorAll('.st').forEach(s => s.classList.toggle('on', +s.dataset.v <= desiderio));
   $('#stelle').onclick = e => { const s = e.target.closest('.st'); if(!s) return; desiderio = +s.dataset.v; dip(); };
@@ -1595,7 +1590,7 @@ function modaleModifica(id){
   }
   $('#m-togli').onclick = () => {
     apriModale(`<h3>Togliere dalla lista?</h3><p class="meta">${visto
-      ? `«${esc(orig.titolo)}» sparirà dai tuoi già visti. Le serate a cui hanno partecipato altri restano nel loro storico.`
+      ? `«${esc(orig.titolo)}» sparirà dai tuoi ${inGiochi() ? 'già giocati' : (inSerie() ? 'già viste' : 'già visti')}. Le serate a cui hanno partecipato altri restano nel loro storico.`
       : `«${esc(orig.titolo)}» sparirà dalla tua lista.`}</p>
       <div class="m-az"><button class="ghost" id="m-no">Annulla</button><button class="primario" id="m-si">Rimuovi</button></div>`);
     $('#m-no').onclick = () => modaleModifica(id);
@@ -1941,7 +1936,7 @@ function modalePlayM(r){
     <span style="font-size:12px">Per i proponenti riparte il timer dell'attesa e il film esce dalle loro liste.</span></p>`}
     <div class="m-az">
       <button class="ghost" id="mp-annulla">Non ancora</button>
-      <button class="primario" id="mp-ok">▶ Buona visione</button>
+      <button class="primario" id="mp-ok">▶ ${giochi ? 'Buona partita' : 'Buona visione'}</button>
     </div>`);
   $('#mp-annulla').onclick = chiudiModale;
   if (giochi){
@@ -1994,7 +1989,7 @@ function modalePlayM(r){
     if (serie){ voce.stagione = stagione; voce.episodi = episodi; }
     if (giochi) voce.stato = statoScelto;
     try { await registraVisioneM(voce); }
-    catch(e){ $('#mp-ok').disabled=false; $('#mp-ok').textContent='▶ Buona visione'; return toast('Registrazione non riuscita: '+e.message, true); }
+    catch(e){ $('#mp-ok').disabled=false; $('#mp-ok').textContent = giochi ? (statoScelto === 'finito' ? "✓ L'abbiamo finito" : '▶ Buona partita') : '▶ Buona visione'; return toast('Registrazione non riuscita: '+e.message, true); }
     chiudiModale();
     $('#m-luci-tit').textContent = `${f.titolo}${giochi ? ' — '+(statoScelto === 'finito' ? 'finito' : 'in corso') : ''} — registrato per ${voce.partecipanti.length} ${giochi ? 'giocatori' : 'spettatori'}`;
     $('#m-luci').classList.add('giu');
@@ -2741,7 +2736,7 @@ function modaleConsiglioM(x){
     ${f.trama?`<div class="trama">${esc(f.trama)}</div>`:''}
     <div class="m-az">
       <button class="ghost" id="cg-no">Non mi interessa</button>
-      <button class="primario" id="cg-si">🎬 Aggiungi</button>
+      <button class="primario" id="cg-si">${datiModo(S.modo).ic} Aggiungi</button>
     </div>`);
   $('#cg-no').onclick = async () => {
     S.cgScartati.set(f.tmdbId, f.titolo || ('Film #'+f.tmdbId));

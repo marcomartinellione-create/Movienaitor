@@ -49,6 +49,24 @@
    il testo che ci sta sopra, che va scurito sul blu. */
 :root[data-modo="serie"]{ --su-oro:#101a26; }
 
+/* La biblioteca: verde bottiglia, legno scuro, carta. L'oro resta l'accento, come nelle
+   altre tre stanze. Vedi CONCEPT-libri.md §6. */
+:root[data-modo="libri"]{
+  --bg:#101711; --bg2:#16201a; --velluto:#22352a; --velluto2:#1b2a21; --velluto3:#2f4a3a;
+  --rosso:#4d7a5a; --rosso2:#6fa583;
+  --crema:#f0ece0; --dim:#b3bda9; --dim2:#7b8874; --verde:#7fb59a;
+  --bordo:#2f4a3a; --bordo2:#22352a;
+  --stella-off:#3f5347;
+  --velo-badge:rgba(10,16,12,.85);
+  --poltrona-scura:#2b4535;
+  --posto-vuoto:#25392c;
+  --posto-bordo:#0a100c;
+  --vuoto-righe:#16211a;
+  --schermo-off:#0b120d;
+  --ombra:0 10px 30px rgba(0,0,0,.55);
+  --su-oro:#16211a;
+}
+
 /* La postazione: notte viola, il neon al posto del velluto. L'oro resta l'accento anche
    qui, per la stessa ragione per cui è rimasto in salotto. Vedi CONCEPT-giochi.md §8. */
 :root[data-modo="giochi"]{
@@ -241,6 +259,165 @@ header .spazio{flex:1; min-width:0}
   65%  {transform:scaleY(.6);   filter:brightness(1.5); opacity:1}
   100% {transform:scaleY(1);    filter:brightness(1);   opacity:1}
 }
+/* ---------- modalità libri: la libreria ----------
+   Il riquadro non è uno schermo e non si accende: è uno SCAFFALE visto di fronte, coi
+   dorsi rivolti verso di noi. Quando il gruppo ha scelto un libro, quel volume esce di
+   costola dallo scaffale, si avvicina ruotando e si mette in posizione mostrando la
+   copertina; lo scaffale resta dietro, sfocato. Alla deselezione torna al suo posto.
+   Le proporzioni del riquadro non si toccano. Vedi CONCEPT-libri.md §6. */
+:root[data-modo="libri"] .tenda{display:none}
+:root[data-modo="libri"] .tv-spenta{display:none}     /* niente da accendere, qui */
+:root[data-modo="libri"] .schermo{border:7px solid #241810; border-radius:4px;
+  box-shadow:inset 0 0 90px rgba(0,0,0,.7), 0 16px 38px rgba(0,0,0,.55)}
+:root[data-modo="libri"] .schermo .sfondo{display:none}
+/* lo scaffale sta nel DOM DOPO il contenuto: senza questo gli finirebbe sopra.
+   La PROSPETTIVA va qui e non sul riquadro: fra i due c'è questo elemento, e un livello
+   in mezzo senza preserve-3d appiattisce la scena — il libro si schiacciava invece di
+   girarsi in profondità, e il translateZ non si vedeva. */
+:root[data-modo="libri"] .schermo-inner{z-index:2;
+  /* Punto di vista LONTANO e CENTRATO. Da vicino e di sbieco (900px al 30%) un volume
+     girato di 90° all'altro capo dello scaffale veniva proiettato pendente, e sembrava
+     partire storto per poi raddrizzarsi. */
+  /* Quasi una proiezione parallela: più il punto di vista è vicino, più un volume girato
+     di 90° lontano dal centro viene proiettato pendente. A 5200px il libro resta
+     perpendicolare allo schermo dovunque si trovi nello scaffale. */
+  perspective:5200px; perspective-origin:50% 50%; transform-style:preserve-3d}
+:root[data-modo="libri"] .schermo .velo{z-index:1;
+  background:linear-gradient(90deg,rgba(12,10,7,.18) 0 30%,rgba(12,10,7,.70) 58%),
+             radial-gradient(120% 90% at 50% -10%, rgba(255,214,150,.10), transparent 62%)}
+
+/* ── il mobile ── */
+.libreria{display:none}
+:root[data-modo="libri"] .libreria{display:flex; position:absolute; inset:0; z-index:0;
+  flex-direction:column; justify-content:space-between; padding:2.2% 3.4%;
+  background:
+    /* le venature del legno di fondo */
+    repeating-linear-gradient(90deg, rgba(0,0,0,.14) 0 2px, transparent 2px 7px),
+    linear-gradient(180deg,#2b1e14,#1d150e 55%,#160f0a);
+  /* si anima SOLO l'opacità: è l'unica cosa che il browser sa comporre senza ridisegnare */
+  transition:opacity .6s ease; contain:paint}
+/* i montanti laterali del mobile */
+:root[data-modo="libri"] .libreria::before,
+:root[data-modo="libri"] .libreria::after{content:''; position:absolute; top:0; bottom:0; width:2.4%;
+  background:linear-gradient(90deg,#3a2818,#241810 60%,#171009);
+  box-shadow:inset 0 0 20px rgba(0,0,0,.55)}
+:root[data-modo="libri"] .libreria::before{left:0}
+:root[data-modo="libri"] .libreria::after{right:0; background:linear-gradient(270deg,#3a2818,#241810 60%,#171009)}
+/* La gemella sfocata: la sfocatura è FISSA, quindi viene calcolata una volta sola e resta
+   nel suo strato. A libro scelto le due si scambiano in dissolvenza — nessun filtro da
+   ricalcolare mentre il libro vola. */
+:root[data-modo="libri"] .libreria.sfocata{opacity:0;
+  filter:blur(6px) brightness(.42) saturate(.85);
+  /* si fa promuovere a strato SUBITO, quando si entra in biblioteca: se aspettasse il
+     momento in cui diventa visibile, dipingerebbe 96 dorsi sfocati proprio mentre il
+     libro parte */
+  will-change:opacity}
+/* Nella copia sfocata i dorsi perdono filetti ed etichetta: a 6px di sfocatura non si
+   vedono, ma costerebbero lo stesso quattro gradienti per ciascuno. Resta il volume. */
+:root[data-modo="libri"] .libreria.sfocata .dorso{
+  background:linear-gradient(90deg, rgba(0,0,0,.42) 0 7%, var(--c) 7% 40%,
+    color-mix(in srgb, var(--c) 88%, white) 40% 55%, var(--c) 55% 84%,
+    rgba(0,0,0,.34) 84% 100%)}
+/* niente scale sulla copia: sposterebbe i suoi dorsi rispetto a quelli della copia nitida,
+   che è quella su cui si misura la partenza del volo — e il libro partirebbe fuori posto */
+:root[data-modo="libri"] .schermo.aperto .libreria.sfocata{opacity:1}
+:root[data-modo="libri"] .schermo.aperto .libreria:not(.sfocata){opacity:0}
+
+.ripiano{position:relative; display:flex; align-items:flex-end; gap:1.5px; height:23%; padding:0 1%}
+/* la mensola: piano chiaro davanti, ombra sotto, come una tavola vista di taglio */
+.ripiano::after{content:''; position:absolute; left:0; right:0; bottom:-5px; height:5px;
+  background:linear-gradient(180deg,#5a3f28,#33210f);
+  box-shadow:0 4px 7px rgba(0,0,0,.6)}
+/* l'ombra che i volumi fanno sul fondo del ripiano */
+.ripiano::before{content:''; position:absolute; left:0; right:0; bottom:0; height:60%;
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.4)); pointer-events:none}
+
+/* ── il dorso ── */
+/* Un dorso = UN elemento. Filetti della rilegatura, etichetta del titolo e volume stanno
+   tutti dentro il `background`: il browser li dipinge in un passaggio solo. Prima erano
+   tre riquadri e due ombre per ciascuno — per 96 dorsi, e tutto da rasterizzare una
+   seconda volta per la copia sfocata. */
+.dorso, .copertina-libro .costa{
+  background:
+    linear-gradient(rgba(0,0,0,.24),rgba(0,0,0,.24)) 50% 46%/68% 16% no-repeat,
+    linear-gradient(rgba(226,196,140,.5),rgba(226,196,140,.5)) 50% 15%/76% 8% no-repeat,
+    linear-gradient(rgba(226,196,140,.34),rgba(226,196,140,.34)) 50% 36%/76% 7% no-repeat,
+    linear-gradient(180deg,rgba(255,255,255,.22),transparent) 50% 0/100% 5px no-repeat,
+    linear-gradient(90deg, rgba(0,0,0,.42) 0 7%, var(--c) 7% 26%,
+      color-mix(in srgb, var(--c) 88%, white) 26% 40%, var(--c) 40% 84%,
+      rgba(0,0,0,.34) 84% 100%)}
+.dorso{flex:var(--w) 1 0; min-width:0; height:var(--h); border-radius:1.5px 1.5px 0 0;
+  transform:rotate(var(--rot)); transform-origin:bottom center}
+/* La transizione sta SOLO sul volume che se ne va: dichiararla su tutti e 96 significa
+   tenerne in vita 96 durante il volo. Il ritardo la fa cadere dentro l'accensione: il
+   dorso piatto si spegne proprio mentre il volume in rilievo si illumina sopra di lui. */
+.dorso.preso{transition:opacity .38s ease .16s}
+/* qualche volume sdraiato sopra gli altri, come in una libreria vera */
+.dorso.sdraiato{align-self:flex-end; height:auto; flex:var(--w) 0 0;
+  border-radius:2px; box-shadow:0 2px 5px rgba(0,0,0,.5)}
+.pila{position:relative; align-self:flex-end; display:flex; flex-direction:column-reverse;
+  gap:2px; flex:var(--w) 0 0; margin-left:4px}
+.pila span{height:7px; border-radius:2px; background:var(--c);
+  box-shadow:inset 0 2px 0 -1px rgba(255,255,255,.25), 0 1px 3px rgba(0,0,0,.5)}
+/* il volume scelto lascia il suo posto vuoto */
+:root[data-modo="libri"] .schermo.aperto .dorso.preso{opacity:0}
+
+/* ── il volume che vola ── */
+.copertina-libro{position:absolute; left:5%; top:50%; width:23%; aspect-ratio:2/3;
+  max-height:84%; z-index:3; transform:translateY(-50%);
+  /* il layer si tiene: toglierlo alla fine del volo lo fa buttare via e ridisegnare
+     proprio nell'istante in cui il libro si posa — ed è uno scatto in faccia */
+  transform-style:preserve-3d; will-change:transform}
+/* Il volume ha uno spessore vero. La costa si estende dal suo bordo sinistro VERSO DI NOI,
+   quindi la copertina va sulla faccia ANTERIORE — a z = spessore — se no resta sul lato
+   lontano della costa e il libro sembra incassato dentro il proprio dorso. */
+.copertina-libro img{width:100%; height:100%; object-fit:cover; display:block;
+  border-radius:2px 5px 5px 2px; backface-visibility:hidden;
+  transform:translateZ(var(--spessore,14px));
+  box-shadow:0 18px 40px rgba(0,0,0,.75), inset 0 0 0 1px rgba(255,255,255,.06)}
+/* il taglio delle pagine, sul lato destro: sta sulla stessa faccia della copertina */
+.copertina-libro::after{content:''; position:absolute; right:0; top:2%; bottom:2%; width:6px;
+  border-radius:0 4px 4px 0; pointer-events:none; transform:translateZ(var(--spessore,14px));
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.2) 0 1px,rgba(0,0,0,.12) 1px 3px)}
+/* Il velo d'ombra sulla copertina: il libro attraversa lo scaffale in penombra e ne esce
+   piano piano. Senza, si posava alla luce piena in un fotogramma solo. */
+.copertina-libro .ombra{position:absolute; inset:0; pointer-events:none; opacity:0;
+  transform:translateZ(calc(var(--spessore,14px) + 0.4px)); border-radius:2px 5px 5px 2px;
+  background:linear-gradient(105deg,rgba(6,9,7,.92),rgba(10,14,10,.72) 55%,rgba(6,9,7,.86));
+  will-change:opacity}
+/* La faccia di dietro chiude il volume, ma NON deve vedersi mai da davanti: si gira di
+   180° e si nasconde con backface-visibility. Senza il giro sarebbe un secondo piano
+   frontale scuro dietro la copertina, e negli scorci spunterebbe di lato — che è
+   esattamente il «si vede il retro» che non deve succedere. */
+.copertina-libro::before{content:''; position:absolute; inset:0;
+  transform:translateZ(0) rotateY(180deg); backface-visibility:hidden;
+  border-radius:2px 5px 5px 2px; background:linear-gradient(115deg,#1d150e,#120c07)}
+/* la costa: la faccia che si vede finché il volume è ancora di taglio */
+/* La costa usa lo STESSO disegno dei dorsi (vedi la regola condivisa qui sopra): nei primi
+   fotogrammi è ferma al posto di uno di loro e deve sembrare quel volume lì. */
+.copertina-libro .costa .luce{position:absolute; inset:0; opacity:0; pointer-events:none;
+  border-radius:inherit; will-change:opacity;
+  background:linear-gradient(90deg,rgba(255,240,214,.35),rgba(255,246,228,.95) 45%,rgba(255,240,214,.4))}
+.copertina-libro .costa{position:absolute; left:0; top:0; bottom:0;
+  --c:var(--tinta-costa,#6b3b2a);
+  width:var(--spessore,14px); transform-origin:left center; transform:rotateY(-90deg);
+  border-radius:2px 0 0 2px; backface-visibility:hidden}
+
+/* Il volo NON è in CSS: i suoi fotogrammi contengono misure che si sanno solo a video
+   (dov'è il dorso, quanto è spesso), e metterle in un @keyframes con var() impedisce al
+   browser di accelerare l'animazione — deve ricalcolare gli stili a ogni fotogramma.
+   Lo costruisce voloDelLibro() con numeri veri e lo lancia con Element.animate().
+   Qui resta solo la posa a riposo. */
+:root[data-modo="libri"] .tv-uscita{position:absolute; inset:0; z-index:4; pointer-events:none}
+:root[data-modo="libri"] .tv-uscita .info,
+:root[data-modo="libri"] .tv-uscita .rango{animation:libroTestoVia .28s ease-in both}
+@keyframes libroTestoVia{from{opacity:1} to{opacity:0}}
+:root[data-modo="libri"] .schermo.pronto:not(.aperto) .messaggio{
+  animation:tvMessaggio .4s ease-out .95s both}
+:root[data-modo="libri"] .schermo .info{left:33%; right:5%; width:auto; bottom:auto; top:50%;
+  transform:translateY(-50%)}
+:root[data-modo="libri"] .schermo .rango{left:auto; right:5%; top:6%}
+
 /* ---------- modalità videogiochi: la postazione ----------
    Stessi tre cambi del salotto (CONCEPT-giochi §8): sedia da gaming (nel disegno SVG),
    monitor al posto della TV, barra di caricamento al posto dell'accensione. Aspect ratio,
@@ -824,15 +1001,15 @@ header .spazio{flex:1; min-width:0}
   <header>
     <div class="brand">MOVIENAITOR<small>SALA PRIVATA</small></div>
     <nav>
-      <button class="tab attivo" data-vista="sala"><span data-film="🎬 Sala" data-serie="📺 Sala" data-giochi="🎮 Sala">🎬 Sala</span></button>
+      <button class="tab attivo" data-vista="sala"><span data-film="🎬 Sala" data-serie="📺 Sala" data-giochi="🎮 Sala" data-libri="📚 Sala">🎬 Sala</span></button>
       <span class="nav-sep">|</span>
-      <button class="tab" data-vista="catalogo"><span data-film="🔖 Watch List" data-giochi="🔖 Da giocare">🔖 Watch List</span></button>
+      <button class="tab" data-vista="catalogo"><span data-film="🔖 Watch List" data-giochi="🔖 Da giocare" data-libri="🔖 Da leggere">🔖 Watch List</span></button>
       <span class="nav-sep">|</span>
       <button class="tab" data-vista="recensioni">📝 Recensioni</button>
       <span class="nav-sep">|</span>
       <button class="tab" data-vista="consigli">✨ Per te</button>
       <span class="nav-sep" id="sep-archivio" hidden>|</span>
-      <button class="tab" id="tab-archivio" data-vista="archivio" hidden><span data-film="🎞 Pronti alla visione" data-giochi="🎮 Pronti a giocare">🎞 Pronti alla visione</span></button>
+      <button class="tab" id="tab-archivio" data-vista="archivio" hidden><span data-film="🎞 Pronti alla visione" data-giochi="🎮 Pronti a giocare" data-libri="📚 Pronti da leggere">🎞 Pronti alla visione</span></button>
       <span class="nav-sep" id="sep-segnalazioni" hidden>|</span>
       <button class="tab" id="tab-segnalazioni" data-vista="segnalazioni" hidden>🐞 Segnalazioni</button>
     </nav>
@@ -852,12 +1029,12 @@ header .spazio{flex:1; min-width:0}
           <div class="generi-chips" id="filtro-generi"></div>
         </div>
         <div class="filtro">
-          <label data-film="Durata massima" data-serie="Durata dell'episodio" data-giochi="Impegno massimo">Durata massima</label>
+          <label data-film="Durata massima" data-serie="Durata dell'episodio" data-giochi="Impegno massimo" data-libri="Lunghezza massima">Durata massima</label>
           <input type="range" id="filtro-durata" min="60" max="240" step="5" value="240">
           <div class="valore" id="filtro-durata-val">qualsiasi</div>
         </div>
         <div class="filtro">
-          <label data-film="Regista" data-serie="Creatore" data-giochi="Sviluppatore">Regista</label>
+          <label data-film="Regista" data-serie="Creatore" data-giochi="Sviluppatore" data-libri="Autore">Regista</label>
           <input type="text" id="filtro-regista" list="lista-registi" placeholder="chiunque">
           <datalist id="lista-registi"></datalist>
         </div>
@@ -868,12 +1045,14 @@ header .spazio{flex:1; min-width:0}
         <div class="schermo" id="schermo">
           <div class="schermo-inner" id="schermo-inner"></div>
           <div class="tenda sx"></div><div class="tenda dx"></div><div class="tv-spenta"><i></i></div>
+          <div class="libreria" id="libreria"></div>
+          <div class="libreria sfocata" id="libreria-sfocata" aria-hidden="true"></div>
         </div>
       </div>
 
       <div class="rosa-col">
         <div class="rosa" id="rosa"></div>
-        <button id="btn-lista-completa" data-dove="titolo" data-film="Tutti i film che passano i filtri di stasera, in ordine di pertinenza" data-serie="Tutte le serie che passano i filtri di stasera, in ordine di pertinenza" data-giochi="Tutti i giochi che passano i filtri di stasera, in ordine di pertinenza" title="Tutti i film che passano i filtri di stasera, in ordine di pertinenza">📋 Lista completa</button>
+        <button id="btn-lista-completa" data-dove="titolo" data-film="Tutti i film che passano i filtri di stasera, in ordine di pertinenza" data-serie="Tutte le serie che passano i filtri di stasera, in ordine di pertinenza" data-giochi="Tutti i giochi che passano i filtri di stasera, in ordine di pertinenza" data-libri="Tutti i libri che passano i filtri, in ordine di pertinenza" title="Tutti i film che passano i filtri di stasera, in ordine di pertinenza">📋 Lista completa</button>
       </div>
     </div>
 
@@ -885,12 +1064,12 @@ header .spazio{flex:1; min-width:0}
   <!-- ───── CATALOGO ───── -->
   <main id="vista-catalogo" hidden>
     <div class="catalogo-testa">
-      <input type="text" id="cerca" data-dove="segnaposto" data-film="Cerca un film da aggiungere alla tua lista…" data-serie="Cerca una serie da aggiungere alla tua lista…" data-giochi="Cerca un gioco da aggiungere alla tua lista…" placeholder="Cerca un film da aggiungere alla tua lista…" autocomplete="off">
-      <span class="aiuto-q a-destra" tabindex="0">?<span class="tip" data-film="Scrivi il titolo di un film: dai risultati che compaiono scegli quello da aggiungere alla tua lista. Serve la chiave TMDB (in ⚙ Impostazioni)." data-serie="Scrivi il titolo di una serie: dai risultati che compaiono scegli quella da aggiungere alla tua lista. Serve la chiave TMDB (in ⚙ Impostazioni)." data-giochi="Scrivi il titolo di un gioco: dai risultati che compaiono scegli quello da aggiungere alla tua lista. Serve la chiave RAWG (in ⚙ Impostazioni).">Scrivi il titolo di un film: dai risultati che compaiono scegli quello da aggiungere alla tua lista. Serve la chiave TMDB (in ⚙ Impostazioni) e una connessione a internet.</span></span>
+      <input type="text" id="cerca" data-dove="segnaposto" data-film="Cerca un film da aggiungere alla tua lista…" data-serie="Cerca una serie da aggiungere alla tua lista…" data-giochi="Cerca un gioco da aggiungere alla tua lista…" data-libri="Cerca un libro da aggiungere alla tua lista…" placeholder="Cerca un film da aggiungere alla tua lista…" autocomplete="off">
+      <span class="aiuto-q a-destra" tabindex="0">?<span class="tip" data-film="Scrivi il titolo di un film: dai risultati che compaiono scegli quello da aggiungere alla tua lista. Serve la chiave TMDB (in ⚙ Impostazioni)." data-serie="Scrivi il titolo di una serie: dai risultati che compaiono scegli quella da aggiungere alla tua lista. Serve la chiave TMDB (in ⚙ Impostazioni)." data-giochi="Scrivi il titolo di un gioco: dai risultati che compaiono scegli quello da aggiungere alla tua lista. Serve la chiave RAWG (in ⚙ Impostazioni)." data-libri="Scrivi il titolo di un libro: dai risultati che compaiono scegli quello da aggiungere alla tua lista. I libri arrivano da Open Library, e non serve nessuna chiave.">Scrivi il titolo di un film: dai risultati che compaiono scegli quello da aggiungere alla tua lista. Serve la chiave TMDB (in ⚙ Impostazioni) e una connessione a internet.</span></span>
       <div id="risultati" hidden></div>
     </div>
     <div id="generi-catalogo"></div>
-    <div class="sezione-titolo"><span data-film="LA MIA LISTA — DA VEDERE" data-giochi="LA MIA LISTA — DA GIOCARE">LA MIA LISTA — DA VEDERE</span><span class="aiuto-q" tabindex="0">?<span class="tip" data-film="I film che vuoi vedere. Le stelle (1–5) dicono quanto ti va di vederlo." data-serie="Le serie che vuoi vedere. Le stelle (1–5) dicono quanto ti va di guardarle. Una serie resta qui finché non arrivate in fondo all'ultima stagione uscita." data-giochi="I giochi a cui vuoi giocare. Le stelle (1–5) dicono quanto ti va di giocarci. Un gioco resta qui finché non lo segnate finito: quelli «in corso» restano proponibili.">I film che vuoi vedere. Le stelle (1–5) dicono quanto ti va di vederlo; i nomi ✓/✗ scelgono con chi vederlo o con chi no. Sono i dati che la Sala usa per comporre la Top 5 della serata.</span></span></div>
+    <div class="sezione-titolo"><span data-film="LA MIA LISTA — DA VEDERE" data-giochi="LA MIA LISTA — DA GIOCARE" data-libri="LA MIA LISTA — DA LEGGERE">LA MIA LISTA — DA VEDERE</span><span class="aiuto-q" tabindex="0">?<span class="tip" data-film="I film che vuoi vedere. Le stelle (1–5) dicono quanto ti va di vederlo." data-serie="Le serie che vuoi vedere. Le stelle (1–5) dicono quanto ti va di guardarle. Una serie resta qui finché non arrivate in fondo all'ultima stagione uscita." data-giochi="I giochi a cui vuoi giocare. Le stelle (1–5) dicono quanto ti va di giocarci. Un gioco resta qui finché non lo segnate finito: quelli «in corso» restano proponibili." data-libri="I libri che vuoi leggere. Le stelle (1–5) dicono quanto ti va di leggerli. Un libro resta qui finché non lo segnate finito: quelli «in corso» restano proponibili.">I film che vuoi vedere. Le stelle (1–5) dicono quanto ti va di vederlo; i nomi ✓/✗ scelgono con chi vederlo o con chi no. Sono i dati che la Sala usa per comporre la Top 5 della serata.</span></span></div>
     <div class="cat-filtri" id="cat-filtri">
       <input type="search" id="cat-q" placeholder="🔎 filtra per titolo…" autocomplete="off">
       <label>Ordina
@@ -910,13 +1089,13 @@ header .spazio{flex:1; min-width:0}
       <span class="cat-conta" id="cat-conta"></span>
     </div>
     <div class="griglia" id="lista-da-vedere"></div>
-    <div class="sezione-titolo"><span data-film="GIÀ VISTI" data-serie="GIÀ VISTE" data-giochi="GIÀ GIOCATI">GIÀ VISTI</span><span class="aiuto-q" tabindex="0">?<span class="tip" data-film="I film che hai già guardato: le serate confermate col Play e quelli di cui hai scritto una recensione (recensire un film vale come averlo visto). Restano qui come storico; puoi rimetterne uno in lista se lo vuoi rivedere." data-serie="Le serie che avete finito, e quelle di cui hai scritto una recensione (recensire vale come averla finita). Restano qui come storico; puoi rimetterne una in lista se la vuoi rivedere." data-giochi="I giochi che avete segnato come finiti. Restano qui come storico; puoi rimetterne uno in lista se lo vuoi rigiocare. Attenzione: per un gioco la recensione NON vale come «finito», perché si scrive anche mentre ci si sta ancora giocando.">I film che hai già guardato: le serate confermate col Play e quelli di cui hai scritto una recensione (recensire un film vale come averlo visto). Restano qui come storico; puoi rimetterne uno in lista se lo vuoi rivedere.</span></span></div>
+    <div class="sezione-titolo"><span data-film="GIÀ VISTI" data-serie="GIÀ VISTE" data-giochi="GIÀ GIOCATI" data-libri="GIÀ LETTI">GIÀ VISTI</span><span class="aiuto-q" tabindex="0">?<span class="tip" data-film="I film che hai già guardato: le serate confermate col Play e quelli di cui hai scritto una recensione (recensire un film vale come averlo visto). Restano qui come storico; puoi rimetterne uno in lista se lo vuoi rivedere." data-serie="Le serie che avete finito, e quelle di cui hai scritto una recensione (recensire vale come averla finita). Restano qui come storico; puoi rimetterne una in lista se la vuoi rivedere." data-giochi="I giochi che avete segnato come finiti. Restano qui come storico; puoi rimetterne uno in lista se lo vuoi rigiocare. Attenzione: per un gioco la recensione NON vale come «finito», perché si scrive anche mentre ci si sta ancora giocando." data-libri="I libri che avete segnato come finiti. Restano qui come storico; puoi rimetterne uno in lista se lo vuoi rileggere. Come per i giochi, la recensione NON vale come «finito»: di un libro si scrive anche mentre lo si sta leggendo.">I film che hai già guardato: le serate confermate col Play e quelli di cui hai scritto una recensione (recensire un film vale come averlo visto). Restano qui come storico; puoi rimetterne uno in lista se lo vuoi rivedere.</span></span></div>
     <div class="griglia" id="lista-visti"></div>
   </main>
 
   <!-- ───── PRONTI ALLA VISIONE (solo host) ───── -->
   <main id="vista-archivio" hidden>
-    <div class="sezione-titolo prima"><span data-film="PRONTI ALLA VISIONE" data-giochi="PRONTI A GIOCARE">PRONTI ALLA VISIONE</span><span class="aiuto-q" tabindex="0">?<span class="tip" data-film="Tutti i film che qualcuno vuole ancora vedere, senza doppioni: la scorta da procurarsi." data-serie="Tutte le serie che qualcuno sta ancora guardando o vuole cominciare, senza doppioni: la scorta da procurarsi." data-giochi="Tutti i giochi che qualcuno sta giocando o vuole cominciare, senza doppioni: la scorta da procurarsi.">Tutti i film che qualcuno vuole ancora vedere, senza doppioni: la scorta da procurare. La bandierina segna quelli già pronti. Con i nomi in alto restringi l'elenco a chi vuoi: puoi sceglierne più di uno.</span></span></div>
+    <div class="sezione-titolo prima"><span data-film="PRONTI ALLA VISIONE" data-giochi="PRONTI A GIOCARE" data-libri="PRONTI DA LEGGERE">PRONTI ALLA VISIONE</span><span class="aiuto-q" tabindex="0">?<span class="tip" data-film="Tutti i film che qualcuno vuole ancora vedere, senza doppioni: la scorta da procurarsi." data-serie="Tutte le serie che qualcuno sta ancora guardando o vuole cominciare, senza doppioni: la scorta da procurarsi." data-giochi="Tutti i giochi che qualcuno sta giocando o vuole cominciare, senza doppioni: la scorta da procurarsi." data-libri="Tutti i libri che qualcuno sta leggendo o vuole cominciare, senza doppioni: la scorta da procurarsi.">Tutti i film che qualcuno vuole ancora vedere, senza doppioni: la scorta da procurare. La bandierina segna quelli già pronti. Con i nomi in alto restringi l'elenco a chi vuoi: puoi sceglierne più di uno.</span></span></div>
     <div class="arch-chi" id="arch-chi"></div>
     <div class="arch-filtro" id="arch-filtro">
       <input type="search" id="arch-q" placeholder="🔎 cerca per titolo…" autocomplete="off">
@@ -973,16 +1152,16 @@ header .spazio{flex:1; min-width:0}
 
   <!-- ───── CONSIGLI «PER TE» ───── -->
   <main id="vista-consigli" hidden>
-    <div class="sezione-titolo prima">CONSIGLIATI PER TE<span class="aiuto-q" tabindex="0">?<span class="tip" data-film="Film che non hai mai visto, scelti confrontando i tuoi voti con quelli del catalogo." data-serie="Serie che non hai mai visto, scelte confrontando i tuoi voti con quelli del catalogo." data-giochi="Giochi a cui non hai mai giocato, scelti confrontando i tuoi voti con quelli del catalogo.">Film che non hai mai visto, scelti confrontando i tuoi voti con quelli del catalogo: contano i temi, i generi, i registi e gli attori che voti alto — non quelli che guardi di più. Le recensioni recenti pesano più delle vecchie.</span></span></div>
+    <div class="sezione-titolo prima">CONSIGLIATI PER TE<span class="aiuto-q" tabindex="0">?<span class="tip" data-film="Film che non hai mai visto, scelti confrontando i tuoi voti con quelli del catalogo." data-serie="Serie che non hai mai visto, scelte confrontando i tuoi voti con quelli del catalogo." data-giochi="Giochi a cui non hai mai giocato, scelti confrontando i tuoi voti con quelli del catalogo." data-libri="Libri che non hai mai letto, scelti confrontando i tuoi voti con quelli del catalogo.">Film che non hai mai visto, scelti confrontando i tuoi voti con quelli del catalogo: contano i temi, i generi, i registi e gli attori che voti alto — non quelli che guardi di più. Le recensioni recenti pesano più delle vecchie.</span></span></div>
     <div class="cg-testa">
       <div class="cg-info" id="cg-info"></div>
       <div class="cg-barra" id="cg-barra">
         <label>Genere <select id="cg-genere"><option value="">tutti</option></select></label>
-        <label id="cg-persona-lbl"><span data-film="Regista/attore" data-giochi="Sviluppatore">Regista/attore</span> <input type="search" id="cg-persona" placeholder="chiunque" list="cg-persone" style="min-width:150px"><datalist id="cg-persone"></datalist></label>
+        <label id="cg-persona-lbl"><span data-film="Regista/attore" data-giochi="Sviluppatore" data-libri="Autore">Regista/attore</span> <input type="search" id="cg-persona" placeholder="chiunque" list="cg-persone" style="min-width:150px"><datalist id="cg-persone"></datalist></label>
         <label>Anno <input type="number" id="cg-annoda" placeholder="da" style="width:70px"> – <input type="number" id="cg-annoa" placeholder="a" style="width:70px"></label>
         <label>Durata ≤ <input type="number" id="cg-durata" placeholder="min" style="width:70px"></label>
         <label>Voto ≥ <input type="number" id="cg-votomin" min="0" max="10" step="0.5" placeholder="0" style="width:64px"></label>
-        <label><input type="checkbox" id="cg-soloMiei"> solo dove posso vederlo</label>
+        <label><input type="checkbox" id="cg-soloMiei"> <span data-film="solo dove posso vederlo" data-giochi="solo dove posso giocarci" data-libri="solo quelli che ho">solo dove posso vederlo</span></label>
         <label><input type="checkbox" id="cg-escludiNeg" checked> escludi i generi ✗</label>
         <span class="cg-spia" id="cg-spia" hidden>cerco…</span>
         <span style="flex:1"></span>
@@ -996,16 +1175,11 @@ header .spazio{flex:1; min-width:0}
   <main id="vista-impostazioni" hidden>
     <div class="imp-griglia">
       <div class="pannello">
-        <h3>CHIAVI API (condivise nella cartella)<span class="aiuto-q" tabindex="0">?<span class="tip">Le chiavi per cercare i film e le serie (TMDB), per i voti IMDb (OMDb, facoltativa) e per i videogiochi (RAWG). Si mettono una volta sola e valgono per tutto il gruppo, perché sono salvate nella cartella condivisa. Sono gratuite.</span></span></h3>
+        <h3>CHIAVI API (condivise nella cartella)<span class="aiuto-q" tabindex="0">?<span class="tip">Le chiavi per cercare i film e le serie (TMDB) e i videogiochi (RAWG); i libri arrivano da Open Library e non ne vogliono nessuna. Queste sono le chiavi del gruppo, salvate nella cartella condivisa: valgono per chi non ne ha una sua. Sono gratuite.</span></span></h3>
         <div class="campo">
           <label>Chiave TMDB (ricerca film, locandine, metadati)</label>
           <input type="text" id="imp-tmdb" placeholder="incolla qui la chiave API v3">
           <div class="aiuto">Gratuita: registrati su themoviedb.org → Impostazioni → API → chiave v3.</div>
-        </div>
-        <div class="campo">
-          <label>Chiave OMDb (media voti IMDb)</label>
-          <input type="text" id="imp-omdb" placeholder="facoltativa — senza, si usa il voto TMDB">
-          <div class="aiuto">Gratuita (1.000 richieste/giorno): omdbapi.com → API Key.</div>
         </div>
         <div class="campo">
           <label>Chiave RAWG (ricerca videogiochi, copertine, metadati)</label>
@@ -1046,6 +1220,12 @@ header .spazio{flex:1; min-width:0}
         <div class="campo"><label>I miei servizi streaming<span class="aiuto-q" tabindex="0">?<span class="tip">Segna gli abbonamenti che hai. Nella scheda dei film e in Pronti alla visione, i film disponibili su un servizio che qualcuno del gruppo ha vengono evidenziati in verde — così sai cosa potete guardare senza cercare a mano.</span></span></label>
           <div id="imp-servizi" class="compagnia" style="margin-top:6px"></div>
         </div>
+        <div class="campo"><label>Le mie chiavi API<span class="aiuto-q" tabindex="0">?<span class="tip">Se metti qui una chiave tua, l'app usa quella al posto di quella del gruppo: le ricerche che fai tu pesano sulla tua quota e non su quella di chi ha messo la chiave condivisa. Se lasci vuoto, si continua a usare quella del gruppo. Le chiavi restano nel tuo profilo, che sei l'unico a scrivere.</span></span></label>
+          <input type="text" id="imp-mia-tmdb" placeholder="chiave TMDB tua (facoltativa)">
+          <input type="text" id="imp-mia-rawg" placeholder="chiave RAWG tua (facoltativa)" style="margin-top:6px">
+          <div class="aiuto" id="imp-mie-chiavi-nota"></div>
+          <button class="bottone piccolo secondario" id="imp-salva-mie" style="margin-top:8px">Salva le mie chiavi</button>
+        </div>
         <div class="campo"><label>Film esclusi dai consigli<span class="aiuto-q" tabindex="0">?<span class="tip">I film a cui hai detto «non mi interessa» nella sezione ✨ Per te: non te li propone più. Da qui puoi rivedere l'elenco e rimetterli in gioco.</span></span></label>
           <button class="bottone piccolo secondario" id="imp-scartati">🚫 Gestisci esclusi</button>
         </div>
@@ -1068,7 +1248,7 @@ header .spazio{flex:1; min-width:0}
 </div>
 
 <div id="modale-fondo" hidden><div class="modale" id="modale"></div></div>
-<div id="luci"><div data-film="🎬 Buona visione!" data-serie="📺 Buona visione!" data-giochi="🎮 Buona partita!">🎬 Buona visione!</div><small id="luci-titolo"></small></div>
+<div id="luci"><div data-film="🎬 Buona visione!" data-serie="📺 Buona visione!" data-giochi="🎮 Buona partita!" data-libri="📚 Buona lettura!">🎬 Buona visione!</div><small id="luci-titolo"></small></div>
 <div id="toasts"></div>
 <div id="carico" hidden><div class="carico-box"><div class="spin"></div>
   <div class="titolo" id="carico-txt">Un attimo…</div><small id="carico-sub"></small></div></div>
@@ -1079,7 +1259,7 @@ header .spazio{flex:1; min-width:0}
 /* ════════════════════════ COSTANTI ════════════════════════ */
 const APP_VERSION = '1.7.9';
 const CONFIG_DEFAULT = {
-  tmdbKey:'', omdbKey:'', rawgKey:'',
+  tmdbKey:'', rawgKey:'',
   bonusCoralita:0.10, capCoralita:0.30, passoSoddisfazione:0.15, bonusCoppia:1.15,
   sogliaSpareggio:0.02,  // entro il 2% del punteggio massimo = "stessa priorità"
   // ── Consigli «Per te» (CONCEPT-consigli.md). Tarabili qui, non in Impostazioni:
@@ -1105,19 +1285,33 @@ const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 // La libreria da cui arrivano le schede di questa categoria: TMDB per film e serie,
 // RAWG per i videogiochi. Compare in parecchie scritte, meglio non ripeterla a mano.
-const LIBRERIA = () => inGiochi() ? 'RAWG' : 'TMDB';
+const LIBRERIA = () => datiModo(S.modo).libreria;
+/* Le chiavi API: prima la propria, poi quella del gruppo. Ognuno può metterne una sua nel
+   PROPRIO profilo — che è anche l'unico file che ha diritto di scrivere (§3.2 SPECIFICA) —
+   e così le chiamate si spalmano su più quote invece di consumare tutte quella dell'host.
+   Chi non ne mette una continua a usare quella condivisa, senza accorgersi di niente. */
+function chiaveAPI(nome){
+  const mio = (typeof mioProfilo === 'function') ? mioProfilo() : null;
+  const mia = mio && mio.chiavi && mio.chiavi[nome];
+  return (mia && String(mia).trim()) || S.config[nome] || '';
+}
 // L'etichetta della fonte del voto: cambia con la libreria da cui arriva.
-const fonteVoto = f => ({imdb:'IMDb', metacritic:'Metacritic', rawg:'RAWG'})[(f||{}).votoFonte] || 'TMDB';
+const fonteVoto = f => ({imdb:'IMDb', metacritic:'Metacritic', rawg:'RAWG',
+  openlibrary:'Open Library'})[(f||{}).votoFonte] || 'TMDB';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const slugify = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 const oggiISO = () => new Date().toISOString().slice(0,10);
 const giorniDa = iso => Math.max(0, (Date.now() - new Date(iso+'T12:00:00').getTime()) / 864e5);
 // sotto l'ora niente "0h": con gli episodi delle serie è il caso normale, non l'eccezione
-// Per film e serie «durata» sono minuti; per un videogioco sono le ORE per finirlo
-// (RAWG playtime), e il filtro della serata diventa «impegno massimo».
-const fmtMin = m => inGiochi()
-  ? (m ? `~${m} ore` : 'durata n.d.')
-  : (m ? (m < 60 ? `${m}'` : `${Math.floor(m/60)}h ${String(m%60).padStart(2,'0')}'`) : 'durata n.d.');
+// Il campo «durata» misura cose diverse secondo la categoria: minuti per film e serie,
+// ORE per finire un videogioco, PAGINE per un libro. L'unità la dichiara MODI.
+const fmtMin = m => {
+  const u = (datiModo(S.modo).durata || {}).unita || 'min';
+  if (!m) return u === 'pag' ? 'lunghezza n.d.' : 'durata n.d.';
+  if (u === 'ore') return `~${m} ore`;
+  if (u === 'pag') return `${m} pagine`;
+  return m < 60 ? `${m}'` : `${Math.floor(m/60)}h ${String(m%60).padStart(2,'0')}'`;
+};
 const fmtNum = (n,d=2) => n.toLocaleString('it-IT',{minimumFractionDigits:d, maximumFractionDigits:d});
 const fmtData = iso => new Date(iso+'T12:00:00').toLocaleDateString('it-IT',{day:'numeric', month:'long', year:'numeric'});
 // data breve in formato europeo gg/mm/aaaa (deterministico, non dipende dalla locale)
@@ -1343,6 +1537,8 @@ function applicaParole(){
 
 function applicaModo(){
   document.documentElement.dataset.modo = S.modo;
+  // lo scaffale si ridisegna una volta per ogni entrata in biblioteca
+  const lib = $('#libreria'); if (lib && !inLibri()) delete lib.dataset.fatto;
   applicaParole();
 }
 // Cambio di modalità: si rileggono i dati dell'altro spazio e si ridisegna. Nient'altro:
@@ -1353,9 +1549,7 @@ async function cambiaModo(m){
   // il velo va su PRIMA di cambiare vestito: fra la palette nuova e i dati riletti c'è un
   // istante in cui la pagina è di due modalità diverse, e in mezzo non si deve cliccare
   const t0 = Date.now();
-  caricamento(true, inGiochi() ? 'Accendo la postazione…'
-                : (inSerie() ? 'Si accende il salotto…' : 'Si apre la sala…'),
-              datiModo(S.modo).nome.toLowerCase());
+  caricamento(true, datiModo(S.modo).apertura, datiModo(S.modo).nome.toLowerCase());
   try {
   await ricordaModo(S.modo);
   applicaModo();
@@ -1469,26 +1663,45 @@ const S = {
 // recensioni. Aggiungerne una domani (documentari, anime, cosa verrà) è **una riga qui**:
 // percorsi, pannellino della scelta e rimandi fra recensioni leggono tutti da questo
 // elenco. La radice vuota è quella dei film, che stanno dove sono sempre stati.
+// Ogni categoria dichiara TUTTO quello che la distingue: dove stanno i suoi file, da
+// quale libreria arrivano le schede, e se le sue voci hanno lo stato «in corso / finito».
+// Chi legge queste proprietà non deve mai chiedersi «è questa categoria o quell'altra?»:
+// è la regola che evita di preparare un difetto alla categoria successiva.
 const MODI = [
-  {id:'film',  ic:'🎬', nome:'Film',     radice:[],
+  {id:'film',  ic:'🎬', nome:'Film',     radice:[],         libreria:'TMDB',
+   apertura:'Si apre la sala…', anim:false,
+   durata:{lab:'Durata massima', unita:'min', min:60, max:240, passo:5},
    desc:'La sala: poltrone, sipario e il film della serata'},
-  {id:'serie', ic:'📺', nome:'Serie TV', radice:['serie'],
+  {id:'serie', ic:'📺', nome:'Serie TV', radice:['serie'],  libreria:'TMDB',
+   apertura:'Si accende il salotto…', anim:true,
+   durata:{lab:"Durata dell'episodio", unita:'min', min:20, max:90, passo:5},
    desc:'Il salotto: divano, TV, e si riprende da dove eravate'},
-  {id:'giochi', ic:'🎮', nome:'Videogiochi', radice:['giochi'],
+  {id:'giochi', ic:'🎮', nome:'Videogiochi', radice:['giochi'], libreria:'RAWG', stato:true,
+   apertura:'Accendo la postazione…', anim:true,
+   durata:{lab:'Impegno massimo', unita:'ore', min:2, max:80, passo:2},
    desc:'La postazione: sedie, monitor, e si riprende la partita'},
+  {id:'libri', ic:'📚', nome:'Libri', radice:['libri'], libreria:'OpenLibrary', stato:true,
+   apertura:'Apro la biblioteca…', anim:true,
+   durata:{lab:'Lunghezza massima', unita:'pag', min:80, max:900, passo:20},
+   desc:'La biblioteca: poltrone, lampada, e si riprende il segno'},
 ];
+// «Ha lo stato»: le categorie in cui una voce non si consuma in una sera, e resta in lista
+// finché qualcuno non la segna finita (videogiochi e libri). Vedi CONCEPT-libri.md §4.
+const conStato = (id = S.modo) => !!datiModo(id).stato;
 // Le chiavi che ogni categoria si porta dentro il profilo. Il profilo resta UN file per
 // persona: cambiano solo i cassetti dentro. Vedi CONCEPT-giochi.md §3.
 const CHIAVI_MODO = {
   film:   {lista:'lista',       gpos:'generiPositivi',       gneg:'generiNegativi'},
   serie:  {lista:'listaSerie',  gpos:'generiPositiviSerie',  gneg:'generiNegativiSerie'},
   giochi: {lista:'listaGiochi', gpos:'generiPositiviGiochi', gneg:'generiNegativiGiochi'},
+  libri:  {lista:'listaLibri',  gpos:'generiPositiviLibri',  gneg:'generiNegativiLibri'},
 };
 const chiaviModo = () => CHIAVI_MODO[S.modo] || CHIAVI_MODO.film;
 const datiModo = id => MODI.find(m => m.id === id) || MODI[0];
 const modoValido = id => MODI.some(m => m.id === id) ? id : MODI[0].id;
 const inSerie = () => S.modo === 'serie';
 const inGiochi = () => S.modo === 'giochi';
+const inLibri = () => S.modo === 'libri';
 // Percorso dentro lo spazio della modalità attiva: i film restano esattamente dove sono
 // sempre stati, le serie vivono sotto serie/. Così è tutto additivo e reversibile: la
 // cartella si cancella in blocco e le versioni vecchie dell'app non la vedono nemmeno.
@@ -1520,6 +1733,8 @@ const PAROLE = {
            fatto:'vista', fatti:'viste',  fattaTutta:"l'abbiamo vista tutta"},
   giochi: {cosa:'gioco', un:'un gioco',   il:'il gioco',   nessun:'Nessun gioco', i:'i giochi',
            fatto:'giocato', fatti:'giocati', fattaTutta:"l'abbiamo finito"},
+  libri:  {cosa:'libro', un:'un libro',   il:'il libro',   nessun:'Nessun libro', i:'i libri',
+           fatto:'letto',  fatti:'letti',  fattaTutta:"l'abbiamo finito"},
 };
 const parole      = () => PAROLE[S.modo] || PAROLE.film;
 const COSA        = () => parole().cosa;
@@ -1602,8 +1817,21 @@ const DEMO_GIOCHI = [
   {tmdbId:41494, titolo:'Baldur\'s Gate 3', anno:'2023', durata:75, oreGioco:75, regista:'Larian Studios', paese:'Larian Studios', generi:['RPG','Strategy'], piattaforme:['PC','PlayStation 5','Xbox Series X'], negozi:['Steam','GOG'], voto:9.6, votoFonte:'metacritic', trama:'Un gioco di ruolo enorme in cui quasi tutto quello che viene in mente si può davvero fare.'},
   {tmdbId:10035, titolo:'Hades', anno:'2020', durata:22, oreGioco:22, regista:'Supergiant Games', paese:'Supergiant Games', generi:['Action','Indie','RPG'], piattaforme:['PC','Switch','PlayStation 5'], negozi:['Steam','Nintendo Store'], voto:9.3, votoFonte:'metacritic', trama:'Scappare dagli inferi, morire, ricominciare — e ogni volta il racconto va avanti lo stesso.'}
 ];
-// Il catalogo di prova della categoria attiva: una sola porta per tutte e tre.
-const demoCatalogo = () => S.modo === 'serie' ? DEMO_SERIE : (S.modo === 'giochi' ? DEMO_GIOCHI : DEMO_DB);
+// Libri di prova. Stessa forma di un film: «durata» sono le PAGINE, «regista» l'autore,
+// «paese» l'editore — la stessa normalizzazione che fa l'adattatore Open Library.
+const DEMO_LIBRI = [
+  {tmdbId:8996439, titolo:'Il nome della rosa', posterUrl:'https://covers.openlibrary.org/b/id/8598263-L.jpg', anno:'1980', durata:533, pagine:533, regista:'Umberto Eco', paese:'Bompiani', generi:['Romanzo','Giallo','Storico'], voto:8.3, votoFonte:'openlibrary', trama:'In un\'abbazia del Trecento un frate francescano indaga su una serie di morti, fra una biblioteca labirintica e un libro che nessuno deve leggere.'},
+  {tmdbId:15322, titolo:'Il barone rampante', posterUrl:'https://covers.openlibrary.org/b/id/115978-L.jpg', anno:'1957', durata:280, pagine:280, regista:'Italo Calvino', paese:'Einaudi', generi:['Romanzo','Avventura','Classici'], voto:8.1, votoFonte:'openlibrary', trama:'A dodici anni Cosimo sale su un albero e decide di non scendere mai più: da lassù attraversa un secolo intero.'},
+  {tmdbId:40873, titolo:'La strada', posterUrl:'https://covers.openlibrary.org/b/id/198120-L.jpg', anno:'2006', durata:287, pagine:287, regista:'Cormac McCarthy', paese:'Einaudi', generi:['Romanzo','Fantascienza'], voto:8.0, votoFonte:'openlibrary', trama:'Un padre e un figlio camminano verso sud in un mondo bruciato, spingendo un carrello e cercando di restare «i buoni».'},
+  {tmdbId:15297, titolo:'Le città invisibili', posterUrl:'https://covers.openlibrary.org/b/id/963147-L.jpg', anno:'1972', durata:164, pagine:164, regista:'Italo Calvino', paese:'Einaudi', generi:['Romanzo','Classici','Fantasy'], voto:8.4, votoFonte:'openlibrary', trama:'Marco Polo racconta a Kublai Khan cinquantacinque città che forse non esistono, e che parlano tutte della stessa.'},
+  {tmdbId:1168083, titolo:'1984', posterUrl:'https://covers.openlibrary.org/b/id/9267242-L.jpg', anno:'1949', durata:328, pagine:328, regista:'George Orwell', paese:'Mondadori', generi:['Romanzo','Fantascienza','Classici'], voto:8.7, votoFonte:'openlibrary', trama:'Winston Smith riscrive il passato per il Ministero della Verità, finché non prova a tenersi un pensiero suo.'},
+  {tmdbId:860066, titolo:'Se questo è un uomo', posterUrl:'https://covers.openlibrary.org/b/id/1049023-L.jpg', anno:'1947', durata:190, pagine:190, regista:'Primo Levi', paese:'Einaudi', generi:['Biografia','Storia','Saggio'], voto:9.0, votoFonte:'openlibrary', trama:'Il racconto di Auschwitz scritto da un chimico che ne è tornato, e che misura le parole come misurerebbe un reagente.'},
+  {tmdbId:27448, titolo:'Il Signore degli Anelli', posterUrl:'https://covers.openlibrary.org/b/id/14625765-L.jpg', anno:'1954', durata:1178, pagine:1178, regista:'J.R.R. Tolkien', paese:'Bompiani', generi:['Fantasy','Avventura','Classici'], voto:8.9, votoFonte:'openlibrary', trama:'Un anello che non si può usare va portato all\'unico posto dove si può distruggere, e la strada è lunga.'},
+  {tmdbId:12437164, titolo:'La solitudine dei numeri primi', posterUrl:'https://covers.openlibrary.org/b/id/5724446-L.jpg', anno:'2008', durata:304, pagine:304, regista:'Paolo Giordano', paese:'Mondadori', generi:['Romanzo'], voto:7.2, votoFonte:'openlibrary', trama:'Due ragazzi feriti in modi diversi si sfiorano per tutta la vita senza riuscire a toccarsi, come due numeri primi gemelli.'}
+];
+// Il catalogo di prova della categoria attiva: una sola porta per tutte e quattro.
+const DEMO_PER_MODO = {film:() => DEMO_DB, serie:() => DEMO_SERIE, giochi:() => DEMO_GIOCHI, libri:() => DEMO_LIBRI};
+const demoCatalogo = () => (DEMO_PER_MODO[S.modo] || DEMO_PER_MODO.film)();
 // La voce di un titolo, cercata nella lista di chiunque: serve dove i dati della scheda
 // (piattaforme, negozi) servono senza rifare la chiamata alla libreria.
 function vocePerId(id){
@@ -1678,19 +1906,29 @@ async function cercaFilm(q){
       .map(f => ({id:f.tmdbId, title:f.titolo, release_date:f.anno+'-01-01', poster_path:null,
                   posterUrl:f.posterUrl || null}));
   }
+  // I libri stanno su Open Library, che non vuole nessuna chiave (CONCEPT-libri.md §3).
+  if (inLibri()){
+    const campi = 'key,title,author_name,first_publish_year,cover_i';
+    const r = await fetch(`https://openlibrary.org/search.json?limit=10&fields=${campi}&q=${encodeURIComponent(q)}`);
+    if (!r.ok) throw new Error('openlibrary '+r.status);
+    return ((await r.json()).docs || []).slice(0, 10).map(l => ({
+      id:idLibro(l.key), title:l.title, release_date:String(l.first_publish_year || ''),
+      poster_path:null, posterUrl:copertinaLibro(l.cover_i)
+    }));
+  }
   // I videogiochi non stanno su TMDB: la loro libreria è RAWG (CONCEPT-giochi.md §6).
   // I campi si normalizzano qui su quelli dei film, come già per le serie.
   if (inGiochi()){
-    if (!S.config.rawgKey) throw new Error('nokey');
-    const r = await fetch(`https://api.rawg.io/api/games?key=${S.config.rawgKey}&page_size=8&search=${encodeURIComponent(q)}`);
+    if (!chiaveAPI('rawgKey')) throw new Error('nokey');
+    const r = await fetch(`https://api.rawg.io/api/games?key=${chiaveAPI('rawgKey')}&page_size=8&search=${encodeURIComponent(q)}`);
     if (!r.ok) throw new Error('rawg '+r.status);
     return ((await r.json()).results || []).slice(0, 8).map(g => ({
       id:g.id, title:g.name, release_date:g.released || '', poster_path:null,
       posterUrl:g.background_image || null
     }));
   }
-  if (!S.config.tmdbKey) throw new Error('nokey');
-  const r = await fetch(`https://api.themoviedb.org/3/search/${inSerie()?'tv':'movie'}?api_key=${S.config.tmdbKey}&language=it-IT&include_adult=false&query=${encodeURIComponent(q)}`);
+  if (!chiaveAPI('tmdbKey')) throw new Error('nokey');
+  const r = await fetch(`https://api.themoviedb.org/3/search/${inSerie()?'tv':'movie'}?api_key=${chiaveAPI('tmdbKey')}&language=it-IT&include_adult=false&query=${encodeURIComponent(q)}`);
   if (!r.ok) throw new Error('tmdb '+r.status);
   // i campi delle serie si normalizzano qui su quelli dei film, così chi legge non cambia
   return ((await r.json()).results || []).slice(0, 8)
@@ -1699,8 +1937,9 @@ async function cercaFilm(q){
 
 async function dettagliFilm(id){
   if (S.demo) return {...demoCatalogo().find(x => x.tmdbId === id)};
+  if (inLibri()) return await dettagliLibro(id);
   if (inGiochi()) return await dettagliGioco(id);
-  const k = S.config.tmdbKey;
+  const k = chiaveAPI('tmdbKey');
   // le keyword arrivano nella stessa chiamata (append_to_response, fino a 20 endpoint):
   // costano zero richieste in più e sono il tratto più specifico per i consigli
   const serie = inSerie();
@@ -1719,15 +1958,10 @@ async function dettagliFilm(id){
   const durata = serie
     ? (((j.episode_run_time || [])[0]) || (j.last_episode_to_air || {}).runtime || null)
     : (j.runtime || null);
-  let voto = j.vote_average ? Math.round(j.vote_average*10)/10 : null, votoFonte = 'tmdb';
-  const imdbId = (j.external_ids || {}).imdb_id || j.imdb_id;
-  if (S.config.omdbKey && imdbId){
-    try {
-      const o = await (await fetch(`https://www.omdbapi.com/?apikey=${S.config.omdbKey}&i=${imdbId}`)).json();
-      const iv = parseFloat(o.imdbRating);
-      if (iv){ voto = iv; votoFonte = 'imdb'; }
-    } catch(e){}
-  }
+  // Il voto è quello di TMDB. La media IMDb via OMDb è stata tolta (2026-09-02): era una
+  // seconda chiave e una seconda chiamata per ogni scheda, per un numero quasi uguale.
+  // «imdb» resta riconosciuto in fonteVoto() per le voci salvate prima.
+  const voto = j.vote_average ? Math.round(j.vote_average*10)/10 : null, votoFonte = 'tmdb';
   return {
     tmdbId:j.id, titolo:(serie ? (j.name || j.original_name) : (j.title || j.original_title)),
     anno:String((serie ? j.first_air_date : j.release_date) || '').slice(0,4),
@@ -1748,10 +1982,57 @@ async function dettagliFilm(id){
 }
 
 // Le locandine NON vengono più salvate in locale: si caricano sempre dal server TMDB.
+/* ── Libri: Open Library ────────────────────────────────────────────────────────────
+   La chiave di un'opera è una stringa tipo "/works/OL27448W", ma tutta l'app indicizza
+   per NUMERO (tmdbId): si tiene il numero e si ricompone la chiave quando serve. Così
+   non cambia niente in nessun'altra parte del codice. */
+const idLibro = key => parseInt(String(key || '').replace(/\D+/g, ''), 10) || 0;
+const chiaveLibro = id => '/works/OL' + id + 'W';
+const copertinaLibro = coverId => coverId ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg` : null;
+
+async function dettagliLibro(id){
+  // la ricerca per chiave dà i campi di elenco (autore, anno, pagine, voto, copertina)
+  const campi = 'key,title,author_name,first_publish_year,number_of_pages_median,' +
+                'cover_i,ratings_average,ratings_count,subject,publisher,first_sentence';
+  const r = await fetch(`https://openlibrary.org/search.json?q=key:${encodeURIComponent(chiaveLibro(id))}&limit=1&fields=${campi}`);
+  if (!r.ok) throw new Error('openlibrary '+r.status);
+  const l = ((await r.json()).docs || [])[0];
+  if (!l) throw new Error('libro non trovato');
+  // la trama sta nell'opera, che è una seconda chiamata: se non risponde si ripiega
+  // sull'incipit, che l'elenco ha già dato
+  let trama = '', copertinaId = l.cover_i || null;
+  try {
+    const w = await (await fetch(`https://openlibrary.org${chiaveLibro(id)}.json`)).json();
+    const d = w && w.description;
+    trama = (typeof d === 'string' ? d : (d && d.value) || '') || '';
+    // la ricerca per chiave non restituisce cover_i: la copertina la sa l'opera, che
+    // stiamo già interrogando per la trama — nessuna chiamata in più
+    if (!copertinaId && Array.isArray(w && w.covers)) copertinaId = w.covers.find(x => x > 0) || null;
+  } catch(e){}
+  if (!trama) trama = ((l.first_sentence || [])[0]) || '';
+  const img = copertinaLibro(copertinaId);
+  return {
+    tmdbId:id, titolo:l.title || '', anno:String(l.first_publish_year || ''),
+    uscita:l.first_publish_year ? String(l.first_publish_year)+'-01-01' : null,
+    collezione:null, collezioneNome:null, stagioni:null, stato:null,
+    durata:l.number_of_pages_median || null,        // «durata» qui sono PAGINE
+    pagine:l.number_of_pages_median || null,
+    regista:(l.author_name || []).slice(0,2).join(', '),          // l'autore
+    generi:generiDaSubject(l.subject),
+    paese:(l.publisher || []).slice(0,1).join(', '),              // l'editore
+    cast:(l.author_name || []).slice(0,4),
+    keywords:(l.subject || []).slice(0,12),
+    voto:l.ratings_average ? Math.round(l.ratings_average * 20) / 10 : null,
+    votoFonte:'openlibrary',
+    trama:String(trama).slice(0, 900),
+    posterUrl:img, sfondoUrl:img, locandina:null, sfondo:null
+  };
+}
+
 // La scheda di un gioco, normalizzata sugli stessi campi di un film: chi la legge non sa
 // nemmeno che la fonte è un'altra. Vedi CONCEPT-giochi.md §6.
 async function dettagliGioco(id){
-  const k = S.config.rawgKey;
+  const k = chiaveAPI('rawgKey');
   if (!k) throw new Error('nokey');
   const r = await fetch(`https://api.rawg.io/api/games/${id}?key=${k}`);
   if (!r.ok) throw new Error('rawg '+r.status);
@@ -1790,7 +2071,7 @@ async function urlImmagine(voce, tipo){ // tipo: 'locandina' | 'sfondo' → semp
   const chiave = tipo === 'locandina' ? 'posterUrl' : 'sfondoUrl';
   if (voce[chiave]) return voce[chiave];
   // voci vecchie salvate senza gli URL remoti: le recupero da TMDB una volta sola
-  if (voce.tmdbId && !S.demo && S.config.tmdbKey && !voce._noPoster){
+  if (voce.tmdbId && !S.demo && chiaveAPI('tmdbKey') && !voce._noPoster){
     try {
       const d = await dettagliFilm(voce.tmdbId);
       voce.posterUrl = d.posterUrl; voce.sfondoUrl = d.sfondoUrl;
@@ -1901,7 +2182,7 @@ function entryAttiva(voce, slug){
   // lasciano in lista, ed è quello che si vuole (essere richiamati a continuarlo). La
   // recensione qui NON vale come «finito»: di un gioco si scrive anche mentre ci si sta
   // ancora giocando (scelta di Marco, CONCEPT-giochi.md §5b).
-  if (inGiochi()) return !seratePerId(voce.tmdbId).some(v =>
+  if (conStato()) return !seratePerId(voce.tmdbId).some(v =>
     v.stato === 'finito' && (v.partecipanti || []).includes(slug)
     && (v.ts || v.data + 'T23:59:59') >= aggiunto);
   // la recensione vale come "visto" per un film e come "finita" per una serie: spegne
@@ -2537,13 +2818,53 @@ const GENERI_ID_SERIE = {'Action & Adventure':10759, Animazione:16, Commedia:35,
 // hanno una tabella di id da mappare (i consigli dei giochi usano generiRAWG()).
 // I generi di RAWG arrivano in inglese dall'API, come già le keyword di TMDB: l'elenco
 // qui sotto usa gli stessi nomi, se no i chip non combacerebbero con quelli delle schede.
+// I «subject» di Open Library sono testo libero, multilingua e rumoroso («Novela de
+// misterio», «Monasticismo y vida religiosa»…). Non si possono dare in pasto ai filtri:
+// si tiene solo ciò che combacia con questo elenco curato, e il resto si scarta.
+// Vedi CONCEPT-libri.md §3.
+const GENERI_LIBRI = ['Romanzo','Giallo','Thriller','Fantascienza','Fantasy','Horror',
+  'Storico','Avventura','Rosa','Biografia','Saggio','Storia','Filosofia','Poesia',
+  'Classici','Ragazzi','Fumetti','Viaggi','Scienza','Umorismo'];
+// Come si riconosce un genere nostro dentro un subject di Open Library: parole chiave in
+// inglese e in italiano, perché i subject arrivano in tutte e due (e in altre lingue).
+const SUBJECT_LIBRI = {
+  'Romanzo':['fiction','novel','romanzo','literature'],
+  'Giallo':['mystery','detective','crime','giallo','poliziesco'],
+  'Thriller':['thriller','suspense'],
+  'Fantascienza':['science fiction','fantascienza','sci-fi','dystopia','distopia'],
+  'Fantasy':['fantasy','fantastico','magic'],
+  'Horror':['horror','ghost','orrore'],
+  'Storico':['historical fiction','romanzo storico'],
+  'Avventura':['adventure','avventura'],
+  'Rosa':['romance','love stories','rosa'],
+  'Biografia':['biography','autobiograph','memoir','biografia'],
+  'Saggio':['essay','nonfiction','non-fiction','saggio'],
+  'Storia':['history','storia','historia'],
+  'Filosofia':['philosophy','filosofia'],
+  'Poesia':['poetry','poesia','poems'],
+  'Classici':['classic','classici','classical literature'],
+  'Ragazzi':['juvenile','children','ragazzi','young adult'],
+  'Fumetti':['comic','graphic novel','fumetti','manga'],
+  'Viaggi':['travel','viaggi'],
+  'Scienza':['science','scienza','mathematics','physics'],
+  'Umorismo':['humor','humour','comic fiction','umorismo'],
+};
+// Da un elenco di subject grezzi ai nostri generi, senza doppioni e al massimo quattro.
+function generiDaSubject(subjects){
+  const testo = (subjects || []).join(' | ').toLowerCase();
+  const out = [];
+  for (const [gen, chiavi] of Object.entries(SUBJECT_LIBRI))
+    if (chiavi.some(k => testo.includes(k))) out.push(gen);
+  return out.slice(0, 4);
+}
 const GENERI_RAWG = ['Action','Adventure','RPG','Shooter','Strategy','Simulation','Puzzle',
   'Arcade','Platformer','Racing','Sports','Fighting','Indie','Casual','Family','Card',
   'Board Games','Educational','Massively Multiplayer'];
 // generiTMDB() torna un ELENCO di nomi (i chip dei generi preferiti);
 // generiID() torna una MAPPA nome→id di TMDB, che per i giochi non esiste.
-const generiTMDB = () => inGiochi() ? GENERI_RAWG : (inSerie() ? GENERI_TMDB_SERIE : GENERI_TMDB);
-const generiID   = () => inGiochi() ? {} : (inSerie() ? GENERI_ID_SERIE   : GENERI_ID);
+const generiTMDB = () => inLibri() ? GENERI_LIBRI
+  : (inGiochi() ? GENERI_RAWG : (inSerie() ? GENERI_TMDB_SERIE : GENERI_TMDB));
+const generiID   = () => (inGiochi() || inLibri()) ? {} : (inSerie() ? GENERI_ID_SERIE : GENERI_ID);
 
 async function tmdbJSON(url){
   const r = await fetch(url);
@@ -2552,7 +2873,7 @@ async function tmdbJSON(url){
 }
 // id TMDB delle keyword più amate: servono a discover, che vuole gli id non i nomi
 async function idKeyword(nomi){
-  const k = S.config.tmdbKey, out = [];
+  const k = chiaveAPI('tmdbKey'), out = [];
   for (const n of nomi.slice(0,4)){
     try {
       const j = await tmdbJSON(`https://api.themoviedb.org/3/search/keyword?api_key=${k}&query=${encodeURIComponent(n)}`);
@@ -2570,7 +2891,7 @@ async function generiRAWG(){
   if (generiRawgCache) return generiRawgCache;
   generiRawgCache = new Map();
   try {
-    const r = await fetch(`https://api.rawg.io/api/genres?key=${S.config.rawgKey}&page_size=40`);
+    const r = await fetch(`https://api.rawg.io/api/genres?key=${chiaveAPI('rawgKey')}&page_size=40`);
     if (r.ok) for (const g of ((await r.json()).results || [])) generiRawgCache.set(g.name, g.slug);
   } catch(e){}
   return generiRawgCache;
@@ -2579,13 +2900,15 @@ async function generaConsigli(){
   const prof = S.cgProfilo = profiloGusto(S.me);
   const box = $('#cg-stato');
   const avanz = t => { if (box) box.textContent = t; };
-  if (!S.demo && !(inGiochi() ? S.config.rawgKey : S.config.tmdbKey)){
-    toast(`Serve la chiave ${inGiochi() ? 'RAWG' : 'TMDB'} (Impostazioni)`, true); return; }
+  // Open Library non vuole chiavi: per i libri non c'è niente da controllare.
+  const chiaveNecessaria = {TMDB:'tmdbKey', RAWG:'rawgKey'}[LIBRERIA()];
+  if (!S.demo && chiaveNecessaria && !S.config[chiaveNecessaria]){
+    toast(`Serve la chiave ${LIBRERIA()} (Impostazioni)`, true); return; }
   if (prof.n < 3){ S.cgLista = []; disegnaConsigli(); return; }
 
   S.cgCaricamento = true; disegnaConsigli();
   try {
-    const f = S.cgFiltri, k = S.config.tmdbKey;
+    const f = S.cgFiltri, k = chiaveAPI('tmdbKey');
     const visti = new Set(S.storico.filter(v => (v.partecipanti||[]).includes(S.me)).map(v => v.tmdbId));
     const inLista = new Set(listaDi(mioProfilo()).map(v => v.tmdbId));
     const recensiti = new Set(S.recensioni.filter(r => r.autore === S.me).map(r => r.tmdbId));
@@ -2594,12 +2917,32 @@ async function generaConsigli(){
     let grezzi = new Map();
     if (S.demo){
       for (const d of demoCatalogo()) if (!escludi(d.tmdbId)) grezzi.set(d.tmdbId, {...d});
+    } else if (inLibri()){
+      // Open Library non ha un «discover», ma ha la ricerca per soggetto: si chiedono i
+      // libri dei generi che piacciono di più, e il punteggio lo calcola l'app come sempre.
+      // Senza questo ramo si chiederebbe a TMDB, che di libri non sa niente.
+      avanz('Cerco libri che potrebbero piacerti…');
+      const generi = (f.generi.length ? f.generi : prof.top.generi).slice(0, 3);
+      const chiavi = generi.length
+        ? generi.map(g => (SUBJECT_LIBRI[g] || [g])[0])
+        : ['fiction'];
+      for (const ch of chiavi){
+        try {
+          const u = `https://openlibrary.org/search.json?limit=25&sort=rating&fields=key,ratings_count&subject=${encodeURIComponent(ch)}`;
+          const j = await (await fetch(u)).json();
+          for (const d of (j.docs || [])){
+            const id = idLibro(d.key);
+            // sotto una manciata di voti la media non dice niente
+            if (id && (d.ratings_count || 0) >= 5 && !escludi(id) && !grezzi.has(id)) grezzi.set(id, {tmdbId:id});
+          }
+        } catch(e){}
+      }
     } else if (inGiochi()){
       // RAWG non ha un «discover»: ha l'elenco dei giochi con filtri e ordinamento, che
       // per il nostro scopo è la stessa cosa. Il punteggio lo calcola l'app come sempre.
       avanz('Cerco giochi che potrebbero piacerti…');
       const mappa = await generiRAWG();
-      const q = new URLSearchParams({key:S.config.rawgKey, page_size:'40', ordering:'-metacritic'});
+      const q = new URLSearchParams({key:chiaveAPI('rawgKey'), page_size:'40', ordering:'-metacritic'});
       const gen = (f.generi.length ? f.generi : prof.top.generi).map(g => mappa.get(g)).filter(Boolean);
       if (gen.length) q.set('genres', gen.join(','));
       if (f.annoDa || f.annoA)
@@ -3059,9 +3402,9 @@ async function providersFilm(tmdbId){
       const v = vocePerId(tmdbId);
       out = ((v && v.negozi) || []).map(x => NEGOZIO_ALIAS[x] || x).filter((x,i,a) => a.indexOf(x) === i);
     } catch(e){ out = []; }
-  } else if (S.config.tmdbKey){
+  } else if (chiaveAPI('tmdbKey')){
     try {
-      const r = await fetch(`https://api.themoviedb.org/3/${inSerie()?'tv':'movie'}/${tmdbId}/watch/providers?api_key=${S.config.tmdbKey}`);
+      const r = await fetch(`https://api.themoviedb.org/3/${inSerie()?'tv':'movie'}/${tmdbId}/watch/providers?api_key=${chiaveAPI('tmdbKey')}`);
       if (r.ok){
         const it = ((await r.json()).results || {}).IT || {};
         out = [...new Set((it.flatrate || []).map(p => normProvider(p.provider_name)))];
@@ -3413,7 +3756,7 @@ function disegnaRecensioni(){
   if (nonRec.length){
     boxV.style.display = '';
     boxV.querySelector('summary').textContent = `${datiModo(S.modo).ic} ${
-      inGiochi() ? 'Giochi da recensire (finiti o in corso)'
+      conStato() ? `${I_COSA().replace(/^(i|le) /, '').replace(/^./, x => x.toUpperCase())} da recensire (finiti o in corso)`
         : (inSerie() ? 'Serie viste non ancora recensite' : 'Film visti non ancora recensiti')} (${nonRec.length})`;
     $('#rec-visti').innerHTML = nonRec.map(f => `<button class="rec-nr" data-id="${f.tmdbId}">${esc(f.titolo)}</button>`).join('');
     $('#rec-visti').querySelectorAll('[data-id]').forEach(b => b.onclick = () => avviaEditorDaTMDB(parseInt(b.dataset.id,10)));
@@ -3749,7 +4092,7 @@ function modaleNuovaRecensione(){
 }
 // Aggancia una recensione (magari importata senza id) a un film TMDB: sovrascrive i metadati e aggiunge la locandina.
 async function collegaTMDB(bozza, id){
-  apriModale(`<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero i dati ${inSerie() ? 'della serie' : (inGiochi() ? 'del gioco' : 'del film')}.</p>`);
+  apriModale(`<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero i dati ${inSerie() ? 'della serie' : (inGiochi() ? 'del gioco' : (inLibri() ? 'del libro' : 'del film'))}.</p>`);
   let d; try { d = await dettagliFilm(id); } catch(e){ return apriModale(`<h3>Ahi</h3><p style="color:var(--dim)">Scheda non recuperata.</p><div class="m-azioni"><button class="bottone piccolo" onclick="chiudiModale()">Chiudi</button></div>`); }
   salvaImmagini(d).then(() => { S.urlCache.clear(); });
   bozza.tmdbId = d.tmdbId;
@@ -3761,7 +4104,7 @@ async function collegaTMDB(bozza, id){
 async function avviaEditorDaTMDB(id){
   const mia = miaRecensione(id);
   if (mia) return editorRecensione(mia);
-  apriModale(`<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero i dati ${inSerie() ? 'della serie' : (inGiochi() ? 'del gioco' : 'del film')}.</p>`);
+  apriModale(`<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero i dati ${inSerie() ? 'della serie' : (inGiochi() ? 'del gioco' : (inLibri() ? 'del libro' : 'del film'))}.</p>`);
   let d; try { d = await dettagliFilm(id); } catch(e){ return apriModale(`<h3>Ahi</h3><p style="color:var(--dim)">Scheda non recuperata.</p><div class="m-azioni"><button class="bottone piccolo" onclick="chiudiModale()">Chiudi</button></div>`); }
   salvaImmagini(d).then(()=>{ S.urlCache.clear(); });
   const rec = { tmdbId:d.tmdbId, votoPersonale:0, doveVederlo:{streaming:[],fisico:[],percorso:''}, ultimaVisione:ultimaVisioneDi(d.tmdbId, S.me) || oggiISO(),
@@ -3894,17 +4237,17 @@ function disegnaFiltri(){
   // episodio in minuti (20'–1h30), un gioco nelle ore che chiede per essere finito
   // (2–80 ore). In fondo alla corsa c'è sempre "qualsiasi".
   const slider = $('#filtro-durata');
-  const min = inGiochi() ? 2 : (inSerie() ? 20 : 60);
-  const max = inGiochi() ? 80 : (inSerie() ? 90 : 240);
+  const d = datiModo(S.modo).durata;
+  const min = d.min, max = d.max;
   // Lo step deve dividere esattamente la corsa: se no il fondo — dove c'è «qualsiasi» —
   // non si raggiunge. Con min 2, max 80 e passo 5 ci si ferma a 77 e il filtro non si
   // spegne più (bug trovato da Marco). Per i giochi il passo è di 2 ore.
-  const passo = inGiochi() ? 2 : 5;
+  const passo = d.passo;
   slider.min = min; slider.max = max; slider.step = passo;
   if (S.filtri.durata != null && (S.filtri.durata < min || S.filtri.durata >= max)) S.filtri.durata = null;
-  const d = S.filtri.durata;
-  slider.value = d || max;
-  $('#filtro-durata-val').textContent = d ? '≤ '+fmtMin(d) : 'qualsiasi';
+  const val = S.filtri.durata;
+  slider.value = val || max;
+  $('#filtro-durata-val').textContent = val ? '≤ '+fmtMin(val) : 'qualsiasi';
   $('#filtro-regista').value = S.filtri.regista;
 }
 
@@ -4018,9 +4361,48 @@ function postoSediaSVG(colore, presente){
   </svg>`;
 }
 // la platea non sa quale disegno sta usando: cambia solo chi disegna il singolo posto
+// Poltrona da lettura tonda — il guscio avvolgente delle poltrone da libreria: una
+// conchiglia rotonda che si chiude ai lati, la seduta ovale davanti e un piede a stelo.
+// Stessa firma e stesso viewBox degli altri posti: la platea non se ne accorge.
+function postoLetturaSVG(colore, presente){
+  const uid = ++poltronaUid;
+  const stoffa = presente ? colore : tema('--posto-vuoto');
+  const scuro = tema('--poltrona-scura');
+  const guscio = presente ? tinta(colore, -0.36) : scuro;
+  const bordo = tema('--posto-bordo');
+  return `<svg viewBox="0 0 100 88">
+    <defs>
+      <radialGradient id="mvnl${uid}" cx="50%" cy="30%" r="72%">
+        <stop offset="0%" stop-color="${tinta(guscio, 0.2)}"/>
+        <stop offset="100%" stop-color="${tinta(guscio, -0.22)}"/>
+      </radialGradient>
+      <radialGradient id="mvnm${uid}" cx="50%" cy="35%" r="75%">
+        <stop offset="0%" stop-color="${tinta(stoffa, 0.16)}"/>
+        <stop offset="100%" stop-color="${tinta(stoffa, -0.16)}"/>
+      </radialGradient>
+    </defs>
+    <g stroke="${bordo}" stroke-width="2.5" stroke-linejoin="round"${presente ? '' : ' opacity=".85"'}>
+      <path d="M50 4 a34 34 0 0 1 34 34 v14 a12 12 0 0 1 -12 12 h-44 a12 12 0 0 1 -12 -12
+               v-14 a34 34 0 0 1 34 -34 z" fill="url(#mvnl${uid})"/>
+      <path d="M50 14 a24 26 0 0 1 24 26 v6 a6 6 0 0 1 -6 6 h-36 a6 6 0 0 1 -6 -6
+               v-6 a24 26 0 0 1 24 -26 z" fill="none"
+            stroke="${tinta(guscio, 0.24)}" stroke-width="1.5" opacity=".65"/>
+      <ellipse cx="50" cy="63" rx="27" ry="11" fill="url(#mvnm${uid})"/>
+    </g>
+    ${presente ? `<g fill="${bordo}" stroke="${colore}" stroke-width="2.2" stroke-linejoin="round">
+      <ellipse cx="50" cy="55" rx="19" ry="8.5"/>
+      <circle cx="50" cy="45" r="11"/>
+    </g>` : ''}
+  </svg>`;
+}
+// la platea non sa quale disegno sta usando: cambia solo chi disegna il singolo posto
+const POSTI = {
+  serie: (col, pres, pos) => postoDivanoSVG(col, pres, pos),
+  giochi:(col, pres) => postoSediaSVG(col, pres),
+  libri: (col, pres) => postoLetturaSVG(col, pres),
+};
 const postoSVG = (colore, presente, pos) =>
-  inSerie() ? postoDivanoSVG(colore, presente, pos)
-    : (inGiochi() ? postoSediaSVG(colore, presente) : poltronaSVG(colore, presente));
+  (POSTI[S.modo] || ((col, pres) => poltronaSVG(col, pres)))(colore, presente, pos);
 
 // Fila dei gruppi sopra la platea. Stessa forma dei chip «Chi» di Pronti alla visione,
 // così il gesto è già noto. Senza gruppi definiti non compare affatto.
@@ -4082,6 +4464,203 @@ function disegnaPlatea(){
   });
 }
 
+/* ── La libreria della modalità libri ──────────────────────────────────────────────
+   Il riquadro non è uno schermo: è uno scaffale visto di fronte, coi dorsi verso di noi.
+   Quando il gruppo ha scelto un libro, uno dei dorsi si stacca, avanza e si gira mostrando
+   la copertina; lo scaffale resta dietro, sfocato. Alla deselezione il libro torna al suo
+   posto. Vedi CONCEPT-libri.md §6.
+   I dorsi sono generati con un seme fisso: devono restare identici a ogni ridisegno, se no
+   la libreria «respirerebbe» a ogni clic. */
+const RIPIANI = 4, DORSI_PER_RIPIANO = 24;
+function semeCaso(seme){                       // generatore ripetibile, sempre lo stesso
+  let x = seme || 1;
+  return () => (x = (x * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+}
+function disegnaLibreria(){
+  const box = $('#libreria'); if (!box || !inLibri()) return;
+  if (box.dataset.fatto) return;               // si disegna una volta sola
+  const r = semeCaso(20260902);
+  const tinte = ['#6b3b2a','#7a5230','#4d5f43','#3f4d62','#6d4a5e','#8a6a3a','#42504a','#5a3f4a'];
+  let html = '';
+  for (let i = 0; i < RIPIANI; i++){
+    let dorsi = '';
+    for (let j = 0; j < DORSI_PER_RIPIANO; j++){
+      const alt = 62 + Math.round(r() * 34);            // quanto è alto il volume
+      const spess = 7 + Math.round(r() * 16);           // e quanto è spesso (in proporzione)
+      const col = tinte[Math.floor(r() * tinte.length)];
+      const inclina = r() < 0.07 ? (r() < 0.5 ? -7 : 7) : 0;   // qualcuno storto, come sempre
+      dorsi += `<span class="dorso" style="--h:${alt}%; --w:${spess}; --c:${col}; --rot:${inclina}deg"></span>`;
+      // ogni tanto una pila di volumi sdraiati, come in una libreria vera
+      if (r() < 0.09 && j > 1 && j < DORSI_PER_RIPIANO - 2){
+        const strati = 2 + Math.round(r() * 2);
+        let pila = '';
+        for (let k = 0; k < strati; k++) pila += `<span style="--c:${tinte[Math.floor(r()*tinte.length)]}"></span>`;
+        dorsi += `<span class="pila" style="--w:${14 + Math.round(r()*10)}">${pila}</span>`;
+      }
+    }
+    html += `<div class="ripiano">${dorsi}</div>`;
+  }
+  box.innerHTML = html;
+  // la gemella già sfocata: si dissolve al posto della nitida invece di sfocarsi dal vivo
+  const sfocata = $('#libreria-sfocata');
+  if (sfocata) sfocata.innerHTML = html;
+  box.dataset.fatto = '1';
+}
+// Quale volume si stacca dallo scaffale: sempre lo stesso per lo stesso libro, così
+// riaprendolo torna al suo posto invece di saltare altrove.
+/* I fotogrammi del volo, con numeri veri e nient'altro che `transform`: è la forma che il
+   browser sa comporre sulla GPU. `dx/dy` sono lo scostamento dal punto d'arrivo, `sc` la
+   riduzione che porta il volume alla misura del dorso.
+   La rotazione parte da +90°: la costa è il bordo SINISTRO del libro, e per mostrarla si
+   avvicina il lato sinistro. Con -90° si avvicinerebbe il destro, e il libro girerebbe
+   dalla parte sbagliata. */
+function fotogrammiVolo(dx, dy, sc){
+  const posa = (x, y, z, s, r) =>
+    `translateY(-50%) translate3d(${x}px, ${y}px, ${z}px) scale(${s}) rotateY(${r}deg)`;
+  const fermo = posa(dx, dy, 0, sc, 90);
+  // SOLO `transform`. Niente `filter` qui dentro: un filtro appiattisce preserve-3d, e il
+  // volume tornerebbe una figurina che si schiaccia invece di un libro che ruota.
+  return [
+    // fermo nel ripiano, di costola, mentre si accende (vedi luceDellaCosta)
+    {offset:0,    transform:fermo},
+    {offset:0.20, transform:fermo},
+    // esce DRITTO dal ripiano, senza girare: viene avanti e basta
+    {offset:0.40, transform:posa(dx * 0.98, dy * 0.98, 620, sc * 1.9, 90)},
+    // solo adesso comincia a girarsi, mentre attraversa
+    {offset:0.70, transform:posa(dx * 0.34, dy * 0.34, 820, 0.62, 55)},
+    // arriva quasi in posa, con un ultimo filo di rotazione
+    {offset:0.90, transform:posa(0, 0, 120, 1.03, 10)},
+    {offset:1,    transform:posa(0, 0, 0, 1, 0)},
+  ];
+}
+/* L'accensione è un VELO di luce sopra la costa, e si anima la sua `opacity`.
+   Non un `filter`: dentro una scena in tre dimensioni Chrome non lo manda al compositore
+   in modo affidabile, e l'animazione tornerebbe a girare sul thread principale — proprio
+   nei primi fotogrammi, dove lo scatto si nota di più. `opacity` invece è accelerata
+   sempre, come `transform`. */
+const luceDellaCosta = [
+  {offset:0,    opacity:0.22},
+  {offset:0.13, opacity:0.68},
+  {offset:0.24, opacity:0.34},
+  {offset:0.48, opacity:0.12},
+  {offset:1,    opacity:0},
+];
+// Mentre la copertina arriva dalla rete, il volume resta nel ripiano e «respira»: si
+// capisce che è quello il libro scelto, e il volo comincia solo quando c'è qualcosa da
+// mostrare. Senza, il libro volava vuoto e l'immagine appariva a metà strada.
+const luceInAttesa = [
+  {opacity:0.10}, {opacity:0.40}, {opacity:0.10},
+];
+// L'ombra dello scaffale che lascia il libro: piena finché è là dentro, poi si scioglie.
+const ombraDelloScaffale = [
+  {offset:0,    opacity:0.78},
+  {offset:0.42, opacity:0.7},
+  {offset:0.72, opacity:0.34},
+  {offset:1,    opacity:0},
+];
+// Il testo entra con il libro, non su un tempo suo: il volo può partire tardi (aspetta la
+// copertina) e un'animazione a tempo fisso arriverebbe scollegata.
+const testoConIlLibro = [
+  {offset:0,    opacity:0, transform:'translateY(-50%) translateX(18px)'},
+  {offset:0.68, opacity:0, transform:'translateY(-50%) translateX(18px)'},
+  {offset:1,    opacity:1, transform:'translateY(-50%)'},
+];
+// Più lungo di prima: i primi 400 ms se li prende l'accensione da fermo. `filter` sta fra
+// le poche proprietà che il browser compone come `transform` e `opacity`, quindi non
+// costa fluidità.
+const TEMPO_VOLO = 1950, CURVA_VOLO = 'cubic-bezier(.33,.02,.22,1)';
+// L'ultimo volo, per rifarlo al contrario quando il libro torna nello scaffale.
+let ultimoVolo = null;
+
+function scegliDorso(tmdbId){
+  const box = $('#libreria'); if (!box) return;
+  const dorsi = [...box.querySelectorAll('.dorso')];
+  const cop = $('#schermo .copertina-libro');
+  if (!dorsi.length || !cop) return;
+  // La posizione d'arrivo si misura a volo fermo: se un volo precedente è ancora in corso
+  // il rettangolo sarebbe quello trasformato, non quello a riposo.
+  cop.getAnimations().forEach(a => a.cancel());
+  const ra = cop.getBoundingClientRect();
+  if (!ra.width) return;
+  const rb = box.getBoundingClientRect();
+  const arrivoX = ra.left + ra.width/2, arrivoY = ra.top + ra.height/2;
+  // Il volume deve venire da LONTANO: se si sceglie quello che sta già dove atterra la
+  // copertina, il libro non esce da nessuna parte e sembra solo che l'immagine si apra.
+  // Fra i dorsi lontani se ne tiene una DECINA, presi a intervalli regolari: sono i volumi
+  // «candidati», tutti in posizioni buone, e il libro sceglie sempre uno di quelli.
+  const lontani = dorsi.filter(d => {
+    // i volumi appoggiati storti non possono partire: il libro nascerebbe di sbieco
+    // rispetto al dorso che sostituisce, e si vedrebbe fuori asse
+    if ((d.style.getPropertyValue('--rot') || '0deg').trim() !== '0deg') return false;
+    const r = d.getBoundingClientRect();
+    return r.width > 6 && Math.abs(r.left + r.width/2 - arrivoX) > rb.width * 0.34;
+  });
+  const base = lontani.length ? lontani : dorsi;
+  const quanti = Math.min(10, base.length);
+  const candidati = [];
+  for (let k = 0; k < quanti; k++) candidati.push(base[Math.floor(k * base.length / quanti)]);
+  const d = candidati[Math.abs(tmdbId || 0) % candidati.length];
+  // il posto vuoto si segna su tutt'e due le copie dello scaffale
+  const i = dorsi.indexOf(d), sfocata = $('#libreria-sfocata');
+  for (const cont of [box, sfocata]){
+    if (!cont) continue;
+    cont.querySelectorAll('.dorso.preso').forEach(x => x.classList.remove('preso'));
+    const q = cont.querySelectorAll('.dorso')[i];
+    if (q) q.classList.add('preso');
+  }
+  const rd = d.getBoundingClientRect();
+  if (!rd.width) return;
+  // Il volo si esprime in scostamenti dalla posizione d'arrivo: così l'animazione usa solo
+  // `transform`, che il browser compone senza rifare il layout — ed è fluida.
+  const sc = $('#schermo');
+  const scala = Math.max(0.05, rd.height / ra.height);
+  sc.style.setProperty('--dx', Math.round(rd.left + rd.width/2 - arrivoX) + 'px');
+  sc.style.setProperty('--dy', Math.round(rd.top + rd.height/2 - arrivoY) + 'px');
+  sc.style.setProperty('--sc', scala.toFixed(3));
+  // Lo spessore della costa è in coordinate del volume «a riposo»: durante il volo tutto
+  // viene ridotto di --sc, quindi va diviso, se no la costa sarebbe un filo invisibile.
+  sc.style.setProperty('--spessore', Math.max(8, Math.round(rd.width / scala)) + 'px');
+  // il taglio delle pagine e la faccia di dietro leggono lo spessore dal volume stesso
+  cop.style.setProperty('--spessore', Math.max(8, Math.round(rd.width / scala)) + 'px');
+  sc.style.setProperty('--tinta-costa', getComputedStyle(d).getPropertyValue('--c') || '#6b3b2a');
+  const dx = Math.round(rd.left + rd.width/2 - arrivoX);
+  const dy = Math.round(rd.top + rd.height/2 - arrivoY);
+  ultimoVolo = {dx, dy, scala};
+  const passi = fotogrammiVolo(dx, dy, scala);
+  // Il libro si mette SUBITO nella posa di partenza, così non lampeggia mai in posizione;
+  // il volo però comincia un giro dopo. Nello stesso istante disegnaSala sta ancora
+  // generando le poltrone e la rosa, e quel lavoro si mangerebbe i primi fotogrammi.
+  cop.getAnimations().forEach(a => a.cancel());
+  cop.style.transform = passi[0].transform;
+  let partito = false;
+  const costa = cop.querySelector('.costa');
+  const luce = costa && costa.querySelector('.luce');
+  // Mentre la copertina arriva dalla rete il volume resta nel ripiano e «respira»: si
+  // capisce che è quello il libro scelto, e il volo comincia quando c'è da mostrare.
+  const attesa = luce && luce.animate(luceInAttesa,
+    {duration:1150, iterations:Infinity, easing:'ease-in-out'});
+  const parti = () => {
+    if (partito || !cop.isConnected) return;
+    partito = true;
+    if (attesa) attesa.cancel();
+    cop.style.transform = '';
+    const opz = {duration:TEMPO_VOLO, easing:CURVA_VOLO, fill:'both'};
+    cop.animate(passi, opz);
+    if (luce) luce.animate(luceDellaCosta, opz);
+    const ombra = cop.querySelector('.ombra');
+    if (ombra) ombra.animate(ombraDelloScaffale, opz);
+    // il testo arriva insieme al libro
+    for (const sel of ['.info', '.rango']){
+      const el = $('#schermo ' + sel);
+      if (el) el.animate(testoConIlLibro, {duration:TEMPO_VOLO, easing:'ease-out', fill:'both'});
+    }
+  };
+  // Il via lo dà disegnaSala quando la copertina è arrivata ed è decodificata. Il tetto è
+  // una rete di sicurezza: se la rete è lenta o l'immagine manca, si parte lo stesso.
+  cop._parti = parti;
+  setTimeout(parti, 2200);
+}
+
 // casella laterale vuota (posizioni 2-5 senza film): resta visibile con "COMING SOON"
 const cellaVuota = () => '<div class="posto vuoto"><span class="cs">Coming<br>soon</span></div>';
 const rosaVuota = () => Array(4).fill(cellaVuota()).join('');
@@ -4093,7 +4672,7 @@ const rosaVuota = () => Array(4).fill(cellaVuota()).join('');
 // spegnersi se ne lascia una copia che collassa e si toglie da sé.
 // Vale per il salotto e per la postazione: il cinema ha il sipario, che è una transizione
 // CSS e non ha bisogno di nessuna copia.
-const schermoAnimato = () => inSerie() || inGiochi();
+const schermoAnimato = () => !!datiModo(S.modo).anim;
 function spegniImmagine(schermo, inner){
   if (!schermoAnimato() || !schermo.classList.contains('pronto') || !schermo.classList.contains('aperto')) return;
   const fantasma = inner.cloneNode(true);
@@ -4101,6 +4680,16 @@ function spegniImmagine(schermo, inner){
   fantasma.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));  // niente id doppi
   fantasma.classList.add('tv-uscita');
   inner.parentNode.insertBefore(fantasma, inner.nextSibling);
+  // Il libro rifà la stessa strada al contrario: stessi fotogrammi, letti all'indietro.
+  const copia = fantasma.querySelector('.copertina-libro');
+  if (inLibri() && copia && ultimoVolo){
+    const {dx, dy, scala} = ultimoVolo;
+    copia.getAnimations().forEach(a => a.cancel());
+    const opz = {duration:1250, easing:'cubic-bezier(.4,0,.6,1)', fill:'both', direction:'reverse'};
+    copia.animate(fotogrammiVolo(dx, dy, scala), opz);
+    const luceCopia = copia.querySelector('.costa .luce');
+    if (luceCopia) luceCopia.animate(luceDellaCosta, opz);
+  }
   setTimeout(() => fantasma.remove(), 1000);
 }
 
@@ -4131,6 +4720,7 @@ async function disegnaSala(){
       e.durata ? `${e.durata} troppo lunghi` : '', e.genere ? `${e.genere} di altro genere` : '',
       e.regista ? `${e.regista} di altri registi` : '', e.vincoli ? `${e.vincoli} per vincoli di compagnia` : ''
     ].filter(Boolean).join(' · ');
+    if (inLibri()) disegnaLibreria();
     spegniImmagine(schermo, inner);
     schermo.classList.remove('aperto');
     inner.innerHTML = `<div class="messaggio">Niente in cartellone stasera<br>
@@ -4141,6 +4731,7 @@ async function disegnaSala(){
     const rango = ris.tutti.indexOf(scelto) + 1;
     inner.innerHTML = `
       <img class="sfondo" hidden><div class="velo"></div>
+      ${inLibri() ? '<div class="copertina-libro"><img alt=""><b class="ombra"></b><i class="costa"><b class="luce"></b></i></div>' : ''}
       <div class="rango serif">${rango}</div>
       <button class="schermo-clic" title="Scheda film"></button>
       <div class="info">
@@ -4153,8 +4744,12 @@ async function disegnaSala(){
         </div>
       </div>
       <button id="btn-play" title="${inSerie() ? 'Registra la serata e sposta il segnalibro'
-        : (inGiochi() ? 'Registra la partita: in corso o finito'
+        : (conStato() ? `Registra: ${IL_COSA()} è in corso oppure finit${inSerie()?'a':'o'}`
                       : 'Elegge il film della serata e lo registra per tutti i presenti')}">▶</button>`;
+    // in biblioteca lo scaffale va disegnato prima, e va scelto il volume che si stacca:
+    // l'animazione parte da lì
+    // in biblioteca si disegna lo scaffale, si sceglie il volume che si stacca e parte il volo
+    if (inLibri()){ disegnaLibreria(); scegliDorso(f.tmdbId); }
     // .pronto abilita le animazioni della TV: si mette qui, nello stesso tick dell'immagine,
     // così l'accensione parte da opacity 0 senza che l'immagine lampeggi prima
     if (schermoAnimato() && !schermo.classList.contains('aperto')) schermo.classList.add('pronto');
@@ -4163,7 +4758,19 @@ async function disegnaSala(){
     $('#btn-play').onclick = () => modalePlay(scelto);
     const img = $('#schermo .sfondo');
     urlImmagine(f, 'sfondo').then(u => u || urlImmagine(f, 'locandina'))
-      .then(u => { img.src = u || segnapostoSVG('', f.tmdbId); img.hidden = false; });
+      .then(u => {
+        const src = u || segnapostoSVG('', f.tmdbId);
+        img.src = src; img.hidden = false;
+        // in biblioteca la copertina è il libro stesso: il volo comincia solo quando
+        // l'immagine è arrivata ED è decodificata, se no il libro volerebbe vuoto e la
+        // copertina comparirebbe a metà strada
+        const volume = $('#schermo .copertina-libro');
+        const copImg = volume && volume.querySelector('img');
+        if (!copImg) return;
+        copImg.src = src;
+        const via = () => { if (volume._parti) volume._parti(); };
+        (copImg.decode ? copImg.decode() : Promise.resolve()).then(via, via);
+      });
 
     // mensola laterale: gli altri film in classifica (tutti tranne quello sul proiettore),
     // ciascuno col suo rango reale. Così scegliendo un laterale il 1º ricompare qui ed è
@@ -4358,7 +4965,7 @@ function disegnaCatalogo(){
       <div class="corpo">
         <h4>${esc(voce.titolo)}</h4>
         <div class="azioni">
-          <button class="testo-link btn-riguarda" data-id="${id}">↺ rimettilo in lista</button>
+          <button class="testo-link btn-riguarda" data-id="${id}">↺ ${inSerie() ? 'rimettila' : 'rimettilo'} in lista</button>
           <button class="testo-link pericolo btn-scorda" data-id="${id}" data-tit="${esc(vis.titolo || voce.titolo)}">rimuovi</button>
         </div>
       </div>
@@ -4388,13 +4995,13 @@ function cardFilm(v){
       ${v.voto ? `<div class="voto-badge">★ ${fmtNum(v.voto,1)} ${fonteVoto(v)}</div>` : ''}
     </div>
     <div class="corpo">
-      <h4>${esc(v.titolo)}${inGiochi() && giocoInCorso(v.tmdbId, S.me)
+      <h4>${esc(v.titolo)}${conStato() && giocoInCorso(v.tmdbId, S.me)
         ? ` <span class="badge-corso" title="Ci avete già giocato ${serateGiocate(v.tmdbId, S.me)} volte senza segnarlo finito">▶ in corso</span>` : ''}</h4>
       <div class="sotto">${esc(v.anno || '')} · ${fmtMin(v.durata)}${v.regista ? ' · '+esc(v.regista) : ''}</div>
       ${stelleHTML(v.desiderio || 3)}
       <div class="compagnia">${chipsCompagnia(v)}</div>
       <div class="azioni">
-        <button class="testo-link btn-visto" title="${inGiochi() ? 'Lo segno come finito senza passare dalla Sala' : 'Segnalo come visto senza passare dalla Sala'}">✓ ${inGiochi() ? 'finito' : FATTO()}</button>
+        <button class="testo-link btn-visto" title="${conStato() ? 'Lo segno come finito senza passare dalla Sala' : 'Segnalo come visto senza passare dalla Sala'}">✓ ${conStato() ? 'finito' : FATTO()}</button>
         <button class="testo-link pericolo btn-togli">rimuovi</button>
       </div>
     </div>
@@ -4418,12 +5025,12 @@ function agganciaCard(v){
     await salvaMioProfilo(); disegnaSala();
   };
   el.querySelector('.btn-visto').onclick = () => {
-    const dom = inGiochi()
+    const dom = conStato()
       ? `Segnare «${v.titolo}» come finito? Esce dalla tua lista e finisce fra i già giocati. Se ci state ancora giocando, registralo dalla Sala scegliendo «in corso».`
       : (inSerie()
         ? `Segnare «${v.titolo}» come vista fino in fondo? Esce dalla tua lista e finisce fra i già visti.`
         : `Segnare «${v.titolo}» come visto? Esce dalla tua lista e finisce fra i già visti.`);
-    confermaModale(dom, inGiochi() ? '✓ Finito' : '✓ Visto', () => segnaVisto(v));
+    confermaModale(dom, conStato() ? '✓ Finito' : '✓ Visto', () => segnaVisto(v));
   };
   el.querySelector('.btn-togli').onclick = () => confermaModale(`Togliere «${v.titolo}» dalla tua lista?`, 'Rimuovi', async () => {
     const mio = mioProfilo();
@@ -4468,11 +5075,11 @@ async function segnaVisto(v){
   }
   // per un gioco questo tasto è la scorciatoia «l'ho finito»: le partite in corso si
   // registrano dalla Sala, dove si sceglie fra i due stati
-  if (inGiochi()) voce.stato = 'finito';
+  if (conStato()) voce.stato = 'finito';
   try { await registraVisione(voce); }
   catch(e){ return toast('Registrazione non riuscita: '+e.message, true); }
   disegnaCatalogo(); disegnaFiltri(); disegnaSala(); disegnaArchivio();
-  toast(inGiochi() ? `«${v.titolo}» segnato come finito ✓`
+  toast(conStato() ? `«${v.titolo}» segnat${inSerie()?'a':'o'} come finit${inSerie()?'a':'o'} ✓`
     : (inSerie() ? `«${v.titolo}» segnata come vista ✓` : `«${v.titolo}» segnato come visto ✓`));
 }
 
@@ -4633,7 +5240,7 @@ document.addEventListener('keydown', e => {
 });
 
 async function modaleAggiungi(id){
-  apriModale(`<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero la scheda ${inSerie() ? 'della serie' : 'del film'}.</p>`);
+  apriModale(`<h3>Un attimo…</h3><p style="color:var(--dim)">Recupero la scheda ${IL_COSA().replace(/^(il|la) /, m => m.trim() === 'il' ? 'del ' : 'della ')}.</p>`);
   let d;
   try { d = await dettagliFilm(id); }
   catch(e){ return apriModale(`<h3>Ahi</h3><p style="color:var(--dim)">Scheda non recuperata: ${esc(e.message)}</p><div class="m-azioni"><button class="bottone piccolo" onclick="chiudiModale()">Chiudi</button></div>`); }
@@ -4648,7 +5255,7 @@ async function modaleAggiungi(id){
         <div class="m-meta">${esc(d.anno || '')} · ${fmtMin(d.durata)}${d.regista ? ' · '+esc(d.regista) : ''}<br>
           ${esc((d.generi || []).join(', '))}${d.voto ? ` · ★ ${fmtNum(d.voto,1)} ${fonteVoto(d)}` : ''}</div>
         ${doppione ? '<div class="m-meta" style="color:var(--rosso2)">⚠ È già nella tua lista.</div>' : `
-        <div class="m-blocco"><label>QUANTO VOGLIO VEDERLO</label><div id="m-stelle">${stelleHTML(3)}</div></div>
+        <div class="m-blocco"><label>QUANTO VOGLIO ${inLibri() ? 'LEGGERLO' : (inGiochi() ? 'GIOCARCI' : (inSerie() ? 'VEDERLA' : 'VEDERLO'))}</label><div id="m-stelle">${stelleHTML(3)}</div></div>
         <div class="m-blocco"><label>COMPAGNIA (facoltativo)</label><div class="compagnia" id="m-chips">${chipsCompagnia(voce)}</div></div>`}
       </div>
     </div>
@@ -4709,14 +5316,14 @@ function modaleScheda(r){
 function modalePlay(r){
   const f = r.film;
   const nomi = [...S.presenti].map(nomeDi).join(', ');
-  const serie = inSerie(), giochi = inGiochi();
-  let statoScelto = 'corso';   // videogiochi: in corso finché non si dice il contrario
+  const serie = inSerie(), giochi = conStato();   // «giochi» = ha lo stato in corso/finito
+  let statoScelto = 'corso';   // finché non si dice il contrario
   // Una serata di serie non la "consuma": sposta il segnalibro. Quindi invece di
   // confermare e basta si chiede fin dove siete arrivati, già compilato sul punto giusto.
   const da = serie ? (prossimoGruppo(f) || {stagione:1, episodio:1}) : null;
   const stagioni = serie ? (f.stagioni || []) : [];
   apriModale(`
-    <h3>${giochi ? 'Si accende la postazione…' : 'Si spengono le luci…'}</h3>
+    <h3>${inLibri() ? 'Il libro del gruppo…' : (giochi ? 'Si accende la postazione…' : 'Si spengono le luci…')}</h3>
     ${(serie || giochi) ? (serie ? `
     <p class="aiuto-p">Stasera guardate <b class="su-oro">«${esc(f.titolo)}»</b> con: ${esc(nomi)}.</p>
     <div class="m-blocco"><label>DOVE SIETE ARRIVATI</label>
@@ -4739,7 +5346,7 @@ function modalePlay(r){
     Lo registro come <b>visto</b> per: ${esc(nomi)}.<br>
     <span class="aiuto">Per i proponenti riparte il timer dell'attesa; il film esce dalle loro liste.</span></p>`}
     ${giochi ? `
-    <p class="aiuto-p">Stasera giocate a <b class="su-oro">«${esc(f.titolo)}»</b> con: ${esc(nomi)}.</p>
+    <p class="aiuto-p">${inLibri() ? 'Leggete' : 'Stasera giocate a'} <b class="su-oro">«${esc(f.titolo)}»</b> ${inLibri() ? 'in' : 'con'}: ${esc(nomi)}.</p>
     <div class="m-blocco"><label>A CHE PUNTO SIETE</label>
       <div class="play-stato">
         <button type="button" class="stato-card on" data-stato="corso">
@@ -4747,10 +5354,11 @@ function modalePlay(r){
           <span class="sc-desc">Resta in lista e continua a essere proposto</span></button>
         <button type="button" class="stato-card" data-stato="finito">
           <span class="sc-ic">✓</span><span class="sc-nome">Finito</span>
-          <span class="sc-desc">Passa fra i già giocati, come un film visto</span></button>
+          <span class="sc-desc">Passa fra i ${inLibri() ? 'già letti' : 'già giocati'}, come un film visto</span></button>
       </div>
-      <div class="aiuto">In tutti e due i casi lo trovi fra i titoli da recensire: di un gioco
-        si può scrivere anche mentre ci si sta ancora giocando.</div>
+      <div class="aiuto">In tutti e due i casi lo trovi fra i titoli da recensire: ${
+        inLibri() ? 'di un libro si può scrivere anche mentre lo si sta leggendo'
+                  : 'di un gioco si può scrivere anche mentre ci si sta ancora giocando'}.</div>
     </div>` : ''}
     <div class="m-azioni">
       <button class="bottone piccolo secondario" id="m-annulla">Non ancora</button>
@@ -4761,9 +5369,9 @@ function modalePlay(r){
     $$('.stato-card').forEach(b => b.onclick = () => {
       statoScelto = b.dataset.stato;
       $$('.stato-card').forEach(x => x.classList.toggle('on', x === b));
-      $('#m-conferma').textContent = statoScelto === 'finito' ? '✓ L\'abbiamo finito' : '▶ Buona partita';
+      $('#m-conferma').textContent = statoScelto === 'finito' ? '✓ L\'abbiamo finito' : (inLibri() ? '📖 Buona lettura' : '▶ Buona partita');
     });
-    $('#m-conferma').textContent = '▶ Buona partita';
+    $('#m-conferma').textContent = inLibri() ? '📖 Buona lettura' : '▶ Buona partita';
   }
   if (serie){
     // gli episodi non possono andare oltre quelli che la stagione scelta ha davvero
@@ -4826,7 +5434,7 @@ function modalePlay(r){
 /* ════════════════════════ IMPOSTAZIONI ════════════════════════ */
 function disegnaImpostazioni(){
   $('#imp-tmdb').value = S.config.tmdbKey || '';
-  $('#imp-omdb').value = S.config.omdbKey || '';
+  disegnaMieChiavi();
   if ($('#imp-rawg')) $('#imp-rawg').value = S.config.rawgKey || '';
   $('#imp-versione').textContent = APP_VERSION;
   $('#imp-cartella').textContent = FS.nomeCartella();
@@ -4946,10 +5554,29 @@ function disegnaBonusGenere(){
     await salvaMioProfilo(); disegnaBonusGenere(); disegnaSala();
   };
 }
+// Le chiavi personali stanno nel proprio profilo: è l'unico file che si ha diritto di
+// scrivere, e così ognuno consuma la propria quota invece di quella dell'host.
+function disegnaMieChiavi(){
+  const mio = mioProfilo(); if (!mio || !$('#imp-mia-tmdb')) return;
+  const k = mio.chiavi || {};
+  $('#imp-mia-tmdb').value = k.tmdbKey || '';
+  $('#imp-mia-rawg').value = k.rawgKey || '';
+  const usa = nome => (k[nome] && String(k[nome]).trim()) ? 'la tua' : (S.config[nome] ? 'quella del gruppo' : 'nessuna');
+  $('#imp-mie-chiavi-nota').textContent =
+    `In uso adesso: TMDB ${usa('tmdbKey')} · RAWG ${usa('rawgKey')} · i libri non ne vogliono.`;
+}
 function agganciaImpostazioni(){
+  if ($('#imp-salva-mie')) $('#imp-salva-mie').onclick = async () => {
+    const mio = mioProfilo(); if (!mio) return;
+    mio.chiavi = {tmdbKey: $('#imp-mia-tmdb').value.trim(), rawgKey: $('#imp-mia-rawg').value.trim()};
+    try { await salvaMioProfilo(); }
+    catch(e){ return toast('Non riuscito: '+e.message, true); }
+    S.providersCache = new Map();     // le risposte vecchie erano di un'altra chiave
+    disegnaMieChiavi();
+    toast('Chiavi salvate nel tuo profilo 🔑');
+  };
   $('#imp-salva-api').onclick = async () => {
     S.config.tmdbKey = $('#imp-tmdb').value.trim();
-    S.config.omdbKey = $('#imp-omdb').value.trim();
     if ($('#imp-rawg')) S.config.rawgKey = $('#imp-rawg').value.trim();
     await FS.writeJSON(['config.json'], S.config);
     toast('Chiavi salvate nella cartella condivisa 🔑');
@@ -5078,10 +5705,10 @@ function agganciaGlobali(){
     const q = e.target.value.trim();
     S.cgFiltri.persona = null; S.cgFiltri.personaNome = q;
     clearTimeout(cgPersonaTimer);
-    if (q.length < 3 || S.demo || !S.config.tmdbKey) return;
+    if (q.length < 3 || S.demo || !chiaveAPI('tmdbKey')) return;
     cgPersonaTimer = setTimeout(async () => {
       try {
-        const j = await tmdbJSON(`https://api.themoviedb.org/3/search/person?api_key=${S.config.tmdbKey}&language=it-IT&query=${encodeURIComponent(q)}`);
+        const j = await tmdbJSON(`https://api.themoviedb.org/3/search/person?api_key=${chiaveAPI('tmdbKey')}&language=it-IT&query=${encodeURIComponent(q)}`);
         const noti = (j.results || []).slice(0,5);
         $('#cg-persone').innerHTML = noti.map(p => `<option value="${esc(p.name)}">`).join('');
         const esatto = noti.find(p => p.name.toLowerCase() === q.toLowerCase()) || noti[0];
