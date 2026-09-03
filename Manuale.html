@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Movienaitor — Manuale</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* La sala: velluto bordeaux, oro, crema — la tavolozza della modalità Film dell'app.
+     Un solo mondo visivo, dipinto per intero. */
+  :root{
+    --fondo:#191014; --fondo2:#221419; --velluto2:#2c181d; --velluto3:#4a2830;
+    --oro:#c9a45c; --oro2:#e0c07d; --oro-dim:#8a7347;
+    --crema:#f2e7d5; --dim:#b8a68e; --dim2:#7d6f5c;
+    --rosso:#a85454; --verde:#7d9b76;
+    --bordo:#4a2c33; --bordo2:#3a2229;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto} *{transition:none!important}}
+  body{background:var(--fondo); color:var(--crema);
+    font-family:"Lora",Georgia,serif; font-size:17px; line-height:1.7; -webkit-font-smoothing:antialiased}
+
+  /* ── impalcatura: indice fisso a sinistra, testo a destra ── */
+  .impalcatura{display:grid; grid-template-columns:238px minmax(0,1fr); gap:44px;
+    max-width:1080px; margin:0 auto; padding:0 26px 110px; align-items:start}
+  @media (max-width:900px){ .impalcatura{grid-template-columns:1fr; gap:0} }
+
+  /* ── indice ── */
+  .indice{position:sticky; top:18px; padding:20px 0; max-height:calc(100dvh - 36px); overflow-y:auto}
+  .indice h2{font-family:"IBM Plex Mono",monospace; font-size:10px; font-weight:500;
+    letter-spacing:.2em; text-transform:uppercase; color:var(--oro-dim); margin:0 0 14px}
+  .indice ol{margin:0; padding:0; list-style:none; counter-reset:i}
+  .indice li{counter-increment:i}
+  .indice a{display:flex; gap:10px; align-items:baseline; padding:5px 9px; border-radius:6px;
+    color:var(--dim); text-decoration:none; font-size:14.5px; line-height:1.35;
+    border-left:2px solid transparent; transition:color .15s, background .15s}
+  .indice a::before{content:counter(i,decimal-leading-zero);
+    font-family:"IBM Plex Mono",monospace; font-size:10px; color:var(--oro-dim); flex:0 0 auto}
+  .indice a:hover{color:var(--crema); background:var(--fondo2)}
+  .indice a.qui{color:var(--oro2); background:var(--velluto2); border-left-color:var(--oro)}
+  .indice a:focus-visible{outline:2px solid var(--oro); outline-offset:2px}
+  @media (max-width:900px){
+    .indice{position:static; max-height:none; border:1px solid var(--bordo);
+      border-radius:10px; padding:18px 16px; margin:0 0 40px; background:var(--fondo2)}
+    .indice ol{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:0 18px}
+  }
+
+  /* ── testata ── */
+  header.copertina{padding:64px 0 34px; margin-bottom:38px; border-bottom:1px solid var(--bordo)}
+  .marchio{font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.3em;
+    text-transform:uppercase; color:var(--oro-dim); margin:0 0 18px}
+  h1{font-family:"Marcellus",Georgia,serif; font-weight:400; font-size:clamp(38px,7vw,60px);
+    line-height:1; margin:0 0 14px; letter-spacing:.01em}
+  h1 span{color:var(--oro)}
+  .occhio{color:var(--dim); font-size:18.5px; margin:0; max-width:48ch; font-style:italic}
+
+  /* ── capitoli ── */
+  section.cap{margin:0 0 56px; scroll-margin-top:22px}
+  .cap-testa{display:flex; align-items:baseline; gap:13px; margin:0 0 18px;
+    padding-bottom:12px; border-bottom:1px solid var(--bordo2)}
+  .cap-num{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--oro-dim);
+    flex:0 0 auto; padding-top:6px}
+  h2.cap-tit{font-family:"Marcellus",Georgia,serif; font-weight:400;
+    font-size:clamp(25px,4.4vw,32px); line-height:1.15; margin:0; letter-spacing:.005em}
+  h3{font-family:"Marcellus",Georgia,serif; font-weight:400; font-size:20px;
+    margin:28px 0 9px; color:var(--oro2)}
+  p{margin:0 0 14px; max-width:64ch; text-wrap:pretty}
+  strong{font-weight:600; color:#fff9ef}
+  code{font-family:"IBM Plex Mono",monospace; font-size:.84em; background:var(--velluto2);
+    border:1px solid var(--bordo2); border-radius:4px; padding:1px 6px; color:var(--dim)}
+  a{color:var(--oro2)}
+  ul{margin:0 0 15px; padding:0; list-style:none; display:flex; flex-direction:column; gap:10px}
+  ul li{padding-left:19px; position:relative; max-width:64ch}
+  ul li::before{content:'—'; position:absolute; left:0; color:var(--oro-dim)}
+
+  .essenziale{background:linear-gradient(180deg,var(--velluto2),var(--fondo2));
+    border-left:3px solid var(--oro); border-radius:0 8px 8px 0; padding:17px 21px; margin:0 0 20px}
+  .essenziale .et{font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--oro); margin:0 0 7px}
+  .essenziale p{margin:0; font-size:17.5px}
+  .essenziale p+p{margin-top:8px}
+  .marca{font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--dim2); margin:26px 0 11px;
+    padding-top:13px; border-top:1px dashed var(--bordo2)}
+
+  table{border-collapse:collapse; width:100%; font-size:15.5px; margin:0 0 18px}
+  .scorre{overflow-x:auto; margin:0 0 18px}
+  .scorre table{min-width:500px; margin:0}
+  th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--bordo2); vertical-align:top}
+  th{font-family:"IBM Plex Mono",monospace; font-size:10px; font-weight:500; letter-spacing:.13em;
+    text-transform:uppercase; color:var(--oro-dim); border-bottom:1px solid var(--bordo)}
+  td:first-child{color:var(--oro2)}
+  tr:last-child td{border-bottom:none}
+
+  .guasto{border:1px solid var(--bordo); border-radius:9px; margin:0 0 13px; overflow:hidden}
+  .guasto>b{display:block; background:var(--velluto2); padding:12px 17px; color:#fff9ef;
+    border-left:3px solid var(--rosso); font-size:16.5px; font-weight:600}
+  .guasto>div{padding:14px 17px 15px}
+  .guasto p{margin:0 0 8px; font-size:16px} .guasto p:last-child{margin:0}
+  .guasto i{font-style:normal; font-family:"IBM Plex Mono",monospace; font-size:9.5px;
+    letter-spacing:.15em; text-transform:uppercase; color:var(--dim2); display:block}
+  .guasto .ok i{color:var(--verde)}
+
+  .avviso{display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:10px;
+    letter-spacing:.12em; text-transform:uppercase; color:var(--rosso);
+    border:1px solid var(--rosso); border-radius:20px; padding:2px 9px; margin:0 0 10px}
+
+  .chiusa{border-top:1px solid var(--bordo); margin-top:54px; padding-top:24px;
+    color:var(--dim2); font-size:15px; font-style:italic}
+</style>
+</head>
+<body>
+<div class="impalcatura">
+  <nav class="indice" aria-label="Indice"><h2>Indice</h2><ol id="indice"></ol></nav>
+  <main id="testo"></main>
+</div>
+<script type="application/json" id="dati">
+{
+ "marchio": "manuale",
+ "titolo": "MOVIE\u003cspan>NAITOR\u003c/span>",
+ "occhio": "Funzionamento, configurazione e risoluzione dei problemi.",
+ "capitoli": [
+  {
+   "id": "intro",
+   "titolo": "Descrizione",
+   "essenziale": "\u003cp>Movienaitor è un'applicazione per la \u003cstrong>selezione condivisa di un titolo\u003c/strong> fra più partecipanti e per l'\u003cstrong>archiviazione delle relative recensioni\u003c/strong>. Nata per la scelta del film, gestisce oggi quattro categorie: film, serie TV, videogiochi e libri.\u003c/p>\u003cp>Ogni partecipante mantiene un elenco personale di titoli con un indice di preferenza; l'applicazione calcola una classifica in base ai presenti e registra la sessione in uno storico condiviso.\u003c/p>",
+   "corpo": "\u003cp class=\"marca\">Struttura\u003c/p>\u003cp>Le quattro categorie sono indipendenti: elenchi, storico, recensioni e suggerimenti di una categoria non interagiscono con quelli delle altre. La categoria attiva si seleziona dal comando in basso a destra.\u003c/p>\u003cp>Ogni categoria espone quattro sezioni, corrispondenti alle schede in alto:\u003c/p>\u003cdiv class=\"scorre\">\u003ctable>\u003cthead>\u003ctr>\u003cth>Sezione\u003c/th>\u003cth>Funzione\u003c/th>\u003c/tr>\u003c/thead>\u003ctbody>\u003ctr>\u003ctd>🎬 Sala\u003c/td>\u003ctd>Selezione dei partecipanti e calcolo della classifica della sessione.\u003c/td>\u003c/tr>\u003ctr>\u003ctd>🔖 Watch List\u003c/td>\u003ctd>Elenco personale: titoli da fruire e titoli già fruiti.\u003c/td>\u003c/tr>\u003ctr>\u003ctd>📝 Recensioni\u003c/td>\u003ctd>Voto e testo strutturato, propri e degli altri profili.\u003c/td>\u003c/tr>\u003ctr>\u003ctd>✨ Per te\u003c/td>\u003ctd>Suggerimenti calcolati sulle recensioni del profilo.\u003c/td>\u003c/tr>\u003c/tbody>\u003c/table>\u003c/div>\u003cp>A queste si aggiungono le \u003cstrong>impostazioni\u003c/strong> (⚙), il comando di \u003cstrong>segnalazione\u003c/strong> (🐞) e, per i profili con modalità host attiva, due sezioni supplementari.\u003c/p>"
+  },
+  {
+   "id": "c1",
+   "titolo": "Archiviazione dei dati",
+   "essenziale": "\u003cp>L'applicazione è costituita da un \u003cstrong>unico file\u003c/strong> e non richiede alcun server. I dati risiedono in una \u003cstrong>cartella locale\u003c/strong> indicata al primo avvio: restano quindi sul dispositivo dell'utente e non dipendono da servizi esterni.\u003c/p>\u003cp>Collocando tale cartella in un servizio di sincronizzazione (Google Drive o equivalente) si ottengono due effetti: l'accesso da \u003cstrong>più dispositivi\u003c/strong> e la condivisione fra \u003cstrong>più profili\u003c/strong>. La sincronizzazione è facoltativa: senza, l'applicazione funziona in modalità mono-utente.\u003c/p>",
+   "corpo": "\u003cp class=\"marca\">Contenuto della cartella\u003c/p>\u003cp>Il formato è JSON, in chiaro e ispezionabile. Non è previsto alcun database.\u003c/p>\u003cdiv class=\"scorre\">\u003ctable>\u003cthead>\u003ctr>\u003cth>Percorso\u003c/th>\u003cth>Contenuto\u003c/th>\u003c/tr>\u003c/thead>\u003ctbody>\u003ctr>\u003ctd>\u003ccode>profili/&lt;nome&gt;.json\u003c/code>\u003c/td>\u003ctd>Un profilo: elenchi, generi preferiti, gruppi, chiavi personali.\u003c/td>\u003c/tr>\u003ctr>\u003ctd>\u003ccode>storico.json\u003c/code>\u003c/td>\u003ctd>Sessioni registrate. Ogni categoria dispone del proprio file nella rispettiva sottocartella: \u003ccode>serie/\u003c/code>, \u003ccode>giochi/\u003c/code>, \u003ccode>libri/\u003c/code>.\u003c/td>\u003c/tr>\u003ctr>\u003ctd>\u003ccode>config.json\u003c/code>\u003c/td>\u003ctd>Chiavi condivise e parametri della formula di classifica.\u003c/td>\u003c/tr>\u003ctr>\u003ctd>\u003ccode>recensioni/&lt;nome&gt;/\u003c/code>\u003c/td>\u003ctd>Recensioni del profilo, un file per titolo.\u003c/td>\u003c/tr>\u003c/tbody>\u003c/table>\u003c/div>\u003ch3>Prevenzione dei conflitti\u003c/h3>\u003cp>Il modello adotta il criterio di \u003cstrong>un solo scrittore per file\u003c/strong>: ciascun profilo è scritto esclusivamente dal proprio titolare. Ne consegue che due dispositivi non possono produrre versioni divergenti dello stesso file, e non è necessario un arbitro centralizzato.\u003c/p>\u003cp>Lo storico è l'unica risorsa a scrittura multipla. Prima di ogni scrittura il file viene \u003cstrong>riletto e fuso\u003c/strong> per identificativo di sessione: registrazioni simultanee da dispositivi diversi non comportano perdita di dati.\u003c/p>\u003cp>Il comando \u003cstrong>⟳\u003c/strong> nella barra superiore forza la rilettura della cartella.\u003c/p>"
+  },
+  {
+   "id": "c2",
+   "titolo": "Categorie",
+   "essenziale": "\u003cp>Ogni categoria dispone di una propria interfaccia, di una libreria online di riferimento e di una specifica unità di misura della durata. La logica applicativa è comune.\u003c/p>",
+   "corpo": "\u003cdiv class=\"scorre\">\u003ctable>\u003cthead>\u003ctr>\u003cth>Categoria\u003c/th>\u003cth>Interfaccia\u003c/th>\u003cth>Libreria\u003c/th>\u003cth>Unità\u003c/th>\u003cth>Chiave\u003c/th>\u003c/tr>\u003c/thead>\u003ctbody>\u003ctr>\u003ctd>🎬 Film\u003c/td>\u003ctd>Sala cinematografica\u003c/td>\u003ctd>TMDB\u003c/td>\u003ctd>minuti\u003c/td>\u003ctd>richiesta\u003c/td>\u003c/tr>\u003ctr>\u003ctd>📺 Serie TV\u003c/td>\u003ctd>Salotto\u003c/td>\u003ctd>TMDB\u003c/td>\u003ctd>minuti per episodio\u003c/td>\u003ctd>richiesta\u003c/td>\u003c/tr>\u003ctr>\u003ctd>🎮 Videogiochi\u003c/td>\u003ctd>Postazione\u003c/td>\u003ctd>RAWG\u003c/td>\u003ctd>ore di completamento\u003c/td>\u003ctd>richiesta\u003c/td>\u003c/tr>\u003ctr>\u003ctd>📚 Libri\u003c/td>\u003ctd>Biblioteca\u003c/td>\u003ctd>Open Library\u003c/td>\u003ctd>pagine\u003c/td>\u003ctd>non richiesta\u003c/td>\u003c/tr>\u003c/tbody>\u003c/table>\u003c/div>\u003cp class=\"marca\">Comportamenti specifici\u003c/p>\u003ch3>Serie TV: segnalibro\u003c/h3>\u003cp>Una serie non si esaurisce in una sessione. Alla conferma viene richiesto il punto raggiunto — stagione, episodio iniziale e finale — e la serie \u003cstrong>permane nell'elenco\u003c/strong>: viene aggiornato unicamente il segnalibro. La rimozione è automatica al raggiungimento dell'ultimo episodio dell'ultima stagione pubblicata.\u003c/p>\u003cp>Le recensioni possono essere articolate \u003cstrong>per stagione\u003c/strong> anziché unitarie, tramite l'apposita opzione nell'editor.\u003c/p>\u003ch3>Videogiochi e libri: stato di avanzamento\u003c/h3>\u003cp>Queste categorie non prevedono una numerazione degli episodi e adottano due stati: \u003cstrong>in corso\u003c/strong> (il titolo permane nell'elenco e continua a essere proposto) e \u003cstrong>completato\u003c/strong> (il titolo transita fra quelli già fruiti). Lo stato viene richiesto alla conferma della sessione.\u003c/p>\u003cp>\u003cstrong>Differenza rilevante.\u003c/strong> Per film e serie la stesura di una recensione equivale alla fruizione e sposta il titolo fra i già visti. Per videogiochi e libri non produce tale effetto, poiché la recensione può essere redatta durante la fruizione: solo lo stato «completato» determina lo spostamento.\u003c/p>\u003ch3>Libri: reperimento delle copertine\u003c/h3>\u003cp>Open Library presenta una copertura incompleta delle copertine, particolarmente marcata sulle edizioni italiane. Sono previsti due meccanismi:\u003c/p>\u003cul>\u003cli>in fase di ricerca le schede riferite alla stessa opera vengono \u003cstrong>aggregate\u003c/strong> — la libreria ne registra una per ristampa — conservando la più completa;\u003c/li>\u003cli>all'apertura di un titolo privo di copertina, questa viene ricercata \u003cstrong>nell'edizione in altra lingua della stessa opera\u003c/strong>, identificata tramite Wikidata. Dalla medesima edizione viene recuperato, se assente, il \u003cstrong>numero di pagine\u003c/strong>, dato necessario al filtro sulla lunghezza.\u003c/li>\u003c/ul>\u003cp>Nei casi residui viene mostrato un segnaposto con il titolo. La condizione dipende dalla base dati di origine e non costituisce un malfunzionamento.\u003c/p>"
+  },
+  {
+   "id": "c3",
+   "titolo": "Elenco personale",
+   "essenziale": "\u003cp>L'inserimento di un titolo richiede la ricerca nella libreria di categoria e l'assegnazione di un \u003cstrong>indice di preferenza da 1 a 5\u003c/strong>. Tale valore è sufficiente affinché il titolo concorra alla classifica.\u003c/p>",
+   "corpo": "\u003cp class=\"marca\">Vincoli di compagnia\u003c/p>\u003cp>A ciascuna voce possono essere associati due vincoli relativi ai presenti:\u003c/p>\u003cul>\u003cli>\u003cstrong>Con chi\u003c/strong> — elenco di profili la cui presenza contestuale attiva un bonus sul punteggio.\u003c/li>\u003cli>\u003cstrong>Non con\u003c/strong> — elenco di profili la cui presenza \u003cstrong>esclude\u003c/strong> il titolo dalla classifica.\u003c/li>\u003c/ul>\u003cp>Lo stesso titolo può comparire negli elenchi di più profili: in Sala le voci vengono unificate e i titolari assumono la qualifica di \u003cstrong>proponenti\u003c/strong>.\u003c/p>\u003cp class=\"marca\">Filtri di visualizzazione\u003c/p>\u003cp>I filtri agiscono esclusivamente sulla visualizzazione e non modificano i dati. Sono disponibili: ricerca testuale sul titolo; ordinamento per data di inserimento, titolo, anno, preferenza o voto, con inversione del verso; soglia minima di preferenza; soglia minima di voto; intervallo di anni. Il comando «azzera» ripristina la configurazione predefinita.\u003c/p>\u003cp>Nella parte superiore è riportata la \u003cstrong>distribuzione dei generi\u003c/strong> dell'elenco in forma di barre percentuali.\u003c/p>\u003cp class=\"marca\">Titoli già fruiti\u003c/p>\u003cp>La sezione inferiore raccoglie le sessioni confermate e i titoli recensiti. Da essa un titolo può essere \u003cstrong>reinserito nell'elenco\u003c/strong> per una nuova fruizione.\u003c/p>\u003cp>La scheda di un titolo espone inoltre due comandi:\u003c/p>\u003cul>\u003cli>\u003cstrong>Visto\u003c/strong> — registra la fruizione individuale senza passare dalla Sala. La sessione risulta con il solo titolare fra i partecipanti e \u003cstrong>non incide sull'indice di soddisfazione degli altri profili\u003c/strong>, non avendo impegnato una sessione collettiva.\u003c/li>\u003cli>\u003cstrong>Rimuovi dai già visti\u003c/strong> — rimuove il solo titolare dalle sessioni relative a quel titolo. Le sessioni con altri partecipanti permangono nei rispettivi storici.\u003c/li>\u003c/ul>"
+  },
+  {
+   "id": "c4",
+   "titolo": "Sala",
+   "essenziale": "\u003cp>Si selezionano i profili presenti agendo sulle rispettive poltrone. L'applicazione espone il primo classificato sullo schermo principale e i successivi quattro nelle caselle laterali, selezionabili. Il comando \u003cstrong>▶\u003c/strong> registra la sessione.\u003c/p>",
+   "corpo": "\u003cp class=\"marca\">Comandi disponibili\u003c/p>\u003cul>\u003cli>\u003cstrong>Lista completa\u003c/strong> — apre la classifica integrale, non limitata alle prime cinque posizioni. Qualsiasi titolo può essere selezionato.\u003c/li>\u003cli>\u003cstrong>Filtri della sessione\u003c/strong> — durata massima, genere, regista. Hanno validità temporanea e non modificano gli elenchi dei profili.\u003c/li>\u003cli>\u003cstrong>Riga di stato\u003c/strong> — riporta il numero di titoli in classifica, i presenti e il conteggio delle \u003cstrong>esclusioni con relativa motivazione\u003c/strong>. Costituisce il primo elemento da verificare in caso di risultato inatteso.\u003c/li>\u003cli>\u003cstrong>Scheda del titolo\u003c/strong> — accessibile dallo schermo: trama, cast, disponibilità e dettaglio del punteggio.\u003c/li>\u003c/ul>\u003ch3>Registrazione della sessione\u003c/h3>\u003cp>Il comando ▶ richiede informazioni differenti secondo la categoria: conferma semplice per i film; punto raggiunto per le serie, con aggiornamento del segnalibro; stato di avanzamento per videogiochi e libri.\u003c/p>\u003cp>In tutti i casi la sessione viene scritta nello storico condiviso e per i proponenti viene azzerato il conteggio dell'attesa.\u003c/p>"
+  },
+  {
+   "id": "c5",
+   "titolo": "Algoritmo di classifica",
+   "essenziale": "\u003cp>Il punteggio di un titolo è il prodotto di quattro fattori: indice di preferenza, coralità, indice di soddisfazione e bonus di compagnia.\u003c/p>\u003cp>Nessun valore intermedio viene memorizzato: la classifica è \u003cstrong>ricalcolata a ogni esecuzione\u003c/strong> a partire dallo storico.\u003c/p>",
+   "corpo": "\u003cp class=\"marca\">Fattori\u003c/p>\u003cdiv class=\"scorre\">\u003ctable>\u003cthead>\u003ctr>\u003cth>Fattore\u003c/th>\u003cth>Definizione\u003c/th>\u003c/tr>\u003c/thead>\u003ctbody>\u003ctr>\u003ctd>Preferenza\u003c/td>\u003ctd>\u003cstrong>Media\u003c/strong> degli indici di preferenza dei proponenti presenti. L'uso della media in luogo della somma impedisce che i titoli con molti proponenti prevalgano sistematicamente.\u003c/td>\u003c/tr>\u003ctr>\u003ctd>Coralità\u003c/td>\u003ctd>\u003cstrong>+10%\u003c/strong> per ogni proponente oltre il primo, con massimale a \u003cstrong>+30%\u003c/strong>.\u003c/td>\u003c/tr>\u003ctr>\u003ctd>Soddisfazione\u003c/td>\u003ctd>Moltiplicatore per profilo nell'intervallo \u003cstrong>0,5–1,5\u003c/strong>. Si incrementa a ogni sessione in cui il profilo risulta presente senza titoli propri selezionati e si decrementa in caso contrario. Il titolo assume il valore del proponente con indice più elevato. Realizza la rotazione senza necessità di gestione manuale.\u003c/td>\u003c/tr>\u003ctr>\u003ctd>Bonus compagnia\u003c/td>\u003ctd>\u003cstrong>+15%\u003c/strong> quando i presenti coincidono con l'insieme indicato nel vincolo «con chi».\u003c/td>\u003c/tr>\u003ctr>\u003ctd>Bonus genere\u003c/td>\u003ctd>Criterio di \u003cstrong>spareggio\u003c/strong>, applicato ai soli titoli entro il 2% dal punteggio massimo. Non concorre al calcolo.\u003c/td>\u003c/tr>\u003c/tbody>\u003c/table>\u003c/div>\u003cp>Le sessioni con il profilo assente non modificano l'indice di soddisfazione. Le fruizioni individuali registrate con il comando «Visto» non incidono sull'indice degli altri profili.\u003c/p>\u003ch3>Gestione delle saghe\u003c/h3>\u003cp>Quando più titoli appartenenti alla stessa collezione risultano candidati, viene mantenuto \u003cstrong>un solo elemento\u003c/strong>: il primo per ordine di pubblicazione non ancora fruito dal gruppo. I capitoli successivi rientrano in classifica al completamento del precedente.\u003c/p>\u003cp>I parametri numerici sono modificabili in ⚙ Impostazioni e risiedono in \u003ccode>config.json\u003c/code>: la modifica ha effetto su tutti i profili collegati alla stessa cartella.\u003c/p>"
+  },
+  {
+   "id": "c6",
+   "titolo": "Recensioni",
+   "essenziale": "\u003cp>Ogni recensione è composta da un \u003cstrong>voto\u003c/strong> e da un testo articolato in \u003cstrong>sezioni\u003c/strong> rinominabili, riordinabili ed eliminabili. Le recensioni sono in sola lettura per i profili diversi dall'autore.\u003c/p>",
+   "corpo": "\u003cp class=\"marca\">Composizione\u003c/p>\u003cul>\u003cli>\u003cstrong>Voto\u003c/strong> — scala a mezze stelle; la frazione si ottiene selezionando la metà sinistra o destra della stella.\u003c/li>\u003cli>\u003cstrong>Sezioni predefinite\u003c/strong> — \u003cem>Introduzione, Che ne penso, Momento preferito, Messaggio, A chi lo consiglio\u003c/em>. Le sezioni prive di contenuto non vengono salvate.\u003c/li>\u003cli>\u003cstrong>Riferimenti incrociati\u003c/strong> — la sequenza \u003ccode>[[\u003c/code> apre l'elenco delle recensioni esistenti e inserisce un collegamento. Il meccanismo opera \u003cstrong>anche fra categorie diverse\u003c/strong>. In calce è riportato l'elenco delle recensioni che citano quella corrente.\u003c/li>\u003cli>\u003cstrong>Stato «in corso»\u003c/strong> — mantiene la recensione in testa all'elenco fino al completamento.\u003c/li>\u003cli>\u003cstrong>Disponibilità\u003c/strong> — piattaforme di streaming, supporti fisici e percorso locale, con rilevamento automatico da TMDB. Disponibile per film e serie.\u003c/li>\u003cli>\u003cstrong>Esportazione\u003c/strong> — singola recensione o esportazione integrale in formato Markdown.\u003c/li>\u003c/ul>\u003ch3>Percentuale di completamento (videogiochi)\u003c/h3>\u003cp>La recensione di un videogioco include un indice di completamento, determinato secondo la disponibilità dei dati:\u003c/p>\u003cul>\u003cli>quando RAWG espone gli \u003cstrong>obiettivi\u003c/strong> del titolo, questi sono elencati e selezionabili singolarmente; la percentuale è calcolata sul rapporto fra selezionati e totale. Il comando \u003cstrong>Platino\u003c/strong> li seleziona integralmente;\u003c/li>\u003cli>in assenza di obiettivi la percentuale è impostata manualmente su scala 0–100.\u003c/li>\u003c/ul>\u003cp>L'indice è rappresentato da un indicatore circolare a riempimento progressivo, completo al 100%.\u003c/p>"
+  },
+  {
+   "id": "c7",
+   "titolo": "Suggerimenti",
+   "essenziale": "\u003cp>La sezione elabora un profilo di gusto a partire dalle \u003cstrong>recensioni\u003c/strong> del titolare e propone titoli affini. È richiesto un minimo di \u003cstrong>tre recensioni\u003c/strong>.\u003c/p>",
+   "corpo": "\u003cp class=\"marca\">Criteri\u003c/p>\u003cp>Le recensioni concorrono al profilo con peso decrescente nel tempo e crescente rispetto al voto assegnato. Sono esclusi dai suggerimenti i titoli già presenti nell'elenco, già fruiti o già recensiti.\u003c/p>\u003cp>Il comando \u003cstrong>«non mi interessa»\u003c/strong> esclude permanentemente un titolo; l'elenco delle esclusioni è consultabile e reversibile da ⚙ Impostazioni.\u003c/p>\u003cp>Ogni categoria utilizza la propria libreria come fonte. Per i libri, in assenza di una funzione di raccomandazione nativa, si impiega la ricerca per soggetto ordinata per valutazione.\u003c/p>"
+  },
+  {
+   "id": "c8",
+   "titolo": "Impostazioni",
+   "essenziale": "\u003cp>Il pannello ⚙ raccoglie la configurazione: chiavi di accesso alle librerie, parametri della formula, gruppi di visualizzazione, modalità host e categorie di partecipazione.\u003c/p>",
+   "corpo": "\u003ch3>Profilo\u003c/h3>\u003cp>Nome, colore identificativo (utilizzato per la poltrona in Sala) e password facoltativa. La password previene l'accesso accidentale a un profilo diverso dal proprio; \u003cstrong>non costituisce una misura di sicurezza\u003c/strong>, essendo memorizzata in chiaro nel file di profilo.\u003c/p>\u003ch3>Chiavi di accesso\u003c/h3>\u003cp>Le chiavi abilitano l'interrogazione delle librerie online da cui provengono titoli, copertine e metadati. \u003cstrong>In loro assenza la ricerca non è operativa\u003c/strong> nelle categorie che le richiedono.\u003c/p>\u003cp>Le chiavi inserite in questa sezione sono \u003cstrong>condivise\u003c/strong> e valide per tutti i profili collegati alla stessa cartella. Ciascun profilo può in alternativa configurare \u003cstrong>chiavi personali\u003c/strong>, memorizzate nel proprio file e prevalenti su quelle condivise: la funzione consente di ripartire il carico ed evitare l'esaurimento della quota condivisa.\u003c/p>\u003cdiv class=\"scorre\">\u003ctable>\u003cthead>\u003ctr>\u003cth>Categoria\u003c/th>\u003cth>Libreria\u003c/th>\u003cth>Chiave\u003c/th>\u003c/tr>\u003c/thead>\u003ctbody>\u003ctr>\u003ctd>Film, Serie TV\u003c/td>\u003ctd>TMDB\u003c/td>\u003ctd>Gratuita — themoviedb.org → Impostazioni → API\u003c/td>\u003c/tr>\u003ctr>\u003ctd>Videogiochi\u003c/td>\u003ctd>RAWG\u003c/td>\u003ctd>Gratuita, 20.000 richieste mensili — rawg.io/apidocs\u003c/td>\u003c/tr>\u003ctr>\u003ctd>Libri\u003c/td>\u003ctd>Open Library\u003c/td>\u003ctd>Non richiesta\u003c/td>\u003c/tr>\u003c/tbody>\u003c/table>\u003c/div>\u003ch3>Parametri della formula\u003c/h3>\u003cp>Coefficienti impiegati nel calcolo del punteggio: peso della coralità, entità del bonus di compagnia, passo di variazione dell'indice di soddisfazione. La definizione dei singoli fattori è riportata nel capitolo «Algoritmo di classifica». I valori risiedono in \u003ccode>config.json\u003c/code> e sono comuni a tutti i profili.\u003c/p>\u003ch3>Gruppi di visualizzazione\u003c/h3>\u003cp>Un gruppo costituisce un \u003cstrong>filtro sui profili\u003c/strong> applicato all'intera applicazione. Se ne possono definire fino a cinque; sono memorizzati nel profilo del titolare e non visibili agli altri.\u003c/p>\u003cp>Il gruppo attivo è una preferenza \u003cstrong>locale al dispositivo\u003c/strong>: è quindi possibile mantenere configurazioni differenti su PC e telefono. Il titolare è sempre incluso.\u003c/p>\u003ch3>Modalità host\u003c/h3>\u003cp>L'attivazione rende disponibile la sezione \u003cstrong>Pronti alla visione\u003c/strong>: elenco deduplicato dei titoli richiesti da almeno un profilo, con indicazione dei richiedenti. Per ciascun titolo è possibile registrare lo stato di reperimento e la collocazione — servizio di streaming, supporto fisico o percorso locale.\u003c/p>\u003cp>La modalità host abilita inoltre, nella sola cartella dello sviluppatore (si veda «Segnalazioni» più sotto), la sezione \u003cstrong>Segnalazioni\u003c/strong>.\u003c/p>\u003ch3>Segnalazioni\u003c/h3>\u003cp>Il comando 🐞, presente in ogni schermata, apre uno stesso modulo — tipo, titolo, descrizione, gravità — con una destinazione diversa a seconda della cartella:\u003c/p>\u003cul>\u003cli>\u003cstrong>Nella cartella dello sviluppatore\u003c/strong> — quella in cui \u003ccode>config.json\u003c/code> dichiara \u003ccode>sviluppo: true\u003c/code> — la segnalazione viene scritta su file. L'host la ritrova nella sezione \u003cstrong>Segnalazioni\u003c/strong>, ordinata per importanza, e la segna come fatta una volta risolta.\u003c/li>\u003cli>\u003cstrong>In ogni altra cartella\u003c/strong> — il caso previsto per un gruppo diverso da quello dello sviluppatore, dove non esiste un destinatario locale — il modulo, allo stesso invio, \u003cstrong>copia il testo negli appunti\u003c/strong> e apre il profilo Instagram dello sviluppatore (link e QR, generato internamente, senza risorse esterne), a cui inoltrare il messaggio.\u003c/li>\u003c/ul>\u003cp>Il flag \u003ccode>sviluppo\u003c/code> si attiva con \u003cstrong>Ctrl+Alt e clic sul numero di versione\u003c/strong>, in ⚙ Impostazioni: un clic semplice non ha effetto, e la voce non compare fra le opzioni visibili. Vale per l'intera cartella condivisa, quindi anche per l'app mobile collegata alla stessa cartella.\u003c/p>\u003ch3>Categorie di partecipazione\u003c/h3>\u003cp>Quattro selettori, uno per categoria, determinano a quali categorie il profilo partecipa. La disattivazione produce \u003cstrong>due effetti simultanei\u003c/strong>:\u003c/p>\u003cul>\u003cli>la categoria non è più selezionabile dal profilo; con una sola categoria attiva il selettore viene nascosto;\u003c/li>\u003cli>il profilo non compare in Sala nelle categorie disattivate e il suo elenco non concorre alla relativa classifica.\u003c/li>\u003c/ul>\u003cp>Deve rimanere attiva almeno una categoria.\u003c/p>\u003ch3>Bonus genere\u003c/h3>\u003cp>Consente di marcare i generi preferiti e quelli da evitare. Il parametro \u003cstrong>non modifica il punteggio\u003c/strong>: interviene esclusivamente come criterio di spareggio fra titoli di punteggio equivalente.\u003c/p>"
+  },
+  {
+   "id": "c9",
+   "titolo": "Applicazione mobile",
+   "essenziale": "\u003cp>L'applicazione Android replica le funzioni della versione desktop: elenco, Sala, recensioni e suggerimenti. Al primo avvio è richiesta l'indicazione della \u003cstrong>medesima cartella\u003c/strong> sincronizzata sul dispositivo.\u003c/p>",
+   "corpo": "\u003cp class=\"marca\">Differenze rispetto alla versione desktop\u003c/p>\u003cp>La configurazione delle chiavi di accesso è disponibile \u003cstrong>esclusivamente da desktop\u003c/strong>. Tutte le altre funzioni — selezione dei presenti, registrazione delle sessioni, elenchi, recensioni, categorie di partecipazione, gruppi — sono operative su entrambe le piattaforme.\u003c/p>\u003cp>In orientamento orizzontale, e su tablet, la Sala adotta una \u003cstrong>disposizione a due colonne\u003c/strong>: schermo a sinistra, partecipanti e riga di stato a destra.\u003c/p>"
+  },
+  {
+   "id": "c10",
+   "titolo": "Risoluzione dei problemi",
+   "essenziale": "\u003cp>Le anomalie ricorrenti sono riconducibili a tre cause: \u003cstrong>assenza di una chiave di accesso\u003c/strong>, \u003cstrong>sincronizzazione non ancora completata\u003c/strong>, \u003cstrong>indisponibilità del dato nella libreria di origine\u003c/strong>. Quest'ultima non costituisce un malfunzionamento dell'applicazione.\u003c/p>",
+   "corpo": "\u003cp class=\"marca\">Casistica\u003c/p>\u003cdiv class=\"guasto\">\u003cb>Messaggio «Manca la chiave TMDB» all'avvio\u003c/b>\u003cdiv>\u003cp>\u003ci>Causa\u003c/i>La ricerca di film e serie richiede una chiave TMDB. L'avviso è mostrato unicamente nelle categorie che la richiedono.\u003c/p>\u003cp class=\"ok\">\u003ci>Soluzione\u003c/i>Da desktop: ⚙ Impostazioni → Chiavi API → inserimento della chiave → Salva. La configurazione è valida per tutti i profili.\u003c/p>\u003c/div>\u003c/div>\u003cdiv class=\"guasto\">\u003cb>Messaggio «Ricerca non riuscita»\u003c/b>\u003cdiv>\u003cp>\u003ci>Causa\u003c/i>Assenza di connettività, chiave non valida, oppure indisponibilità temporanea del servizio.\u003c/p>\u003cp class=\"ok\">\u003ci>Soluzione\u003c/i>Ripetere l'operazione. Se l'errore persiste, verificare la chiave: spazi iniziali o finali ne determinano il rifiuto.\u003c/p>\u003c/div>\u003c/div>\u003cdiv class=\"guasto\">\u003cb>Copertina di un libro assente\u003c/b>\u003cdiv>\u003cp>\u003ci>Causa\u003c/i>Il dato non è presente in Open Library. La condizione è frequente sulle edizioni italiane, registrate come schede distinte e meno complete rispetto a quelle in altre lingue.\u003c/p>\u003cp class=\"ok\">\u003ci>Soluzione\u003c/i>Aprire la scheda del titolo: nell'elenco dei risultati la ricerca esterna non viene eseguita, per non moltiplicare le richieste a ogni carattere digitato, mentre all'apertura la copertina è recuperata dall'edizione in altra lingua. Nei casi residui il dato non è disponibile in alcuna fonte.\u003c/p>\u003c/div>\u003c/div>\u003cdiv class=\"guasto\">\u003cb>Titolo non più presente nei risultati di ricerca\u003c/b>\u003cdiv>\u003cp>\u003ci>Causa\u003c/i>Anomalia riscontrata e corretta nella versione 1.7.13: la ricerca scartava le schede con una sola edizione e priva di copertina, forma che caratterizza anche opere effettivamente esistenti.\u003c/p>\u003cp class=\"ok\">\u003ci>Soluzione\u003c/i>Verificare di utilizzare almeno la versione 1.7.13. In caso di persistenza, includere nella ricerca il cognome dell'autore oltre al titolo.\u003c/p>\u003c/div>\u003c/div>\u003cdiv class=\"guasto\">\u003cb>Messaggio «Niente in cartellone»\u003c/b>\u003cdiv>\u003cp>\u003ci>Causa\u003c/i>Nessun titolo ha superato la selezione: elenchi vuoti nella categoria attiva, esclusione totale da parte dei filtri di sessione, oppure vincolo «non con» attivo.\u003c/p>\u003cp class=\"ok\">\u003ci>Soluzione\u003c/i>Consultare la riga di stato sotto lo schermo, che riporta il numero di esclusioni e la relativa motivazione.\u003c/p>\u003c/div>\u003c/div>\u003cdiv class=\"guasto\">\u003cb>Profilo non visibile fra i partecipanti\u003c/b>\u003cdiv>\u003cp>\u003ci>Causa\u003c/i>Il profilo ha disattivato la categoria corrente, oppure è attivo un gruppo di visualizzazione che non lo include.\u003c/p>\u003cp class=\"ok\">\u003ci>Soluzione\u003c/i>Verificare il gruppo attivo. In assenza di filtri, la condizione dipende dalla configurazione del profilo interessato.\u003c/p>\u003c/div>\u003c/div>\u003cdiv class=\"guasto\">\u003cb>Un titolo di una saga non compare in classifica\u003c/b>\u003cdiv>\u003cp>\u003ci>Causa\u003c/i>Comportamento previsto: di una collezione viene proposto un solo capitolo per volta, in ordine di pubblicazione.\u003c/p>\u003cp class=\"ok\">\u003ci>Soluzione\u003c/i>Il capitolo successivo rientra automaticamente al completamento del precedente.\u003c/p>\u003c/div>\u003c/div>\u003cdiv class=\"guasto\">\u003cb>Modifiche non visibili agli altri profili\u003c/b>\u003cdiv>\u003cp>\u003ci>Causa\u003c/i>La scrittura è locale; la propagazione è demandata al servizio di sincronizzazione.\u003c/p>\u003cp class=\"ok\">\u003ci>Soluzione\u003c/i>Attendere il completamento della sincronizzazione e utilizzare il comando ⟳ per forzare la rilettura. Verificare che la sincronizzazione non sia sospesa.\u003c/p>\u003c/div>\u003c/div>\u003cdiv class=\"guasto\">\u003cb>Avviso di sicurezza di Windows all'installazione\u003c/b>\u003cdiv>\u003cp>\u003ci>Causa\u003c/i>L'installatore non dispone di firma con certificato commerciale; SmartScreen segnala tutti gli eseguibili non firmati.\u003c/p>\u003cp class=\"ok\">\u003ci>Soluzione\u003c/i>Selezionare «Ulteriori informazioni» → «Esegui comunque». L'avviso è mostrato solo al primo avvio.\u003c/p>\u003c/div>\u003c/div>\u003cdiv class=\"guasto\">\u003cb>Installazione dell'APK non completata\u003c/b>\u003cdiv>\u003cp>\u003ci>Causa\u003c/i>Alcune distribuzioni Android, in particolare MIUI, sottopongono a verifica online le applicazioni installate da fonti esterne agli store e ne bloccano l'installazione.\u003c/p>\u003cp class=\"ok\">\u003ci>Soluzione\u003c/i>Attivare la modalità aereo, procedere con l'installazione e ripristinare la connettività. È inoltre necessaria l'autorizzazione all'installazione da fonti sconosciute per il gestore file utilizzato.\u003c/p>\u003c/div>\u003c/div>\u003cdiv class=\"guasto\">\u003cb>Cartella non più accessibile dal dispositivo mobile\u003c/b>\u003cdiv>\u003cp>\u003ci>Causa\u003c/i>Android revoca l'autorizzazione sulla cartella in caso di prolungato inutilizzo dell'applicazione o di spostamento della cartella stessa.\u003c/p>\u003cp class=\"ok\">\u003ci>Soluzione\u003c/i>Ripetere la selezione della cartella dalla schermata iniziale. I dati non subiscono alterazioni, risiedendo su file.\u003c/p>\u003c/div>\u003c/div>"
+  },
+  {
+   "id": "c11",
+   "titolo": "Aggiornamenti",
+   "essenziale": "\u003cp>La versione desktop esegue l'\u003cstrong>aggiornamento automatico\u003c/strong> al riavvio. L'applicazione mobile richiede l'installazione manuale dell'APK, reso disponibile nella cartella condivisa e segnalato dall'applicazione.\u003c/p>",
+   "corpo": "\u003cp class=\"marca\">Numerazione\u003c/p>\u003cp>Lo schema è a tre cifre; le revisioni ordinarie incrementano l'ultima. Le due piattaforme condividono la numerazione ma non necessariamente la stessa revisione, potendo l'APK essere compilato successivamente.\u003c/p>\u003cp>È disponibile una \u003cstrong>modalità dimostrativa\u003c/strong>, accessibile dalla schermata iniziale, che avvia l'applicazione con dati fittizi e senza scritture su disco.\u003c/p>"
+  }
+ ],
+ "chiusa": "Manuale riferito alla versione 1.7.15. Le specifiche di dettaglio — formule, formati dei file, motivazioni delle scelte progettuali — sono documentate in SPECIFICA.md all'interno del progetto."
+}
+</script>
+<script>
+(() => {
+  'use strict';
+  const $ = s => document.querySelector(s);
+  const G = JSON.parse(document.getElementById('dati').textContent);
+  const num = i => String(i).padStart(2, '0');
+
+  function disegna(){
+    const testo = $('#testo'), indice = $('#indice');
+    testo.innerHTML = `
+      <header class="copertina">
+        <p class="marchio">${G.marchio || ''}</p>
+        <h1>${G.titolo || ''}</h1>
+        <p class="occhio">${G.occhio || ''}</p>
+      </header>` +
+      G.capitoli.map((c, i) => `
+      <section class="cap" id="${c.id}">
+        <div class="cap-testa"><span class="cap-num">${num(i + 1)}</span>
+          <h2 class="cap-tit">${c.titolo}</h2></div>
+        ${c.avviso ? `<div class="avviso">${c.avviso}</div>` : ''}
+        <div class="essenziale"><p class="et">In sintesi</p>
+          <div>${c.essenziale || ''}</div></div>
+        <div>${c.corpo || ''}</div>
+      </section>`).join('') +
+      `<p class="chiusa">${G.chiusa || ''}</p>`;
+
+    indice.innerHTML = G.capitoli.map(c =>
+      `<li><a href="#${c.id}" data-va="${c.id}">${c.titolo}</a></li>`).join('');
+  }
+
+  /* il capitolo in cui si sta leggendo si accende nell'indice */
+  function osserva(){
+    const osservatore = new IntersectionObserver(voci => {
+      const visibile = voci.filter(v => v.isIntersecting)
+        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      if (!visibile) return;
+      document.querySelectorAll('#indice a').forEach(a =>
+        a.classList.toggle('qui', a.dataset.va === visibile.target.id));
+    }, {rootMargin: '-10% 0px -70% 0px'});
+    document.querySelectorAll('section.cap').forEach(s => osservatore.observe(s));
+  }
+
+  disegna();
+  osserva();
+})();
+</script>
+</body>
+</html>

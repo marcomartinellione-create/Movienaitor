@@ -18,6 +18,11 @@ cache per l'uso offline, e **si aggiorna da sola**.
 **Nel browser** — apri `Movienaitor.html` (che sta nella cartella Drive) con **Chrome o
 Edge** e collega la cartella (File System Access API). È lo stesso identico programma.
 
+**App mobile (Android)** — scarica l'APK dall'ultima [Release](https://github.com/marcomartinellione-create/Movienaitor/releases),
+installalo (va concesso il permesso "installa da fonti sconosciute" al gestore file
+usato) e collega la stessa cartella condivisa. Da lì in poi gli aggiornamenti li segnala
+l'app stessa, senza bisogno di tornare su GitHub — vedi «Aggiornamenti» più sotto.
+
 Senza cartella si può provare la **demo** (dati finti, nessun salvataggio).
 
 ## Setup: la cartella condivisa e gli utenti
@@ -91,8 +96,10 @@ collegato alla TV). Così Drive non crea mai "copie in conflitto".
 3. **Sala** → clicca le poltrone dei presenti, imposta durata/regista/genere della serata,
    e **▶ Play** sul film in cima. Viene registrato come visto per tutti i presenti.
 
-Regole e formule complete in [SPECIFICA.md](SPECIFICA.md); il layout della Sala segue
-`Stile home.dxf`.
+Guida completa all'uso — funzionamento, configurazione, risoluzione dei problemi — in
+[GUIDA.md](GUIDA.md) o, nella stessa cartella del progetto, la versione impaginata
+[Manuale.html](Manuale.html) (si apre con un doppio clic, nessuna installazione). Le
+formule sono in [SPECIFICA.md](SPECIFICA.md); il layout della Sala segue `Stile home.dxf`.
 
 ## Aggiornamenti
 
@@ -101,13 +108,23 @@ Regole e formule complete in [SPECIFICA.md](SPECIFICA.md); il layout della Sala 
   la versione nuova e propone il riavvio. Nessuna configurazione.
 - **Versione browser:** sostituisci `Movienaitor.html` nella cartella Drive; alla prossima
   apertura tutti hanno la versione nuova.
+- **App mobile:** la [Release](https://github.com/marcomartinellione-create/Movienaitor/releases)
+  serve solo al primo download, per chi arriva da fuori un gruppo già avviato. Una volta
+  dentro un gruppo, l'app segnala da sola quando c'è una versione più recente nella
+  cartella condivisa (`Latest APK/`, pubblicata da chi gestisce il gruppo).
 
 Pubblicare una nuova versione (per chi sviluppa):
 
-1. Bump `version` in `electron/package.json` e `APP_VERSION` in `Movienaitor.html`.
+1. Bump `version` in `electron/package.json`, `APP_VERSION` in `Movienaitor.html` e in
+   `app-mobile/www/index.html` (e `version` in `app-mobile/package.json`).
 2. `cd electron && npm run dist` → `dist/Movienaitor-Setup-<v>.exe` + `latest.yml`.
-3. `gh release create v<v> "dist/Movienaitor-Setup-<v>.exe" "dist/latest.yml" -t "v<v>" -n "note"`
-   (oppure `npm run publish`).
+3. L'azione **Build APK** (`.github/workflows/build-apk.yml`) parte da sola a ogni push
+   che tocca `app-mobile/`: a fine corsa scarica l'artifact con
+   `gh run download <run-id> -n movienaitor-apk -D dist` e rinominalo
+   `Movienaitor-<v>.apk`.
+4. `gh release create v<v> "dist/Movienaitor-Setup-<v>.exe" "dist/latest.yml" "dist/Movienaitor-<v>.apk" -t "v<v>" -n "note"`
+   (oppure `npm run publish` per i soli asset desktop) — così chi trova il repo da fuori
+   ha exe e APK nella stessa release.
 
 ## Sviluppo
 
