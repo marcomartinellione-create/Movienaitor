@@ -809,25 +809,29 @@ video resta un riquadro vuoto, indistinguibile da una copertina non ancora arriv
 questo tutte le URL portano **`?default=false`**, che fa rispondere 404: allora l'`onerror`
 scatta e al suo posto si vede il segnaposto col titolo.
 
-**Un libro, una riga.** Open Library tiene **più schede per lo stesso libro**: ristampe,
-traduzioni, e mozziconi con una sola edizione e nessun ISBN. Cercando «il nome della rosa»
-arrivavano 36 righe, di cui sei su dieci senza copertina e quasi tutte doppioni. La ricerca
-dei libri (`cercaLibri`) fa quattro cose:
+**Un libro, una riga.** Open Library tiene **più schede per lo stesso libro**: ristampe e
+traduzioni. La ricerca (`cercaLibri`) chiede **40** risultati, raggruppa le schede dello
+stesso libro (impronta di titolo + autore: niente maiuscole, accenti, punteggiatura) e di
+ogni gruppo tiene **la più famosa**, cioè quella con più edizioni. Se quella non ha la
+copertina, **se la fa prestare** da un'altra dello stesso gruppo.
 
-1. chiede **40** risultati invece di 10, perché dopo la potatura ne restano pochi;
-2. butta i **mozziconi** — una sola edizione **e** nessuna copertina: sono schede vuote, non
-   libri;
-3. raggruppa le schede dello stesso libro (impronta di titolo + autore: niente maiuscole,
-   accenti, punteggiatura) e di ogni gruppo tiene **la più famosa**, cioè quella con più
-   edizioni;
-4. se la scheda più pertinente non ha la copertina, **se la fa prestare** da un'altra dello
-   stesso gruppo — spesso è l'edizione straniera ad averla.
+**Quello che NON si fa, e va saputo perché è stato provato e ritirato.** Non si scarta
+niente e non si riordina niente. Avevo buttato le schede con una sola edizione e nessuna
+copertina — chiamandole «mozziconi» — e messo in fondo quelle senza copertina. Sbagliato:
+*Il Vangelo secondo Gesù Cristo* di Saramago è il **primo** risultato della sua ricerca, con
+una edizione e nessuna copertina, e così spariva. **Un libro vero può avere esattamente la
+forma di uno scarto.** Perdere un libro che qualcuno sta cercando è molto peggio che
+mostrare una riga in più: la pertinenza la sa Open Library meglio di noi, e si tiene la sua.
 
-L'ordine di pertinenza di Open Library resta: si tiene la posizione del membro più in alto
-di ogni gruppo, e chi resta senza copertina va in fondo (ordinamento stabile).
-
-Misurato su «il nome della rosa»: **da 36 righe a 10, e i senza-copertina da 6 a 1**. Su
-«calvino»: dieci libri veri, tutti con copertina.
+**La copertina dall'edizione straniera non si può prendere**, ed è stato verificato:
+l'edizione italiana e quella spagnola dello stesso libro sono **due opere distinte** nei
+dati di Open Library (`OL27720175W` e `OL7922583W`), senza nessun collegamento da seguire —
+`editions.json` dell'italiana dà una sola edizione e zero copertine. Agganciarle per titolo
+non si può (i titoli cambiano con la lingua) e agganciarle per autore + anno è **pericoloso**:
+il record italiano dichiara 2014, che è l'anno di quella ristampa, e l'unico libro di
+Saramago del 2014 è *As intermitências da morte* — si sarebbe attaccata la copertina
+sbagliata, che è peggio di nessuna copertina. Per la coda lunga l'unica strada che funziona
+davvero resta la **copertina scelta a mano**, non ancora fatta.
 
 **Google Books è stato provato e scartato.** Ha una copertura migliore, ma **senza chiave
 risponde 429**: la quota anonima è condivisa fra tutti quelli che chiamano senza chiave e

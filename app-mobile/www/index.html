@@ -1567,23 +1567,24 @@ const impronta = s => String(s || '').toLowerCase().normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 
 /* La ricerca dei libri.
-   Open Library tiene PIU' SCHEDE per lo stesso libro: ristampe, traduzioni, e mozziconi
-   con una sola edizione e nessun ISBN (cercando «il nome della rosa», sei righe su dieci
-   erano di quelli). Quindi:
-     1. si chiedono 40 risultati invece di 10, perché dopo la potatura ne restano pochi;
-     2. si buttano i mozziconi — una sola edizione E nessuna copertina: sono schede vuote,
-        non libri;
-     3. si raggruppano le schede dello stesso libro e di ogni gruppo resta LA PIU' FAMOSA,
-        cioè quella con più edizioni;
-     4. se la scheda più pertinente non ha la copertina, se la fa PRESTARE da un'altra
-        dello stesso libro — spesso è l'edizione straniera ad averla.
-   L'ordine di pertinenza di Open Library resta: si tiene la posizione del membro più in
-   alto di ogni gruppo. */
+   Open Library tiene PIU' SCHEDE per lo stesso libro: ristampe e traduzioni. Si chiedono
+   40 risultati, si raggruppano le schede dello stesso libro (impronta di titolo + autore)
+   e di ogni gruppo resta LA PIU' FAMOSA, cioe' quella con piu' edizioni; se quella non ha
+   la copertina, se la fa PRESTARE da un'altra dello stesso gruppo — spesso e' l'edizione
+   straniera ad averla.
+
+   Quello che NON si fa, e va spiegato perche' e' stato provato e ritirato: non si scarta
+   niente e non si riordina niente. Avevo buttato le schede con una sola edizione e nessuna
+   copertina, chiamandole mozziconi, e messo in fondo quelle senza copertina. Ma un libro
+   vero puo' avere esattamente quella forma — «Il Vangelo secondo Gesu' Cristo» di Saramago
+   e' il PRIMO risultato della sua ricerca, con una edizione e nessuna copertina — e cosi'
+   spariva. Perdere un libro che qualcuno sta cercando e' molto peggio che mostrare una riga
+   in piu': la pertinenza la sa Open Library meglio di noi, e si tiene la sua. */
 async function cercaLibri(q){
   const campi = 'key,title,author_name,first_publish_year,cover_i,edition_count';
   const r = await fetch(`https://openlibrary.org/search.json?limit=40&fields=${campi}&q=${encodeURIComponent(q)}`);
   if (!r.ok) throw new Error('openlibrary '+r.status);
-  const docs = ((await r.json()).docs || []).filter(d => (d.edition_count || 0) > 1 || d.cover_i);
+  const docs = (await r.json()).docs || [];
   const gruppi = new Map();
   docs.forEach((d, i) => {
     const k = impronta(d.title) + '|' + impronta((d.author_name || [])[0]);
@@ -1591,17 +1592,15 @@ async function cercaLibri(q){
     if (!g){ gruppi.set(k, {best:d, pos:i, cover:d.cover_i || null}); return; }
     // la copertina si tiene comunque, da qualunque scheda del gruppo arrivi
     if (!g.cover && d.cover_i) g.cover = d.cover_i;
-    if ((d.edition_count || 0) > (g.best.edition_count || 0)){ g.best = d; }
+    if ((d.edition_count || 0) > (g.best.edition_count || 0)) g.best = d;
     g.pos = Math.min(g.pos, i);
   });
-  const scelti = [...gruppi.values()].sort((a, b) => a.pos - b.pos).slice(0, 10);
-  const righe = scelti.map(g => ({
+  // l'ordine e' quello di Open Library: ogni gruppo sta dove stava il suo membro piu' in alto
+  return [...gruppi.values()].sort((a, b) => a.pos - b.pos).slice(0, 10).map(g => ({
     id:idLibro(g.best.key), title:g.best.title,
     release_date:String(g.best.first_publish_year || ''),
     poster_path:null, posterUrl:copertinaLibro(g.cover)
   }));
-  // chi resta senza copertina va in fondo (ordinamento stabile)
-  return righe.filter(x => x.posterUrl).concat(righe.filter(x => !x.posterUrl));
 }
 
 async function cercaFilm(q){
