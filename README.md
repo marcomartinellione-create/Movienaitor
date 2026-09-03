@@ -1,15 +1,30 @@
 # 🎬 Movienaitor
 
-La sala dei film tra amici: ognuno tiene la propria lista di film da vedere (con quanto
-li desidera e con chi sì/no), la sera si selezionano i presenti sulle poltrone e l'app
-propone i 5 film più adatti. **Play** elegge il film della serata e lo registra per tutti.
+**Scegliere insieme cosa guardare, giocare o leggere — e tenere memoria di com'è andata.**
+
+Ognuno tiene la propria lista con quanto desidera ogni titolo e con chi sì / con chi no.
+La sera si toccano le poltrone di chi c'è e l'app calcola la classifica della serata: chi
+non sceglie da un po' pesa di più, così a turno tocca a tutti senza doverci pensare.
+**▶ Play** elegge il titolo e lo registra per tutti i presenti.
+
+Quattro categorie indipendenti, ciascuna con la sua stanza:
+
+| | Categoria | Stanza | Libreria |
+|---|---|---|---|
+| 🎬 | **Film** | la sala col sipario | TMDB |
+| 📺 | **Serie TV** | il salotto, con il segnalibro degli episodi | TMDB |
+| 🎮 | **Videogiochi** | la postazione, con la percentuale di completamento | RAWG |
+| 📚 | **Libri** | la biblioteca, col libro che si apre sullo scaffale | Open Library |
+
+Oltre alla Sala: **elenco personale**, **recensioni** con voto e sezioni (e riferimenti
+incrociati fra una recensione e l'altra), **suggerimenti** calcolati sul proprio gusto.
 
 Filosofia: **un solo file HTML**, nessun server. I dati vivono come JSON in una
 **cartella condivisa su Google Drive** sincronizzata in locale — è quella la vostra
 "rete". Il codice è pubblico; i vostri dati (chi c'è, cosa guardate) restano privati
 nella vostra cartella, non in questo repo.
 
-## Due modi per usarla
+## Tre modi per usarla
 
 **App desktop (consigliata)** — installa `Movienaitor-Setup.exe`, all'avvio scegli la
 cartella condivisa col dialogo di sistema. Niente permessi del browser, locandine in
@@ -45,8 +60,12 @@ Drive condivisa**. Si prepara una volta sola.
 - L'app crea da sola `config.json` e `storico.json`.
 - In **⚙ Impostazioni** incolla le **chiavi API** (una volta sola, valgono per tutti,
   finiscono in `config.json`):
-  - **TMDB** — ricerca film, locandine, metadati: gratuita su themoviedb.org → *Settings → API* (serve la chiave "API Key (v3 auth)").
-  - **OMDb** — media voti IMDb, facoltativa: gratuita su omdbapi.com.
+  - **TMDB** — film e serie TV: locandine, trama, cast, dove vederlo. Gratuita su themoviedb.org → *Settings → API* (serve la chiave "API Key (v3 auth)").
+  - **RAWG** — videogiochi: copertine, durata, obiettivi. Gratuita su rawg.io/apidocs, 20.000 richieste al mese.
+  - I **libri** usano Open Library, che non richiede nessuna chiave.
+
+  Ogni profilo può anche mettere le **proprie** chiavi personali, che prevalgono su
+  quelle condivise: utile per non esaurire la quota di uno solo.
 
 ### 3. Gli utenti (profili)
 
@@ -78,24 +97,37 @@ Ci sono due modi per crearli:
 ```
 Movienaitor/            ← la cartella condivisa su Drive
 ├── Movienaitor.html    ← (opzionale) per aprirla dal browser
+├── Manuale.html        ← (opzionale) il manuale, si apre col doppio clic
 ├── config.json         ← chiavi API + costanti della formula
-├── storico.json        ← registro delle serate (fonte di verità dei "visti")
+├── storico.json        ← le serate di FILM (fonte di verità dei "visti")
 ├── posters/            ← locandine e sfondi in cache
-└── profili/
-    ├── mario.json
-    └── … un file per persona
+├── profili/
+│   ├── mario.json      ← un file per persona: liste di tutte le categorie
+│   └── …
+├── recensioni/<nome>/  ← una recensione per file
+├── segnalazioni/       ← bug e idee (solo nella cartella di chi sviluppa)
+├── serie/              ← le altre tre categorie hanno lo stesso impianto
+├── giochi/                (storico, recensioni, consigli), ciascuna
+└── libri/                 nella propria sottocartella
 ```
 
-**Regola d'oro (niente conflitti su Drive):** ogni dispositivo scrive **solo** il proprio
-`profili/<slug>.json`; `storico.json` lo scrive solo chi preme **Play** (in pratica il PC
-collegato alla TV). Così Drive non crea mai "copie in conflitto".
+**Regola d'oro (niente conflitti su Drive):** ogni dispositivo scrive **solo** i propri
+file — il proprio profilo, le proprie recensioni. Lo storico è l'unico a più mani: prima
+di scriverlo viene riletto e fuso per identificativo di sessione, così due dispositivi
+che registrano insieme non si sovrascrivono. Drive non crea mai "copie in conflitto".
 
 ## Uso di tutti i giorni
 
 1. Scegli il tuo nome (resta ricordato sul tuo dispositivo).
-2. **Catalogo** → cerca i film, imposta *quanto* vuoi vederli (1–5) e con chi sì / con chi no.
-3. **Sala** → clicca le poltrone dei presenti, imposta durata/regista/genere della serata,
-   e **▶ Play** sul film in cima. Viene registrato come visto per tutti i presenti.
+2. **Watch List** → cerca i titoli, imposta *quanto* vuoi vederli (1–5) e con chi sì / con chi no.
+3. **Sala** → clicca le poltrone dei presenti, imposta i filtri della serata (durata,
+   genere, regista) e **▶ Play** sul titolo in cima. Viene registrato per tutti i presenti.
+4. **Recensioni** → voto e testo in sezioni; per i videogiochi anche la percentuale di
+   completamento, presa dagli obiettivi quando la libreria li espone.
+5. **Per te** → suggerimenti costruiti sulle proprie recensioni (ne servono almeno tre).
+
+La categoria si cambia col comando in basso a destra, e ognuno può disattivare le
+categorie che non lo interessano: sparisce dalla propria app e dalla Sala degli altri.
 
 Guida completa all'uso — funzionamento, configurazione, risoluzione dei problemi — in
 [GUIDA.md](GUIDA.md) o, nella stessa cartella del progetto, la versione impaginata
@@ -148,6 +180,9 @@ il browser usa la File System Access API.
 
 ## Crediti
 
-- Dati e immagini dei film: [TMDB](https://www.themoviedb.org). *This product uses the
-  TMDB API but is not endorsed or certified by TMDB.*
-- Media voti IMDb via [OMDb API](https://www.omdbapi.com).
+- Film e serie TV: [TMDB](https://www.themoviedb.org). *This product uses the TMDB API
+  but is not endorsed or certified by TMDB.*
+- Videogiochi: [RAWG](https://rawg.io).
+- Libri: [Open Library](https://openlibrary.org) e [Wikidata](https://www.wikidata.org)
+  (quest'ultimo per ritrovare copertina e numero di pagine dall'edizione in altra lingua
+  della stessa opera).

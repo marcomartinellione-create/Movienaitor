@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Titolo e descrizione stanno sotto i limiti oltre i quali Google tronca (~60 e ~155
+     caratteri): la parte che conta va davanti. -->
+<title>Movienaitor — decidere insieme film, serie, giochi e libri</title>
+<meta name="description" content="App gratuita per scegliere in gruppo cosa guardare, giocare o leggere: ognuno tiene la sua lista, l'app propone il titolo giusto per chi c'è stasera. Windows e Android.">
+<link rel="canonical" href="https://marcomartinellione-create.github.io/Movienaitor/">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Movienaitor">
+<meta property="og:title" content="Movienaitor — scegliere insieme cosa guardare, giocare o leggere">
+<meta property="og:description" content="Ognuno tiene la sua lista, la sera si scelgono i presenti e l'app propone il titolo giusto. Film, serie TV, videogiochi e libri. Gratis, senza server, per Windows e Android.">
+<meta property="og:url" content="https://marcomartinellione-create.github.io/Movienaitor/">
+<meta property="og:locale" content="it_IT">
+<meta name="twitter:card" content="summary">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Movienaitor",
+  "applicationCategory": "EntertainmentApplication",
+  "operatingSystem": "Windows, Android",
+  "inLanguage": "it",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+  "description": "App per scegliere in gruppo film, serie TV, videogiochi e libri: ognuno tiene la propria lista con quanto desidera ogni titolo, l'app calcola la classifica della serata in base a chi è presente e registra com'è andata. Dati su una cartella condivisa, nessun server.",
+  "url": "https://marcomartinellione-create.github.io/Movienaitor/",
+  "downloadUrl": "https://github.com/marcomartinellione-create/Movienaitor/releases/latest",
+  "codeRepository": "https://github.com/marcomartinellione-create/Movienaitor",
+  "author": { "@type": "Person", "name": "Marco Martinellione" }
+}
+</script>
+
+<style>
+  /* La tavolozza della sala: velluto bordeaux, oro, crema — la stessa dell'app. */
+  :root{
+    --fondo:#191014; --fondo2:#221419; --velluto2:#2c181d; --velluto3:#4a2830;
+    --oro:#c9a45c; --oro2:#e0c07d; --oro-dim:#8a7347;
+    --crema:#f2e7d5; --dim:#b8a68e; --dim2:#7d6f5c;
+    --bordo:#4a2c33; --bordo2:#3a2229;
+  }
+  *{box-sizing:border-box}
+  ::-webkit-scrollbar{width:10px; height:10px}
+  ::-webkit-scrollbar-thumb{background:var(--velluto3); border-radius:5px}
+  ::-webkit-scrollbar-track{background:transparent}
+  html{scrollbar-color:var(--velluto3) transparent}
+  body{margin:0; background:var(--fondo); color:var(--crema);
+    font-family:"Lora",Georgia,serif; font-size:17px; line-height:1.7;
+    -webkit-font-smoothing:antialiased}
+  .foglio{max-width:820px; margin:0 auto; padding:0 24px 90px}
+
+  header{padding:76px 0 40px; border-bottom:1px solid var(--bordo); margin-bottom:40px}
+  .marchio{font-family:ui-monospace,"SFMono-Regular",Menlo,monospace; font-size:10.5px;
+    letter-spacing:.3em; text-transform:uppercase; color:var(--oro-dim); margin:0 0 18px}
+  h1{font-weight:400; font-size:clamp(38px,8vw,62px); line-height:1.05; margin:0 0 16px;
+    font-family:Georgia,"Times New Roman",serif}
+  h1 span{color:var(--oro)}
+  .occhio{color:var(--dim); font-size:19px; margin:0; max-width:46ch; font-style:italic}
+
+  h2{font-weight:400; font-size:26px; margin:44px 0 14px; color:var(--oro2);
+    font-family:Georgia,"Times New Roman",serif}
+  p{margin:0 0 15px; max-width:66ch}
+  strong{color:#fff9ef; font-weight:600}
+  a{color:var(--oro2)}
+
+  /* 320px: due colonne piene invece di tre più una spaiata; su telefono scende a una */
+  .stanze{display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:14px;
+    margin:22px 0 8px; padding:0; list-style:none}
+  .stanze li{border:1px solid var(--bordo2); border-radius:12px; padding:15px 17px;
+    background:var(--fondo2)}
+  .stanze b{display:block; color:var(--oro2); font-weight:400; font-size:19px; margin-bottom:3px}
+  .stanze span{color:var(--dim); font-size:15px; line-height:1.5}
+
+  .scarica{display:flex; flex-wrap:wrap; gap:12px; margin:26px 0 10px}
+  .scarica a{display:inline-block; padding:12px 22px; border-radius:24px; text-decoration:none;
+    border:1px solid var(--oro-dim); color:var(--oro2); background:var(--velluto2); font-size:16px}
+  .scarica a.primo{background:var(--oro); border-color:var(--oro); color:#241610; font-weight:600}
+
+  footer{margin-top:56px; padding-top:22px; border-top:1px solid var(--bordo);
+    color:var(--dim2); font-size:14.5px}
+</style>
+</head>
+<body>
+<div class="foglio">
+
+<header>
+  <p class="marchio">gratis · senza server · Windows e Android</p>
+  <h1>MOVIE<span>NAITOR</span></h1>
+  <p class="occhio">Scegliere insieme cosa guardare, giocare o leggere — e tenere memoria
+  di com'è andata.</p>
+</header>
+
+<p>Ognuno tiene la propria lista di titoli, indicando <strong>quanto</strong> desidera
+ciascuno e <strong>con chi</strong> vuole (o non vuole) fruirlo. La sera si toccano le
+poltrone di chi è presente e l'app calcola la classifica della serata.</p>
+
+<p>Chi da qualche serata non vede scegliere qualcosa di suo <strong>pesa di più</strong>
+nel calcolo: il turno ruota da solo, senza che nessuno debba tenerne il conto. Il tasto
+Play elegge il titolo e lo registra come fruito per tutti i presenti.</p>
+
+<h2>Quattro categorie, quattro stanze</h2>
+<ul class="stanze">
+  <li><b>🎬 Film</b><span>La sala: poltrone, sipario che si apre e la locandina sullo schermo.</span></li>
+  <li><b>📺 Serie TV</b><span>Il salotto: la serie resta in lista e avanza il segnalibro degli episodi.</span></li>
+  <li><b>🎮 Videogiochi</b><span>La postazione: durata per finirlo e percentuale di completamento dagli obiettivi.</span></li>
+  <li><b>📚 Libri</b><span>La biblioteca: il libro esce dallo scaffale e si apre sulla copertina.</span></li>
+</ul>
+<p>Le categorie sono indipendenti — liste, storico e recensioni separati — e ognuno può
+disattivare quelle che non lo riguardano.</p>
+
+<h2>Anche recensioni e consigli</h2>
+<p>Ogni titolo fruito si può <strong>recensire</strong>: voto e testo diviso in sezioni,
+con riferimenti incrociati fra una recensione e l'altra, anche fra categorie diverse. Da
+quelle recensioni l'app costruisce un profilo di gusto e propone <strong>suggerimenti</strong>
+personali.</p>
+
+<h2>Nessun server, i dati restano vostri</h2>
+<p>Movienaitor è <strong>un solo file HTML</strong>. I dati vivono come file JSON in una
+cartella condivisa (per esempio su Google Drive) sincronizzata sui vostri dispositivi: è
+quella la vostra "rete". Il codice è pubblico, quello che guardate no — non passa da
+nessuna parte, resta nella vostra cartella.</p>
+
+<h2>Scarica</h2>
+<div class="scarica">
+  <a class="primo" href="https://github.com/marcomartinellione-create/Movienaitor/releases/latest">Ultima versione ↗</a>
+  <a href="manuale.html">Leggi il manuale</a>
+  <a href="https://github.com/marcomartinellione-create/Movienaitor">Codice su GitHub ↗</a>
+</div>
+<p>Per Windows c'è l'installatore, che poi <strong>si aggiorna da solo</strong>; per
+Android l'APK, che controlla da sé se ne esiste una versione più recente. In alternativa
+si apre il file HTML direttamente in Chrome o Edge, senza installare niente.</p>
+
+<footer>
+  Dati e immagini: <a href="https://www.themoviedb.org">TMDB</a> (film e serie TV),
+  <a href="https://rawg.io">RAWG</a> (videogiochi),
+  <a href="https://openlibrary.org">Open Library</a> (libri).
+  <em>This product uses the TMDB API but is not endorsed or certified by TMDB.</em>
+</footer>
+
+</div>
+</body>
+</html>
