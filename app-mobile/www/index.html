@@ -1500,9 +1500,9 @@ function entra(slug){
   // La chiave che serve dipende dalla categoria: i giochi ne vogliono una loro e i libri
   // nessuna (Open Library non la chiede). Guardando sempre TMDB, entrando in biblioteca
   // compariva un richiamo per una chiave che lì non serve a niente.
-  const chiaveMancante = inLibri() ? '' : (inGiochi() ? (S.config.rawgKey ? '' : 'RAWG')
-                                                      : (S.config.tmdbKey ? '' : 'TMDB'));
-  if (chiaveMancante) toast(`Manca la chiave ${chiaveMancante} in config.json (si imposta dal PC).`, true);
+  const chiaveMancante = inLibri() ? '' : (inGiochi() ? (chiaveAPI('rawgKey') ? '' : 'RAWG')
+                                                      : (chiaveAPI('tmdbKey') ? '' : 'TMDB'));
+  if (chiaveMancante) toast(`Manca la chiave ${chiaveMancante}: mettila in ⚙ Impostazioni.`, true);
   $('#hdr').style.display = 'flex';
   $('#m-modo').style.display = 'flex';
   applicaModo();
@@ -1522,7 +1522,7 @@ function entra(slug){
 // La scheda di un gioco, normalizzata sugli stessi campi di un film: chi la legge non sa
 // nemmeno che la fonte è un'altra. «durata» qui sono ORE per finirlo, non minuti.
 async function dettagliGioco(id){
-  const k = S.config.rawgKey;
+  const k = chiaveAPI('rawgKey');
   if (!k) throw new Error('nokey');
   const r = await fetch(`https://api.rawg.io/api/games/${id}?key=${k}`);
   if (!r.ok) throw new Error('rawg '+r.status);
@@ -1738,7 +1738,7 @@ async function cercaFilm(q){
   if (inLibri()) return await cercaLibri(q);
   // I videogiochi non stanno su TMDB: la loro libreria è RAWG (SPECIFICA §15.1).
   if (inGiochi()){
-    const kg = S.config.rawgKey; if (!kg) throw new Error('nokey');
+    const kg = chiaveAPI('rawgKey'); if (!kg) throw new Error('nokey');
     const rg = await fetch(`https://api.rawg.io/api/games?key=${kg}&page_size=10&search=${encodeURIComponent(q)}`);
     if (!rg.ok) throw new Error('rawg '+rg.status);
     return ((await rg.json()).results || []).slice(0, 10).map(g => ({
@@ -1746,7 +1746,7 @@ async function cercaFilm(q){
       posterUrl:g.background_image || null
     }));
   }
-  const k = S.config.tmdbKey; if (!k) throw new Error('nokey');
+  const k = chiaveAPI('tmdbKey'); if (!k) throw new Error('nokey');
   const r = await fetch(`https://api.themoviedb.org/3/search/${inSerie()?'tv':'movie'}?api_key=${k}&language=it-IT&include_adult=false&query=${encodeURIComponent(q)}`);
   if (!r.ok) throw new Error('tmdb '+r.status);
   return ((await r.json()).results || []).slice(0, 10)
@@ -1755,7 +1755,7 @@ async function cercaFilm(q){
 async function dettagliFilm(id){
   if (inLibri()) return await dettagliLibro(id);
   if (inGiochi()) return await dettagliGioco(id);
-  const k = S.config.tmdbKey;
+  const k = chiaveAPI('tmdbKey');
   const r = await fetch(`https://api.themoviedb.org/3/${inSerie()?'tv':'movie'}/${id}?api_key=${k}&language=it-IT&append_to_response=credits,external_ids,keywords`);
   if (!r.ok) throw new Error('tmdb '+r.status);
   const j = await r.json();
@@ -1829,10 +1829,10 @@ async function providersFilm(tmdbId){
     S.providersCache.set(tmdbId, out);
     return out;
   }
-  if (!S.config.tmdbKey) return [];
+  if (!chiaveAPI('tmdbKey')) return [];
   let out = [];
   try {
-    const r = await fetch(`https://api.themoviedb.org/3/${inSerie()?'tv':'movie'}/${tmdbId}/watch/providers?api_key=${S.config.tmdbKey}`);
+    const r = await fetch(`https://api.themoviedb.org/3/${inSerie()?'tv':'movie'}/${tmdbId}/watch/providers?api_key=${chiaveAPI('tmdbKey')}`);
     if (r.ok){
       const it = ((await r.json()).results || {}).IT || {};
       out = [...new Set((it.flatrate || []).map(p => normProvider(p.provider_name)))];
@@ -1876,7 +1876,7 @@ async function eseguiRicerca(){
     box.querySelectorAll('[data-add]').forEach(b => b.onclick = () => modaleAggiungi(parseInt(b.dataset.add,10)));
   } catch(e){
     if (mio !== cercaSeq) return;
-    box.innerHTML = `<div class="vuoto">Ricerca non riuscita: ${esc(e.message==='nokey'?'manca la chiave TMDB in config.json':e.message)}</div>`;
+    box.innerHTML = `<div class="vuoto">Ricerca non riuscita: ${esc(e.message==='nokey'?'manca la chiave TMDB: mettila in ⚙ Impostazioni':e.message)}</div>`;
   }
 }
 
@@ -2127,6 +2127,18 @@ function modaleModifica(id){
 
 /* ══════════════════ SALA — stessa logica del desktop (SPECIFICA §6-8) ══════════════════ */
 const cfgSala = () => ({ ...CONFIG_DEFAULT, ...(S.config||{}) });
+
+/* La chiave da usare: quella personale del profilo se c'è, se no quella condivisa
+   nella cartella. Gemella di chiaveAPI() sul desktop — chi ne mette una sua
+   alleggerisce la quota di tutti. */
+function chiaveAPI(nome){
+  const mia = S.me && S.me.chiavi && S.me.chiavi[nome];
+  return (mia && String(mia).trim()) || (S.config && S.config[nome]) || '';
+}
+/* Le chiavi condivise stanno in config.json, che qui prima si leggeva soltanto. */
+async function salvaConfig(){
+  await fsScriviPercorso('config.json', JSON.stringify(S.config, null, 2));
+}
 const ordineSaga = f => f.uscita || (f.anno ? f.anno + '-00-00' : '9999');
 // Data in cui una persona ha visto un film secondo la SUA recensione: quella dichiarata
 // nella recensione e, se manca, il giorno in cui l'ha scritta. Scrivere una recensione
@@ -3334,6 +3346,50 @@ function modaleGruppoM(indice){
   };
 }
 
+// Etichette dei coefficienti: le stesse quattro del desktop, stesso ordine.
+const ETICHETTE_COSTANTI = {
+  bonusCoralita:'Bonus coralità', capCoralita:'Tetto coralità',
+  passoSoddisfazione:'Soddisfazione: passo', bonusCoppia:'Bonus coppia'
+};
+function disegnaCostantiM(){
+  const box = $('#i-costanti'); if (!box) return;
+  const c = cfgSala();
+  box.innerHTML = Object.keys(ETICHETTE_COSTANTI).map(k =>
+    `<div class="campo-r"><label>${ETICHETTE_COSTANTI[k]}</label>
+      <input type="number" step="0.05" class="inp" id="i-c-${k}" value="${c[k]}" style="width:96px"></div>`).join('');
+}
+function disegnaServiziM(){
+  const box = $('#i-servizi'); if (!box || !S.me) return;
+  const miei = S.me.serviziStreaming || [];
+  box.innerHTML = DOVE_STREAMING.map(x => {
+    const on = miei.includes(x);
+    return `<button class="pchip" data-srv="${esc(x)}"${on
+      ? ' style="background:var(--oro);border-color:var(--oro);color:var(--su-oro);font-weight:600"' : ''
+    }>${on ? '✓ ' : ''}${esc(x)}</button>`;
+  }).join('');
+  box.onclick = async e => {
+    const b = e.target.closest('[data-srv]'); if (!b) return;
+    const x = b.dataset.srv;
+    try {
+      await mutaProfilo(pr => {
+        const l = (pr.serviziStreaming || []).slice();
+        const i = l.indexOf(x);
+        if (i >= 0) l.splice(i, 1); else l.push(x);
+        pr.serviziStreaming = l;
+      });
+    } catch(err){ return toast('Non riuscito: '+err.message, true); }
+    disegnaServiziM();
+  };
+}
+// Quale chiave sta davvero usando l'app, adesso: la propria o quella del gruppo.
+function notaChiaviM(){
+  const el = $('#i-chiavi-nota'); if (!el) return;
+  const k = (S.me && S.me.chiavi) || {};
+  const usa = nome => (k[nome] && String(k[nome]).trim()) ? 'la tua'
+    : ((S.config || {})[nome] ? 'quella del gruppo' : 'nessuna');
+  el.textContent = `In uso adesso: TMDB ${usa('tmdbKey')} · RAWG ${usa('rawgKey')}.`;
+}
+
 async function apriImpostazioni(){
   if (!S.me) return;
   // rilegge il profilo aggiornato dalla cartella (vede i cambi fatti dal desktop)
@@ -3366,6 +3422,33 @@ async function apriImpostazioni(){
     <button class="linkbtn" id="i-gruppo-nuovo" style="margin-top:4px">＋ nuovo gruppo</button>
     <div class="etich" style="margin-top:16px">DI COSA TI OCCUPI <span style="color:var(--dim);letter-spacing:0">— le categorie che togli spariscono dalla tua app, e tu sparisci da loro per gli altri: niente poltrona in Sala e la tua lista non entra nel conto.</span></div>
     <div class="compagnia" id="i-modi"></div>
+    <div class="etich" style="margin-top:16px">IL MIO PROFILO</div>
+    <div class="campo-r"><label>Colore poltrona</label>
+      <input type="color" class="inp" id="i-colore" value="${esc(p.colore || '#c9a45c')}" style="width:64px; padding:3px"></div>
+    <div class="campo-r"><label>Password <span style="color:var(--dim2)">(solo anti-errore)</span></label>
+      <input type="text" class="inp" id="i-pw" value="${esc(p.password || '')}" placeholder="nessuna" style="width:130px"></div>
+    <div class="etich" style="margin-top:12px">I MIEI ABBONAMENTI <span style="color:var(--dim);letter-spacing:0">— i titoli che stanno su un servizio del gruppo si vedono in verde nella scheda.</span></div>
+    <div class="compagnia" id="i-servizi"></div>
+
+    <div class="etich" style="margin-top:16px">CHIAVI DELLE LIBRERIE <span style="color:var(--dim);letter-spacing:0">— valgono per tutto il gruppo, si mettono una volta sola. I libri non ne vogliono.</span></div>
+    <div class="campo-r"><label>TMDB <span style="color:var(--dim2)">film e serie</span></label>
+      <input type="text" class="inp" id="i-tmdb" value="${esc((S.config||{}).tmdbKey || '')}" placeholder="incolla qui" style="flex:1; min-width:0"></div>
+    <div class="campo-r"><label>RAWG <span style="color:var(--dim2)">videogiochi</span></label>
+      <input type="text" class="inp" id="i-rawg" value="${esc((S.config||{}).rawgKey || '')}" placeholder="incolla qui" style="flex:1; min-width:0"></div>
+    <button class="linkbtn" id="i-salva-api">Salva le chiavi del gruppo</button>
+
+    <div class="etich" style="margin-top:14px">LE MIE CHIAVI <span style="color:var(--dim);letter-spacing:0">— facoltative: se le metti valgono solo per te e prevalgono su quelle del gruppo.</span></div>
+    <div class="campo-r"><label>TMDB</label>
+      <input type="text" class="inp" id="i-mia-tmdb" value="${esc(((p.chiavi)||{}).tmdbKey || '')}" placeholder="nessuna" style="flex:1; min-width:0"></div>
+    <div class="campo-r"><label>RAWG</label>
+      <input type="text" class="inp" id="i-mia-rawg" value="${esc(((p.chiavi)||{}).rawgKey || '')}" placeholder="nessuna" style="flex:1; min-width:0"></div>
+    <div class="meta" id="i-chiavi-nota" style="font-size:11.5px"></div>
+    <button class="linkbtn" id="i-salva-mie">Salva le mie chiavi</button>
+
+    <div class="etich" style="margin-top:16px">FORMULA DELLA CLASSIFICA <span style="color:var(--dim);letter-spacing:0">— vale per tutto il gruppo. Nel dubbio, lasciali come sono.</span></div>
+    <div id="i-costanti"></div>
+    <button class="linkbtn" id="i-salva-cost">Salva i valori</button>
+
     <div class="etich" style="margin-top:16px">CONSIGLI</div>
     <div class="campo-r"><label>Film esclusi</label><button class="inp" id="i-esclusi">🚫 Gestisci</button></div>
     <div class="etich" style="margin-top:16px">VERSIONE</div>
@@ -3391,6 +3474,50 @@ async function apriImpostazioni(){
       apriImpostazioni();
     };
   };
+  // ── profilo: colore, password, abbonamenti ──
+  disegnaServiziM();
+  $('#i-colore').onchange = async e => {
+    const c = e.target.value;
+    try { await mutaProfilo(pr => { pr.colore = c; }); } catch(err){ return toast('Non riuscito: '+err.message, true); }
+    disegnaSalaM(); toast('Colore aggiornato');
+  };
+  $('#i-pw').onchange = async e => {
+    const pw = e.target.value.trim();
+    try { await mutaProfilo(pr => { pr.password = pw; }); } catch(err){ return toast('Non riuscito: '+err.message, true); }
+    toast(pw ? 'Password impostata' : 'Password tolta');
+  };
+
+  // ── chiavi: quelle del gruppo (config.json) e le mie (nel profilo) ──
+  notaChiaviM();
+  $('#i-salva-api').onclick = async () => {
+    S.config = {...(S.config||{}), tmdbKey: $('#i-tmdb').value.trim(), rawgKey: $('#i-rawg').value.trim()};
+    try { await salvaConfig(); }
+    catch(e){ return toast('Non riuscito: '+e.message, true); }
+    S.providersCache = new Map();          // le risposte vecchie erano di un'altra chiave
+    notaChiaviM(); toast('Chiavi del gruppo salvate 🔑');
+  };
+  $('#i-salva-mie').onclick = async () => {
+    const chiavi = {tmdbKey: $('#i-mia-tmdb').value.trim(), rawgKey: $('#i-mia-rawg').value.trim()};
+    try { await mutaProfilo(pr => { pr.chiavi = chiavi; }); }
+    catch(e){ return toast('Non riuscito: '+e.message, true); }
+    S.providersCache = new Map();
+    notaChiaviM(); toast('Chiavi salvate nel tuo profilo 🔑');
+  };
+
+  // ── i coefficienti della formula ──
+  disegnaCostantiM();
+  $('#i-salva-cost').onclick = async () => {
+    const nuovi = {};
+    for (const k of Object.keys(ETICHETTE_COSTANTI)){
+      const v = parseFloat(($('#i-c-'+k) || {}).value);
+      if (!isNaN(v)) nuovi[k] = v;
+    }
+    S.config = {...(S.config||{}), ...nuovi};
+    try { await salvaConfig(); }
+    catch(e){ return toast('Non riuscito: '+e.message, true); }
+    disegnaSalaM(); toast('Valori salvati');
+  };
+
   $('#i-esclusi').onclick = modaleScartatiM;
   $('#i-agg').onclick = async () => {
     const b = $('#i-agg'); b.disabled = true; b.innerHTML = '<span class="spin"></span>';
@@ -3595,7 +3722,7 @@ async function generiRAWG(){
   if (generiRawgCache) return generiRawgCache;
   generiRawgCache = new Map();
   try {
-    const r = await fetch(`https://api.rawg.io/api/genres?key=${S.config.rawgKey}&page_size=40`);
+    const r = await fetch(`https://api.rawg.io/api/genres?key=${chiaveAPI('rawgKey')}&page_size=40`);
     if (r.ok) for (const g of ((await r.json()).results || [])) generiRawgCache.set(g.name, g.slug);
   } catch(e){}
   return generiRawgCache;
@@ -3608,7 +3735,7 @@ const PROVIDER_ID = {'Netflix':8,'Prime Video':119,'Disney+':337,'NOW':39,'Sky':
 
 async function tmdbJSON(url){ const r = await fetch(url); if (!r.ok) throw new Error('tmdb '+r.status); return r.json(); }
 async function idKeyword(nomi){
-  const k = S.config.tmdbKey, out = [];
+  const k = chiaveAPI('tmdbKey'), out = [];
   for (const n of nomi.slice(0,4)){
     try { const j = await tmdbJSON(`https://api.themoviedb.org/3/search/keyword?api_key=${k}&query=${encodeURIComponent(n)}`);
       const p = (j.results||[])[0]; if (p) out.push(p.id); } catch(e){}
@@ -3619,7 +3746,7 @@ async function idKeyword(nomi){
 async function generaConsigliM(){
   const prof = S.cgProfilo = profiloGusto();
   // i libri arrivano da Open Library, che non vuole nessuna chiave
-  const chiaveMancante = inLibri() ? false : (inGiochi() ? !S.config.rawgKey : !S.config.tmdbKey);
+  const chiaveMancante = inLibri() ? false : (inGiochi() ? !chiaveAPI('rawgKey') : !chiaveAPI('tmdbKey'));
   if (chiaveMancante){
     toast(`Manca la chiave ${inGiochi() ? 'RAWG' : 'TMDB'} (si imposta dal PC)`, true); return; }
   if (prof.n < 3){ S.cgPool = []; disegnaConsigliM(); return; }
@@ -3627,7 +3754,7 @@ async function generaConsigliM(){
   const stato = () => $('#cg-stato');
   const avanz = t => { const e = stato(); if (e) e.textContent = t; };
   try {
-    const f = S.cgFiltri, k = S.config.tmdbKey;
+    const f = S.cgFiltri, k = chiaveAPI('tmdbKey');
     const visti = new Set(S.storico.filter(v => (v.partecipanti||[]).includes(S.me.slug)).map(v => v.tmdbId));
     const inLista = new Set(listaDi(S.me).map(v => v.tmdbId));
     const recensiti = new Set(S.recensioni.filter(r => r.autore === S.me.slug).map(r => r.tmdbId));
@@ -3655,7 +3782,7 @@ async function generaConsigliM(){
     } else if (inGiochi()){
       avanz('Cerco giochi che potrebbero piacerti…');
       const mappa = await generiRAWG();
-      const q = new URLSearchParams({key:S.config.rawgKey, page_size:'40', ordering:'-metacritic'});
+      const q = new URLSearchParams({key:chiaveAPI('rawgKey'), page_size:'40', ordering:'-metacritic'});
       const gen = (f.generi.length ? f.generi : prof.top.generi).map(g => mappa.get(g)).filter(Boolean);
       if (gen.length) q.set('genres', gen.join(','));
       if (f.annoDa || f.annoA)
@@ -4068,7 +4195,7 @@ function sezioneHTMLm(s,i,ed){
 async function trofeiGioco(id){
   if (id == null) return [];
   if (S.trofeiCache.has(id)) return S.trofeiCache.get(id);
-  const k = S.config.rawgKey;
+  const k = chiaveAPI('rawgKey');
   if (!k) return [];
   const out = [];
   let url = `https://api.rawg.io/api/games/${id}/achievements?key=${k}&page_size=40`;
@@ -4120,7 +4247,7 @@ function editorRecMobile(recOrig, opts={}){
     if (!trofei.length) return `<div class="compl-barra">
         ${ed?`<input type="range" id="m-compl-range" min="0" max="100" step="1" value="${p}">`:''}
         <span class="compl-num" id="m-compl-num">${p}%</span>${badgeCompletamento(p)}
-      </div><p class="meta" style="font-size:12px">${S.config.rawgKey
+      </div><p class="meta" style="font-size:12px">${chiaveAPI('rawgKey')
         ? 'Di questo gioco RAWG non ha i trofei: la percentuale la metti tu.'
         : 'Senza chiave RAWG i trofei non si possono chiedere: la percentuale la metti tu.'}</p>`;
     return `<div class="compl-testa">
@@ -4302,7 +4429,7 @@ function editorRecMobile(recOrig, opts={}){
     // chip corrispondenti, senza toccare quelli già scelti a mano.
     const rilevaStreaming=async(silenzioso)=>{
       if(bozza.tmdbId==null){ if(!silenzioso) toast('Nessun film collegato',true); return; }
-      if(!S.config.tmdbKey){ if(!silenzioso) toast('Manca la chiave TMDB (dal PC)',true); return; }
+      if(!chiaveAPI('tmdbKey')){ if(!silenzioso) toast('Manca la chiave TMDB: mettila in ⚙ Impostazioni',true); return; }
       const btn=$('#m-re-rileva'); if(btn && !silenzioso) btn.textContent='⏳…';
       const sv=await providersFilm(bozza.tmdbId);
       if(btn) btn.textContent='🔄 rileva';
