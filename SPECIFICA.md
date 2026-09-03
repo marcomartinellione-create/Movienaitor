@@ -993,3 +993,15 @@ motivo qualsiasi, e a **sì** rifare l'accensione quando il titolo cambia davver
 vetrina non c'era niente), quindi `stesso = !cambiato` sarebbe sbagliato e salterebbe il
 volo del primo libro. «Stesso» ha una sua definizione: *è lo stesso titolo di prima*, non
 *non è cambiato*.
+
+### 19.1 Al cinema il cambio va fatto a tende chiuse
+
+Il sipario ci mette 0,9 s a chiudersi, e in quel tempo il contenuto nuovo era già a video:
+si vedeva il cambio **prima** che le tende coprissero. Le altre tre stanze non hanno il
+problema perché la loro accensione fa comparire l'immagine dal nulla.
+
+Rimedio: prima di riscrivere `schermo-inner` se ne tiene una **copia** (`.sipario-copia`,
+`z-index:3`, cioè **sotto le tende** che stanno a 4), la si mette sopra il contenuto nuovo,
+e la si toglie dopo `TEMPO_SIPARIO` — cioè esattamente quando il sipario è chiuso e sta per
+riaprirsi. Chi guarda vede: vecchio titolo → tende che chiudono sul vecchio → tende che
+riaprono sul nuovo.

@@ -189,6 +189,9 @@ header .spazio{flex:1; min-width:0}
   transition:transform .9s cubic-bezier(.55,.06,.3,1)}
 .tenda.sx{left:-4px; box-shadow:inset -22px 0 34px rgba(0,0,0,.55)}
 .tenda.dx{right:-4px; box-shadow:inset 22px 0 34px rgba(0,0,0,.55)}
+/* Il fermo-immagine del titolo precedente, mentre il sipario si chiude: sta SOTTO le
+   tende (z-index 4), così il cambio avviene a sipario chiuso e non si vede. */
+.sipario-copia{position:absolute; inset:0; z-index:3; pointer-events:none}
 .schermo.aperto .tenda.sx{transform:translateX(calc(-100% + 30px))}
 .schermo.aperto .tenda.dx{transform:translateX(calc(100% - 30px))}
 /* ---------- modalità serie: il salotto ----------
@@ -5274,6 +5277,10 @@ async function disegnaSala(){
     // animazione invece di sostituire l'immagine di scatto
     const cambiato = inVetrina !== null && inVetrina !== f.tmdbId
       && schermo.classList.contains('aperto');
+    /* Al cinema il sipario ci mette 0,9 s a chiudersi, e in quel tempo il titolo nuovo
+       sarebbe già a video: il cambio si vedrebbe PRIMA che le tende coprano. Si tiene una
+       copia del vecchio contenuto sotto le tende, e la si toglie quando sono chiuse. */
+    const copiaSipario = (cambiato && !schermoAnimato()) ? inner.cloneNode(true) : null;
     inner.innerHTML = `
       <img class="sfondo" hidden><div class="velo"></div>
       ${inLibri() ? '<div class="copertina-libro"><i class="costa"><b class="luce"></b></i><img alt=""><b class="riflesso"><i></i></b></div>' : ''}
@@ -5307,6 +5314,13 @@ async function disegnaSala(){
     schermo.classList.add('aperto');
     // in biblioteca ci pensa il volo del libro; nelle altre tre si rilancia l'accensione
     if (cambiato && !inLibri()) rifaiAccensione(schermo);
+    if (copiaSipario){
+      copiaSipario.removeAttribute('id');
+      copiaSipario.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
+      copiaSipario.classList.add('sipario-copia');
+      inner.parentNode.insertBefore(copiaSipario, inner.nextSibling);
+      setTimeout(() => copiaSipario.remove(), TEMPO_SIPARIO);
+    }
     inVetrina = f.tmdbId;
     $('.schermo-clic').onclick = () => modaleScheda(scelto);
     $('#btn-play').onclick = () => modalePlay(scelto);

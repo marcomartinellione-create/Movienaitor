@@ -566,6 +566,8 @@
     transition:transform .9s cubic-bezier(.55,.06,.3,1)}
   .cartellone .tenda.sx{left:-4px; box-shadow:inset -18px 0 28px rgba(0,0,0,.55)}
   .cartellone .tenda.dx{right:-4px; box-shadow:inset 18px 0 28px rgba(0,0,0,.55)}
+  /* il fermo-immagine del titolo precedente, sotto le tende, mentre il sipario si chiude */
+  .sipario-copia{position:absolute; inset:0; z-index:3; pointer-events:none}
   .cartellone.aperto .tenda.sx{transform:translateX(calc(-100% + 22px))}
   .cartellone.aperto .tenda.dx{transform:translateX(calc(100% - 22px))}
   /* tasto Play (registra la serata come sul desktop) */
@@ -2657,6 +2659,9 @@ function disegnaSalaM(){
     // il titolo è cambiato a schermo acceso: la stanza si rifa' la sua animazione
     const cambiato = inVetrina !== null && inVetrina !== f.tmdbId
       && schermo.classList.contains('aperto');
+    /* Al cinema il sipario ci mette 0,9 s a chiudersi: senza una copia del vecchio
+       contenuto sotto le tende, il cambio si vedrebbe prima che coprano. */
+    const copiaSipario = (cambiato && !schermoAnimato()) ? inner.cloneNode(true) : null;
     const sf = f.sfondoUrl || f.posterUrl || '';
     inner.innerHTML = `
       ${sf ? `<img class="sfondo" src="${esc(sf)}" alt="">` : ''}<div class="velo"></div>
@@ -2697,6 +2702,13 @@ function disegnaSalaM(){
     }
     // in biblioteca ci pensa il volo del libro; nelle altre tre si rilancia l'accensione
     if (cambiato && !inLibri()) rifaiAccensione(schermo);
+    if (copiaSipario){
+      copiaSipario.removeAttribute('id');
+      copiaSipario.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
+      copiaSipario.classList.add('sipario-copia');
+      inner.parentNode.insertBefore(copiaSipario, inner.nextSibling);
+      setTimeout(() => copiaSipario.remove(), TEMPO_SIPARIO);
+    }
     inVetrina = f.tmdbId;
   }
   const e = ris.esclusi, fuori = e.durata+e.genere+e.regista+e.vincoli;
