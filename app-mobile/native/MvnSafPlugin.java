@@ -23,6 +23,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -40,7 +42,8 @@ import java.nio.charset.StandardCharsets;
  *  - scriviPercorso({ uri, percorso, data })-> { uri }         (crea le sottocartelle)
  *  - elencaJson({ uri, cartella })          -> { files:[{nome,uri,data}] }
  *  - versioneApp()                          -> { versione, codice }
- *  - installaApk({ uri, percorso })         -> { permesso, avviato }  (aggiornamento dell'APK)
+ *  - installaApk({ uri, percorso })         -> { permesso, avviato }  (aggiornamento dell'APK, dalla cartella condivisa)
+ *  - installaApkDaUrl({ url })              -> { permesso, avviato }  (aggiornamento dell'APK, da un URL diretto — GitHub Releases)
  */
 @CapacitorPlugin(name = "MvnSaf")
 public class MvnSafPlugin extends Plugin {
@@ -279,10 +282,49 @@ public class MvnSafPlugin extends Plugin {
     }
 
     /**
+     * Se manca il consenso "installa app sconosciute" apre le impostazioni e risolve
+     * {permesso:false} (il chiamante deve fermarsi lì). Torna true se si può proseguire.
+     */
+    private boolean consensoInstallaOSpiega(PluginCall call) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                && !getContext().getPackageManager().canRequestPackageInstalls()) {
+            Intent perm = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                    Uri.parse("package:" + getContext().getPackageName()));
+            perm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(perm);
+            JSObject o = new JSObject();
+            o.put("permesso", false);
+            call.resolve(o);
+            return false;
+        }
+        return true;
+    }
+
+    /** Passa un APK già scritto in cache all'installer di sistema via FileProvider:
+     *  un content:// dell'installer va sempre bene, quello del provider SAF no su tutti i telefoni. */
+    private void avviaInstaller(File apk, PluginCall call) throws Exception {
+        Uri content = FileProvider.getUriForFile(getContext(),
+                getContext().getPackageName() + ".fileprovider", apk);
+        Intent i = new Intent(Intent.ACTION_VIEW);
+        i.setDataAndType(content, "application/vnd.android.package-archive");
+        i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+        getContext().startActivity(i);
+
+        JSObject o = new JSObject();
+        o.put("permesso", true);
+        o.put("avviato", true);
+        call.resolve(o);
+    }
+
+    private File cartellaAggiornamenti() throws Exception {
+        File dir = new File(getContext().getCacheDir(), "aggiornamenti");
+        if (!dir.exists() && !dir.mkdirs()) throw new Exception("cache non scrivibile");
+        return dir;
+    }
+
+    /**
      * Installa un APK preso dalla cartella condivisa (es. "Latest APK/Movienaitor-1.3.0.apk").
-     * Lo copia nella cache dell'app e lo passa all'installer di sistema via FileProvider:
-     * un content:// dell'installer va sempre bene, quello del provider SAF no su tutti i telefoni.
-     * Se manca il consenso "installa app sconosciute" apre le impostazioni e torna {permesso:false}.
+     * Lo copia nella cache dell'app e lo passa all'installer di sistema via FileProvider.
      */
     @PluginMethod
     public void installaApk(PluginCall call) {
@@ -290,24 +332,13 @@ public class MvnSafPlugin extends Plugin {
         String percorso = call.getString("percorso");
         if (uriStr == null || percorso == null) { call.reject("parametri mancanti"); return; }
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
-                    && !getContext().getPackageManager().canRequestPackageInstalls()) {
-                Intent perm = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-                        Uri.parse("package:" + getContext().getPackageName()));
-                perm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                getContext().startActivity(perm);
-                JSObject o = new JSObject();
-                o.put("permesso", false);
-                call.resolve(o);
-                return;
-            }
+            if (!consensoInstallaOSpiega(call)) return;
+
             DocumentFile root = DocumentFile.fromTreeUri(getContext(), Uri.parse(uriStr));
             DocumentFile f = risolvi(root, percorso, false);
             if (f == null || !f.isFile()) { call.reject("APK non trovato: " + percorso); return; }
 
-            File dir = new File(getContext().getCacheDir(), "aggiornamenti");
-            if (!dir.exists() && !dir.mkdirs()) { call.reject("cache non scrivibile"); return; }
-            File apk = new File(dir, "movienaitor-update.apk");
+            File apk = new File(cartellaAggiornamenti(), "movienaitor-update.apk");
             InputStream is = getContext().getContentResolver().openInputStream(f.getUri());
             if (is == null) { call.reject("APK non leggibile"); return; }
             try {
@@ -319,18 +350,51 @@ public class MvnSafPlugin extends Plugin {
                 } finally { os.close(); }
             } finally { is.close(); }
 
-            Uri content = FileProvider.getUriForFile(getContext(),
-                    getContext().getPackageName() + ".fileprovider", apk);
-            Intent i = new Intent(Intent.ACTION_VIEW);
-            i.setDataAndType(content, "application/vnd.android.package-archive");
-            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
-            getContext().startActivity(i);
-
-            JSObject o = new JSObject();
-            o.put("permesso", true);
-            o.put("avviato", true);
-            call.resolve(o);
+            avviaInstaller(apk, call);
         } catch (Exception e) { call.reject(e.getMessage(), e); }
+    }
+
+    /**
+     * Installa un APK scaricandolo direttamente da un URL https (l'asset di una GitHub
+     * Release): serve a chi ha l'app ma non è nella cartella condivisa di chi pubblica
+     * gli aggiornamenti — vale per chiunque, non solo per un gruppo con "Latest APK/".
+     * Stessa logica di installaApk da qui in poi: cache dell'app + FileProvider.
+     */
+    @PluginMethod
+    public void installaApkDaUrl(PluginCall call) {
+        String urlStr = call.getString("url");
+        if (urlStr == null) { call.reject("url mancante"); return; }
+        if (!urlStr.startsWith("https://")) { call.reject("url non sicuro"); return; }
+        if (!consensoInstallaOSpiega(call)) return;
+        // Lo scaricamento è I/O di rete: mai sul thread principale (NetworkOnMainThreadException),
+        // anche se Capacitor gira già i PluginMethod fuori da lì — non do per scontato l'uno o l'altro.
+        new Thread(new Runnable() { public void run() {
+            try {
+                File apk = new File(cartellaAggiornamenti(), "movienaitor-update.apk");
+                HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
+                conn.setInstanceFollowRedirects(true);
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(30000);
+                try {
+                    int codice = conn.getResponseCode();
+                    if (codice != HttpURLConnection.HTTP_OK) {
+                        call.reject("scaricamento non riuscito: HTTP " + codice);
+                        return;
+                    }
+                    InputStream is = conn.getInputStream();
+                    try {
+                        FileOutputStream os = new FileOutputStream(apk);
+                        try {
+                            byte[] buf = new byte[65536];
+                            int n;
+                            while ((n = is.read(buf)) > 0) os.write(buf, 0, n);
+                        } finally { os.close(); }
+                    } finally { is.close(); }
+                } finally { conn.disconnect(); }
+
+                avviaInstaller(apk, call);
+            } catch (Exception e) { call.reject(e.getMessage(), e); }
+        } }).start();
     }
 
     @PluginMethod

@@ -3119,9 +3119,14 @@ function modaleSegnalaM(){
 }
 
 /* ══════════════════ AGGIORNAMENTO DELL'APK ══════════════════ */
-// Marco pubblica il nuovo APK con "Pubblica APK.bat": finisce in <cartella>/Latest APK/
-// insieme a versione.json. L'app se ne accorge e propone di installarlo.
+// Due fonti, per due situazioni diverse:
+//  - GitHub Release: chi ha l'app ma non è nella cartella di chi pubblica gli
+//    aggiornamenti (un gruppo diverso, o nessun gruppo) — vale per chiunque.
+//  - "Latest APK/" nella cartella condivisa: pubblicata con "Pubblica APK.bat",
+//    la controlla comunque anche chi è già in un gruppo, come riserva se GitHub
+//    non è raggiungibile (rete aziendale, ecc).
 const APK_CARTELLA = 'Latest APK';
+const GH_REPO = 'marcomartinellione-create/Movienaitor';
 // confronto "1.10.0" > "1.9.3" (numerico pezzo per pezzo, non alfabetico)
 function versioneMaggiore(a, b){
   const pa = String(a||'0').split('.').map(n=>parseInt(n,10)||0);
@@ -3136,21 +3141,39 @@ async function versioneInstallata(){
   try { const r = await saf().versioneApp(); if (r && r.versione) return r.versione; } catch(e){}
   return APP_VERSION;
 }
+async function controllaAggiornamentoGitHub(){
+  try {
+    const r = await fetch(`https://api.github.com/repos/${GH_REPO}/releases/latest`,
+      {headers:{Accept:'application/vnd.github+json'}});
+    if (!r.ok) return null;
+    const j = await r.json();
+    const versione = String(j.tag_name || '').replace(/^v/, '');
+    const asset = (j.assets || []).find(a => /\.apk$/i.test(a.name));
+    if (!versione || !asset) return null;
+    const note = (j.name || '').replace(/^v?[\d.]+\s*[:—-]?\s*/, '') || (j.body || '').split('\n')[0] || '';
+    return {versione, url:asset.browser_download_url, note, fonte:'github'};
+  } catch(e){ return null; }   // offline, o GitHub irraggiungibile: si prova l'altra fonte
+}
+async function controllaAggiornamentoCartella(){
+  const txt = await fsLeggiPercorso(APK_CARTELLA + '/versione.json');
+  if (!txt) return null;
+  let j; try { j = JSON.parse(txt); } catch(e){ return null; }
+  if (!j || !j.versione || !j.file) return null;
+  return {versione:j.versione, file:j.file, note:j.note, fonte:'cartella'};
+}
 async function controllaAggiornamento(){
   S.aggiornamento = null;
   const box = $('#m-upd'); if (box) box.hidden = true;
-  const txt = await fsLeggiPercorso(APK_CARTELLA + '/versione.json');
-  if (!txt) return;
-  let j; try { j = JSON.parse(txt); } catch(e){ return; }
-  if (!j || !j.versione || !j.file) return;
   const corrente = await versioneInstallata();
-  if (!versioneMaggiore(j.versione, corrente)) return;
-  S.aggiornamento = {...j, corrente};
+
+  const trovato = (await controllaAggiornamentoGitHub()) || (await controllaAggiornamentoCartella());
+  if (!trovato || !versioneMaggiore(trovato.versione, corrente)) return;
+  S.aggiornamento = {...trovato, corrente};
   if (box){
     box.hidden = false;
     box.innerHTML = `<span class="frecc">↑</span>
-      <span class="txt"><b>Aggiornamento disponibile — ${esc(j.versione)}</b>
-      <span>hai la ${esc(corrente)}${j.note ? ' · '+esc(String(j.note).slice(0,60)) : ''}</span></span>
+      <span class="txt"><b>Aggiornamento disponibile — ${esc(trovato.versione)}</b>
+      <span>hai la ${esc(corrente)}${trovato.note ? ' · '+esc(String(trovato.note).slice(0,60)) : ''}</span></span>
       <span class="vai">Installa ›</span>`;
   }
 }
@@ -3167,7 +3190,9 @@ function pannelloAggiornamento(){
   $('#up-ok').onclick = async () => {
     const b = $('#up-ok'); b.disabled = true; b.innerHTML = '<span class="spin"></span> preparo…';
     try {
-      const r = await saf().installaApk({ uri:S.treeUri, percorso: APK_CARTELLA + '/' + a.file });
+      const r = a.fonte === 'github'
+        ? await saf().installaApkDaUrl({ url: a.url })
+        : await saf().installaApk({ uri:S.treeUri, percorso: APK_CARTELLA + '/' + a.file });
       if (r && r.permesso === false){
         chiudiModale();
         toast('Attiva «Installa app sconosciute» per Movienaitor, poi riprova', true);
