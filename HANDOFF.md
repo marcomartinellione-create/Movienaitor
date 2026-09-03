@@ -513,14 +513,18 @@ al cambio utente). Per file arbitrari nella cartella il plugin espone
 `fsElencaJson`). Per provare la UI nel browser serve un finto `window.Capacitor.Plugins.MvnSaf`
 (niente SAF fuori dall'APK): si stubba, si chiama `caricaCartella('fake')` e `entra(slug)`.
 
-**Pubblicare l'APK** (come la Compila.bat della SustEner): `app-mobile\Pubblica APK.bat`
-→ chiede la versione → `tools/pubblica-apk.js` scrive la versione in `package.json` +
-`APP_VERSION`, committa e pusha `app-mobile/`, lancia il workflow in cloud, aspetta,
-scarica l'artifact e copia `Movienaitor-<v>.apk` + `versione.json` nella cartella di
-`pubblica.txt` (`G:\My Drive\4 - Movienaitor\Latest APK`). L'app legge quel
-`versione.json`, mostra il banner e installa via FileProvider (`installaApk`).
-`--prova` fa un giro a vuoto, `--locale` compila sul PC. **Attenzione: lo script pusha**
-— si lancia solo quando Marco vuole pubblicare (regola d'oro #1).
+**Pubblicare l'APK**: niente più script dedicato (rimosso "Pubblica APK.bat" /
+`tools/pubblica-apk.js` — pubblicavano in `G:\My Drive\4 - Movienaitor\Latest APK`, letta
+solo dal gruppo di Marco). Ora un'unica fonte per chiunque: l'ultima **GitHub Release**,
+la stessa dell'exe. Si bumpa la versione in `package.json` + `APP_VERSION`, si pusha
+`app-mobile/` (parte da sola `build-apk.yml`), si scarica l'artifact
+(`gh run download <id> -n movienaitor-apk`) e lo si allega con `gh release create`
+insieme a exe + `latest.yml`. L'app controlla `api.github.com/.../releases/latest` a ogni
+apertura, mostra il banner e installa scaricando l'asset via FileProvider
+(`installaApkDaUrl`). Verificato funzionante su device reale il 2026-09-03 (v1.7.19,
+release apk-only usata come test). **Attenzione: il push fa partire la build e la
+release resta comunque un passo esplicito** — si lancia solo quando Marco vuole
+pubblicare (regola d'oro #1).
 
 ## Punti aperti / idee
 

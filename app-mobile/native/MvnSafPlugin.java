@@ -42,8 +42,7 @@ import java.nio.charset.StandardCharsets;
  *  - scriviPercorso({ uri, percorso, data })-> { uri }         (crea le sottocartelle)
  *  - elencaJson({ uri, cartella })          -> { files:[{nome,uri,data}] }
  *  - versioneApp()                          -> { versione, codice }
- *  - installaApk({ uri, percorso })         -> { permesso, avviato }  (aggiornamento dell'APK, dalla cartella condivisa)
- *  - installaApkDaUrl({ url })              -> { permesso, avviato }  (aggiornamento dell'APK, da un URL diretto — GitHub Releases)
+ *  - installaApkDaUrl({ url })              -> { permesso, avviato }  (aggiornamento dell'APK, dall'ultima GitHub Release)
  */
 @CapacitorPlugin(name = "MvnSaf")
 public class MvnSafPlugin extends Plugin {
@@ -323,42 +322,9 @@ public class MvnSafPlugin extends Plugin {
     }
 
     /**
-     * Installa un APK preso dalla cartella condivisa (es. "Latest APK/Movienaitor-1.3.0.apk").
-     * Lo copia nella cache dell'app e lo passa all'installer di sistema via FileProvider.
-     */
-    @PluginMethod
-    public void installaApk(PluginCall call) {
-        String uriStr = call.getString("uri");
-        String percorso = call.getString("percorso");
-        if (uriStr == null || percorso == null) { call.reject("parametri mancanti"); return; }
-        try {
-            if (!consensoInstallaOSpiega(call)) return;
-
-            DocumentFile root = DocumentFile.fromTreeUri(getContext(), Uri.parse(uriStr));
-            DocumentFile f = risolvi(root, percorso, false);
-            if (f == null || !f.isFile()) { call.reject("APK non trovato: " + percorso); return; }
-
-            File apk = new File(cartellaAggiornamenti(), "movienaitor-update.apk");
-            InputStream is = getContext().getContentResolver().openInputStream(f.getUri());
-            if (is == null) { call.reject("APK non leggibile"); return; }
-            try {
-                FileOutputStream os = new FileOutputStream(apk);
-                try {
-                    byte[] buf = new byte[65536];
-                    int n;
-                    while ((n = is.read(buf)) > 0) os.write(buf, 0, n);
-                } finally { os.close(); }
-            } finally { is.close(); }
-
-            avviaInstaller(apk, call);
-        } catch (Exception e) { call.reject(e.getMessage(), e); }
-    }
-
-    /**
-     * Installa un APK scaricandolo direttamente da un URL https (l'asset di una GitHub
-     * Release): serve a chi ha l'app ma non è nella cartella condivisa di chi pubblica
-     * gli aggiornamenti — vale per chiunque, non solo per un gruppo con "Latest APK/".
-     * Stessa logica di installaApk da qui in poi: cache dell'app + FileProvider.
+     * Installa un APK scaricandolo direttamente da un URL https (l'asset dell'ultima
+     * GitHub Release): vale per chiunque abbia l'app, non serve una cartella condivisa.
+     * Scarica nella cache dell'app e lo passa all'installer di sistema via FileProvider.
      */
     @PluginMethod
     public void installaApkDaUrl(PluginCall call) {

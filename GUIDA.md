@@ -296,7 +296,7 @@ In orientamento orizzontale, e su tablet, la Sala adotta una **disposizione a du
 
 ## 12. Aggiornamenti
 
-**In sintesi.** La versione desktop esegue l'**aggiornamento automatico** al riavvio. L'applicazione mobile richiede l'installazione manuale dell'APK, reso disponibile nella cartella condivisa e segnalato dall'applicazione.
+**In sintesi.** La versione desktop esegue l'**aggiornamento automatico** al riavvio. L'applicazione mobile controlla da sola l'ultima versione pubblicata e, se più recente di quella installata, propone l'installazione con un tocco.
 
 ### Numerazione
 Lo schema è a tre cifre; le revisioni ordinarie incrementano l'ultima. Le due piattaforme condividono la numerazione ma non necessariamente la stessa revisione, potendo l'APK essere compilato successivamente.

@@ -20,8 +20,9 @@ Edge** e collega la cartella (File System Access API). È lo stesso identico pro
 
 **App mobile (Android)** — scarica l'APK dall'ultima [Release](https://github.com/marcomartinellione-create/Movienaitor/releases),
 installalo (va concesso il permesso "installa da fonti sconosciute" al gestore file
-usato) e collega la stessa cartella condivisa. Da lì in poi gli aggiornamenti li segnala
-l'app stessa, senza bisogno di tornare su GitHub — vedi «Aggiornamenti» più sotto.
+usato) e collega la cartella condivisa del tuo gruppo. Da lì in poi gli aggiornamenti
+l'app li controlla e li propone da sola, senza bisogno di tornare su GitHub a mano —
+vedi «Aggiornamenti» più sotto.
 
 Senza cartella si può provare la **demo** (dati finti, nessun salvataggio).
 
@@ -108,10 +109,10 @@ formule sono in [SPECIFICA.md](SPECIFICA.md); il layout della Sala segue `Stile 
   la versione nuova e propone il riavvio. Nessuna configurazione.
 - **Versione browser:** sostituisci `Movienaitor.html` nella cartella Drive; alla prossima
   apertura tutti hanno la versione nuova.
-- **App mobile:** la [Release](https://github.com/marcomartinellione-create/Movienaitor/releases)
-  serve solo al primo download, per chi arriva da fuori un gruppo già avviato. Una volta
-  dentro un gruppo, l'app segnala da sola quando c'è una versione più recente nella
-  cartella condivisa (`Latest APK/`, pubblicata da chi gestisce il gruppo).
+- **App mobile:** stessa fonte, le [Release](https://github.com/marcomartinellione-create/Movienaitor/releases).
+  L'app controlla da sola l'ultima release a ogni apertura; se trova una versione più
+  recente la scarica e la installa — vale per chiunque l'abbia installata, non serve
+  essere nella stessa cartella condivisa di nessuno.
 
 Pubblicare una nuova versione (per chi sviluppa):
 
