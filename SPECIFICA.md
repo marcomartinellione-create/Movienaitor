@@ -968,3 +968,28 @@ fra i titoli in cartellone.
   mostrare, e la spunta si rimette da sola.
 - Togliendo la categoria in cui si è, si viene spostati nella prima che resta. Lo stesso
   vale all'avvio, se la categoria ricordata non è più fra le proprie (`avviaApp`).
+
+## 19. L'accensione si rifà cambiando titolo (2026-09-03, desktop e mobile)
+
+Scegliendo il 2º o il 3º dalla rosa, la stanza **rifà la sua animazione** invece di
+sostituire l'immagine di scatto. In biblioteca succedeva già (il volo del libro); ora
+succede in tutte e quattro.
+
+Due meccanismi diversi, e vanno rilanciati in due modi diversi — è il punto da ricordare:
+
+- **salotto, postazione e biblioteca** sono ANIMAZIONI CSS attaccate alla classe `aperto`:
+  per rifarle basta togliere la classe, **forzare il reflow** (`void schermo.offsetWidth`,
+  se no il browser non si accorge di niente) e rimetterla;
+- **il cinema è una TRANSIZIONE** (le tende scorrono in 0,9 s), e una transizione non si
+  «rifà»: il sipario va **chiuso e poi riaperto**, lasciandogli il tempo di chiudersi
+  davvero. Da qui `TEMPO_SIPARIO`, che deve restare uguale alla durata in CSS.
+
+Il campo che tiene il conto è `inVetrina` (prima si chiamava `libroInVetrina` ed era solo
+dei libri): dice cosa c'è sullo schermo in questo momento, in qualunque categoria. Serve a
+due cose opposte — a **non** rifare il volo del libro quando lo schermo si ridisegna per un
+motivo qualsiasi, e a **sì** rifare l'accensione quando il titolo cambia davvero.
+
+⚠️ Attenzione a una trappola già presa: `cambiato` è falso anche al **primo** disegno (in
+vetrina non c'era niente), quindi `stesso = !cambiato` sarebbe sbagliato e salterebbe il
+volo del primo libro. «Stesso» ha una sua definizione: *è lo stesso titolo di prima*, non
+*non è cambiato*.

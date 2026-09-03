@@ -2277,6 +2277,28 @@ const filtriSalaAttivi = () => !!(S.fSala.durata || S.fSala.genere.length || S.f
 // il cinema ha il sipario (una transizione CSS); salotto, postazione e biblioteca hanno
 // un'accensione a fotogrammi, e quindi anche uno spegnimento da mostrare
 const schermoAnimato = () => inSerie() || inGiochi() || inLibri();
+/* Rifa' l'accensione della stanza quando cambia il TITOLO a schermo già acceso (si sceglie
+   il 2º o il 3º dalla rosa). Senza, l'immagine verrebbe sostituita di scatto: l'accensione
+   è attaccata alla classe `aperto`, che a quel punto è già lì.
+   Salotto, postazione e biblioteca sono ANIMAZIONI e basta togliere la classe, forzare il
+   reflow e rimetterla. Il cinema è una TRANSIZIONE (le tende scorrono) e non si «rifa»:
+   il sipario va chiuso e riaperto, lasciandogli il tempo di chiudersi. */
+const TEMPO_SIPARIO = 900;
+function rifaiAccensione(schermo){
+  if (schermoAnimato()){
+    schermo.classList.remove('aperto');
+    void schermo.offsetWidth;   // senza il reflow il browser non vede il cambio
+    schermo.classList.add('aperto');
+    return;
+  }
+  schermo.classList.remove('aperto');
+  clearTimeout(rifaiAccensione._t);
+  rifaiAccensione._t = setTimeout(() => {
+    const sc = $('#m-schermo');
+    if (sc && S.presenti.size) sc.classList.add('aperto');
+  }, TEMPO_SIPARIO);
+}
+
 function spegniImmagine(schermo, inner){
   if (!schermoAnimato() || !schermo.classList.contains('pronto') || !schermo.classList.contains('aperto')) return;
   const fantasma = inner.cloneNode(true);
@@ -2453,7 +2475,10 @@ let ultimoVolo = null;
 let dorsiUsati = new Set();
 // Qual è il libro già in vetrina: il volo si rifà solo quando cambia. Cambiare un presente
 // o un filtro riscrive lo schermo, ma non è un motivo per rifare l'animazione da capo.
-let libroInVetrina = null;
+/* Cosa c'è in questo momento sullo schermo, in qualunque categoria: serve a non rifare il
+   volo del libro per un ridisegno qualsiasi, e a RIFARE l'accensione quando il titolo
+   cambia davvero. */
+let inVetrina = null;
 
 /* Il libro si mette subito dove il volo lo lascerebbe. Serve quando lo schermo si ridisegna
    ma il libro è lo stesso: gli elementi sono nuovi (nascono chiusi), e senza questo
@@ -2604,7 +2629,8 @@ function disegnaSalaM(){
   const aggiornaLC = n => { if (btnLC){ btnLC.disabled = !n; btnLC.textContent = n ? `📋 Lista completa (${n})` : '📋 Lista completa'; } };
   // schermo.classList `aperto` apre le tende (sipario); l'inner si rifà ad ogni render
   if (!S.presenti.size){
-    if (inLibri()){ disegnaLibreriaM(); libroInVetrina = null; }
+    if (inLibri()) disegnaLibreriaM();
+    inVetrina = null;
     spegniImmagine(schermo, inner);
     schermo.classList.remove('aperto');
     inner.innerHTML = '<div class="msg">La sala è vuota…<br><span style="font-size:12px; color:var(--dim)">tocca le poltrone di chi c\'è stasera</span></div>';
@@ -2621,12 +2647,16 @@ function disegnaSalaM(){
     const e = ris.esclusi;
     const motivi = [e.durata && e.durata+' troppo lunghi', e.genere && e.genere+' di altro genere',
       e.regista && e.regista+' di altri registi', e.vincoli && e.vincoli+' per vincoli di compagnia'].filter(Boolean).join(' · ');
-    if (inLibri()){ disegnaLibreriaM(); libroInVetrina = null; }
+    if (inLibri()) disegnaLibreriaM();
+    inVetrina = null;
     spegniImmagine(schermo, inner);
     schermo.classList.remove('aperto');
     inner.innerHTML = `<div class="msg">Niente in cartellone stasera<br><span style="font-size:12px">${esc(motivi || 'le liste dei presenti sono vuote')}</span></div>`;
   } else {
     const f = scelto.film, rango = ris.tutti.indexOf(scelto) + 1;
+    // il titolo è cambiato a schermo acceso: la stanza si rifa' la sua animazione
+    const cambiato = inVetrina !== null && inVetrina !== f.tmdbId
+      && schermo.classList.contains('aperto');
     const sf = f.sfondoUrl || f.posterUrl || '';
     inner.innerHTML = `
       ${sf ? `<img class="sfondo" src="${esc(sf)}" alt="">` : ''}<div class="velo"></div>
@@ -2646,9 +2676,8 @@ function disegnaSalaM(){
     // rimette dov'era, senza rifare tutto il viaggio.
     if (inLibri()){
       disegnaLibreriaM();
-      const stesso = libroInVetrina === f.tmdbId && schermo.classList.contains('aperto');
+      const stesso = inVetrina === f.tmdbId && schermo.classList.contains('aperto');
       if (stesso || !scegliDorso()) posaFinaleLibro();
-      libroInVetrina = f.tmdbId;
       // la copertina è il libro stesso: il volo comincia quando l'immagine è arrivata ED
       // è decodificata, se no il libro volerebbe vuoto
       const volume = $('#m-schermo .copertina-libro');
@@ -2666,6 +2695,9 @@ function disegnaSalaM(){
       if (schermoAnimato()){ schermo.classList.add('pronto'); schermo.classList.add('aperto'); }
       else setTimeout(() => schermo.classList.add('aperto'), 60);
     }
+    // in biblioteca ci pensa il volo del libro; nelle altre tre si rilancia l'accensione
+    if (cambiato && !inLibri()) rifaiAccensione(schermo);
+    inVetrina = f.tmdbId;
   }
   const e = ris.esclusi, fuori = e.durata+e.genere+e.regista+e.vincoli;
   stato.innerHTML = `🎞 ${ris.totale} in cartellone · ${S.presenti.size} in sala
