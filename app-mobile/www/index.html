@@ -1001,6 +1001,10 @@ async function cambiaModoM(m){
   caricamento(true, inLibri() ? 'Apro la biblioteca…'
     : (inGiochi() ? 'Accendo la postazione…' : (inSerie() ? 'Apro il salotto…' : 'Apro la sala…')));
   try {
+    /* Lo scaffale si disegna ADESSO, mentre il velo è ancora alzato: sono 72 dorsi più la
+       copia sfocata, e dipingerli la prima volta costa. Facendolo qui il costo se lo prende
+       il velo, e il primo volo parte già fluido invece di scattare. */
+    if (inLibri()) await scaldaLibreriaM();
     await caricaCartella(S.treeUri);
     // caricaCartella riporta alla scelta del profilo: rientro con quello di prima
     const slug = S.me && S.me.slug;
@@ -1472,7 +1476,11 @@ function entra(slug){
   $('#q').value = ''; $('#risultati').innerHTML = '';
   disegnaMiaLista();
   S.presenti = new Set([slug]); S.proiettato = null;
-  S.recUtente = null; setPan('sala');   // la Sala è la home dell'app
+  S.recUtente = null;
+  // Anche all'avvio: se l'app riapre direttamente in biblioteca, il primo volo partirebbe
+  // nello stesso istante in cui lo scaffale va dipinto (vedi scaldaLibreriaM).
+  if (inLibri()) scaldaLibreriaM().then(() => setPan('sala'));
+  else setPan('sala');                  // la Sala è la home dell'app
   schermo('sc-app');
 }
 
@@ -1517,28 +1525,6 @@ const chiaveLibro = id => '/works/OL' + id + 'W';
 const copertinaLibro = coverId =>
   coverId ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg?default=false` : null;
 
-/* Le copertine che Open Library non ha si cercano su Google Books. Senza chiave si usa la
-   quota ANONIMA, condivisa con tutto il mondo e spesso gia' esaurita (risponde 429); con
-   una chiave (gratuita, si mette dal PC) diventa affidabile. In ogni caso non puo' far
-   danno: o trova una copertina, o lascia le cose come stanno. */
-async function copertinaGoogleBooks(titolo, autore){
-  if (!titolo) return null;
-  const q = `intitle:${titolo}` + (autore ? ` inauthor:${autore}` : '');
-  const k = S.config.googleKey || '';
-  const u = 'https://www.googleapis.com/books/v1/volumes?maxResults=3&printType=books'
-    + (k ? '&key=' + encodeURIComponent(k) : '') + '&q=' + encodeURIComponent(q);
-  try {
-    const r = await fetch(u);
-    if (!r.ok) return null;
-    for (const v of ((await r.json()).items || [])){
-      const im = (v.volumeInfo || {}).imageLinks || {};
-      const url = im.thumbnail || im.smallThumbnail;
-      if (url) return url.replace(/^http:/, 'https:').replace(/&edge=curl/g, '');
-    }
-  } catch(e){}
-  return null;
-}
-
 async function dettagliLibro(id){
   const campi = 'key,title,author_name,first_publish_year,number_of_pages_median,' +
                 'cover_i,ratings_average,ratings_count,subject,publisher,first_sentence';
@@ -1556,8 +1542,7 @@ async function dettagliLibro(id){
     if (!copertinaId && Array.isArray(w && w.covers)) copertinaId = w.covers.find(x => x > 0) || null;
   } catch(e){}
   if (!trama) trama = ((l.first_sentence || [])[0]) || '';
-  let img = copertinaLibro(copertinaId);
-  if (!img) img = await copertinaGoogleBooks(l.title, (l.author_name || [])[0]);
+  const img = copertinaLibro(copertinaId);
   return {
     tmdbId:id, titolo:l.title || '', anno:String(l.first_publish_year || ''),
     uscita:l.first_publish_year ? String(l.first_publish_year)+'-01-01' : null,
@@ -1576,20 +1561,52 @@ async function dettagliLibro(id){
   };
 }
 
+/* Titolo e autore ridotti all'osso, per riconoscere due schede dello stesso libro:
+   niente maiuscole, niente accenti, niente punteggiatura. */
+const impronta = s => String(s || '').toLowerCase().normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+
+/* La ricerca dei libri.
+   Open Library tiene PIU' SCHEDE per lo stesso libro: ristampe, traduzioni, e mozziconi
+   con una sola edizione e nessun ISBN (cercando «il nome della rosa», sei righe su dieci
+   erano di quelli). Quindi:
+     1. si chiedono 40 risultati invece di 10, perché dopo la potatura ne restano pochi;
+     2. si buttano i mozziconi — una sola edizione E nessuna copertina: sono schede vuote,
+        non libri;
+     3. si raggruppano le schede dello stesso libro e di ogni gruppo resta LA PIU' FAMOSA,
+        cioè quella con più edizioni;
+     4. se la scheda più pertinente non ha la copertina, se la fa PRESTARE da un'altra
+        dello stesso libro — spesso è l'edizione straniera ad averla.
+   L'ordine di pertinenza di Open Library resta: si tiene la posizione del membro più in
+   alto di ogni gruppo. */
+async function cercaLibri(q){
+  const campi = 'key,title,author_name,first_publish_year,cover_i,edition_count';
+  const r = await fetch(`https://openlibrary.org/search.json?limit=40&fields=${campi}&q=${encodeURIComponent(q)}`);
+  if (!r.ok) throw new Error('openlibrary '+r.status);
+  const docs = ((await r.json()).docs || []).filter(d => (d.edition_count || 0) > 1 || d.cover_i);
+  const gruppi = new Map();
+  docs.forEach((d, i) => {
+    const k = impronta(d.title) + '|' + impronta((d.author_name || [])[0]);
+    const g = gruppi.get(k);
+    if (!g){ gruppi.set(k, {best:d, pos:i, cover:d.cover_i || null}); return; }
+    // la copertina si tiene comunque, da qualunque scheda del gruppo arrivi
+    if (!g.cover && d.cover_i) g.cover = d.cover_i;
+    if ((d.edition_count || 0) > (g.best.edition_count || 0)){ g.best = d; }
+    g.pos = Math.min(g.pos, i);
+  });
+  const scelti = [...gruppi.values()].sort((a, b) => a.pos - b.pos).slice(0, 10);
+  const righe = scelti.map(g => ({
+    id:idLibro(g.best.key), title:g.best.title,
+    release_date:String(g.best.first_publish_year || ''),
+    poster_path:null, posterUrl:copertinaLibro(g.cover)
+  }));
+  // chi resta senza copertina va in fondo (ordinamento stabile)
+  return righe.filter(x => x.posterUrl).concat(righe.filter(x => !x.posterUrl));
+}
+
 async function cercaFilm(q){
   // I libri stanno su Open Library, che non vuole nessuna chiave.
-  if (inLibri()){
-    const campi = 'key,title,author_name,first_publish_year,cover_i';
-    const r = await fetch(`https://openlibrary.org/search.json?limit=10&fields=${campi}&q=${encodeURIComponent(q)}`);
-    if (!r.ok) throw new Error('openlibrary '+r.status);
-    const trovati = ((await r.json()).docs || []).slice(0, 10).map(l => ({
-      id:idLibro(l.key), title:l.title, release_date:String(l.first_publish_year || ''),
-      poster_path:null, posterUrl:copertinaLibro(l.cover_i)
-    }));
-    // chi non ha copertina va in fondo: sono quasi sempre schede-moncone o saggi SU quel
-    // libro, e riempirebbero mezzo elenco coprendo quello giusto (ordinamento stabile)
-    return trovati.filter(x => x.posterUrl).concat(trovati.filter(x => !x.posterUrl));
-  }
+  if (inLibri()) return await cercaLibri(q);
   // I videogiochi non stanno su TMDB: la loro libreria è RAWG (SPECIFICA §15.1).
   if (inGiochi()){
     const kg = S.config.rawgKey; if (!kg) throw new Error('nokey');
@@ -2161,6 +2178,13 @@ function spegniImmagine(schermo, inner){
   fantasma.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
   fantasma.classList.add('tv-uscita');
   inner.parentNode.insertBefore(fantasma, inner.nextSibling);
+  /* Il testo se ne va per PRIMO. Restando a video per tutto il viaggio di ritorno copriva
+     il libro proprio mentre torna nello scaffale, che è la parte da vedere. */
+  for (const sel of ['.dentro', '.rango']){
+    const el = fantasma.querySelector(sel);
+    if (el) el.animate([{opacity:1}, {opacity:0}],
+      {duration:220, easing:'ease-in', fill:'forwards'});
+  }
   // Il libro rifà la stessa strada al contrario: stessi fotogrammi, letti all'indietro.
   const copia = fantasma.querySelector('.copertina-libro');
   if (inLibri() && copia && ultimoVolo){
@@ -2444,6 +2468,22 @@ function scegliDorso(){
   cop._parti = parti;
   setTimeout(parti, 2200);
   return true;
+}
+
+/* Disegna lo scaffale e aspetta che il browser l'abbia davvero dipinto. Due fotogrammi:
+   il primo lo mette in pagina, il secondo dà al compositore il tempo di rasterizzarlo
+   (compresa la copia sfocata, che è la più cara). Senza, quel lavoro cadeva esattamente
+   sopra i primi fotogrammi del volo — ed è quello lo scatto. */
+async function scaldaLibreriaM(){
+  disegnaLibreriaM();
+  const sfocata = $('#m-libreria-sfocata');
+  /* La parte cara è la SFOCATURA dei dorsi della copia, e a opacità 0 il browser può
+     saltarla del tutto: si porta a un filo di opacità — invisibile a occhio — giusto per
+     costringerlo a rasterizzarla, e poi si rimette com'era. */
+  if (sfocata){ sfocata.style.transition = 'none'; sfocata.style.opacity = '0.01'; }
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  if (sfocata){ sfocata.style.opacity = ''; sfocata.style.transition = ''; }
+  await new Promise(r => requestAnimationFrame(r));
 }
 
 function disegnaSalaM(){

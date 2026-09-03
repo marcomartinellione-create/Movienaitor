@@ -799,25 +799,41 @@ diverso dalle altre tre.
 - I **consigli** non hanno un «discover»: si usa la ricerca per soggetto ordinata per voto,
   scartando i libri con meno di cinque voti (una media su tre voti non dice niente).
 
-### 16.2 Le copertine che non ci sono
+### 16.2 Le copertine che non ci sono, e i doppioni
 
-Il punto dolente della categoria, e va conosciuto:
+Il punto dolente della categoria, e va conosciuto.
 
-- Chiedendo a `covers.openlibrary.org` una copertina che non esiste, **non risponde
-  errore: manda un PNG di 1×1 pixel trasparente**. L'immagine «si carica» e a video resta
-  un riquadro vuoto, indistinguibile da una copertina non ancora arrivata. Per questo tutte
-  le URL delle copertine portano **`?default=false`**, che fa rispondere 404: allora
-  l'`onerror` scatta e al suo posto si vede il segnaposto col titolo.
-- **Parecchi risultati non hanno proprio la copertina** (misurato: 6 su 10 cercando «il
-  nome della rosa»). Non sono libri veri: sono schede-moncone (una sola edizione, nessun
-  ISBN), traduzioni sparse o saggi *su* quel libro. Nella ricerca vanno **in fondo**
-  (ordinamento stabile, così il libro giusto resta primo) e mostrano il segnaposto.
-- Ripiego: quando Open Library non ce l'ha, la copertina si cerca su **Google Books**, una
-  volta sola e **solo aprendo il libro** (nell'elenco sarebbero dieci richieste a ogni
-  pausa di battitura). Attenzione: senza chiave si usa la quota **anonima**, condivisa fra
-  tutti quelli che chiamano senza chiave, e sta regolarmente esaurita — risponde 429. Con
-  una chiave propria (gratuita, in ⚙ Impostazioni) diventa affidabile. In ogni caso non può
-  far danno: o trova una copertina, o lascia le cose come stanno.
+**Il pixel invisibile.** Chiedendo a `covers.openlibrary.org` una copertina che non esiste,
+**non risponde errore: manda un PNG di 1×1 pixel trasparente**. L'immagine «si carica» e a
+video resta un riquadro vuoto, indistinguibile da una copertina non ancora arrivata. Per
+questo tutte le URL portano **`?default=false`**, che fa rispondere 404: allora l'`onerror`
+scatta e al suo posto si vede il segnaposto col titolo.
+
+**Un libro, una riga.** Open Library tiene **più schede per lo stesso libro**: ristampe,
+traduzioni, e mozziconi con una sola edizione e nessun ISBN. Cercando «il nome della rosa»
+arrivavano 36 righe, di cui sei su dieci senza copertina e quasi tutte doppioni. La ricerca
+dei libri (`cercaLibri`) fa quattro cose:
+
+1. chiede **40** risultati invece di 10, perché dopo la potatura ne restano pochi;
+2. butta i **mozziconi** — una sola edizione **e** nessuna copertina: sono schede vuote, non
+   libri;
+3. raggruppa le schede dello stesso libro (impronta di titolo + autore: niente maiuscole,
+   accenti, punteggiatura) e di ogni gruppo tiene **la più famosa**, cioè quella con più
+   edizioni;
+4. se la scheda più pertinente non ha la copertina, **se la fa prestare** da un'altra dello
+   stesso gruppo — spesso è l'edizione straniera ad averla.
+
+L'ordine di pertinenza di Open Library resta: si tiene la posizione del membro più in alto
+di ogni gruppo, e chi resta senza copertina va in fondo (ordinamento stabile).
+
+Misurato su «il nome della rosa»: **da 36 righe a 10, e i senza-copertina da 6 a 1**. Su
+«calvino»: dieci libri veri, tutti con copertina.
+
+**Google Books è stato provato e scartato.** Ha una copertura migliore, ma **senza chiave
+risponde 429**: la quota anonima è condivisa fra tutti quelli che chiamano senza chiave e
+sta regolarmente esaurita. Con una chiave funziona, ma è una chiave in più da procurarsi e
+da tenere, per un guadagno che il raggruppamento qui sopra ottiene già senza chiedere
+niente a nessuno.
 
 ### 16.3 La biblioteca e il volo del libro
 
@@ -853,6 +869,17 @@ Il libro scelto **esce da un dorso preciso** e vola in vetrina. Come è fatto, e
 - La copertina **nasce chiusa e invisibile**: se nascesse visibile la si vedrebbe intera
   per un istante, prima che il volo — che aspetta l'immagine decodificata — la riporti a
   zero.
+- Nell'**uscita** il testo se ne va per primo (220 ms), e solo dopo il libro rifà la
+  strada al contrario: restando a video per tutto il viaggio di ritorno copriva proprio la
+  cosa da guardare.
+- Lo scaffale si **scalda prima**. Il primo volo cade nello stesso istante in cui il browser
+  deve dipingere per la prima volta 96 dorsi e **sfocarne la copia**, e quel lavoro si
+  mangiava dei fotogrammi. Ora `scaldaLibreria()` lo disegna mentre il velo del cambio
+  categoria è ancora alzato (e all'avvio, se l'app riapre già in biblioteca). Attenzione al
+  dettaglio che conta: la copia sfocata va portata a **un filo di opacità** per due
+  fotogrammi, perché un livello del tutto trasparente il browser può saltarlo e non
+  rasterizzarlo affatto. Misurato sul cambio categoria a sala piena: peggior fotogramma
+  **33 ms → 27 ms**, e nessun fotogramma perso.
 - Sul **telefono** il meccanismo è lo stesso, trapiantato dal file del PC e adattato solo
   nei nomi degli elementi. Se si corregge una delle due, si ricopia.
 
