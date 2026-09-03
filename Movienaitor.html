@@ -864,6 +864,19 @@ header .spazio{flex:1; min-width:0}
 .sg-ig .chi{flex:1; min-width:0; display:flex; flex-direction:column; gap:9px; align-items:flex-start}
 .sg-ig .nome{color:var(--oro2); font-family:var(--serif); font-size:17px}
 .sg-ig .come{color:var(--dim2); font-size:12.5px; line-height:1.5}
+/* Il manuale a schermo intero. Sta in un iframe e non in un div: il manuale è una
+   pagina sua, con un suo :root e un suo body — riversata qui dentro ridipingerebbe
+   l'app. Nell'iframe resta identica a com'è, indice e ancore compresi. */
+.manuale-vista{position:fixed; inset:0; z-index:300; display:flex; flex-direction:column;
+  background:var(--bg); opacity:0; pointer-events:none; transition:opacity .2s ease}
+.manuale-vista.aperta{opacity:1; pointer-events:auto}
+.manuale-vista .testata{display:flex; align-items:center; gap:12px; padding:11px 18px;
+  border-bottom:1px solid var(--bordo); background:var(--velluto2); flex:none}
+.manuale-vista .titolo{flex:1; color:var(--oro2); font-family:var(--serif); font-size:17px}
+.manuale-vista iframe{flex:1; width:100%; border:0; background:var(--bg)}
+.sg-guida{display:flex; gap:12px; align-items:center; margin:14px 0 2px; padding:12px 14px;
+  border:1px solid var(--velluto3); border-radius:12px; background:var(--velluto)}
+.sg-guida .dritta{flex:1; min-width:0; color:var(--dim2); font-size:12.5px; line-height:1.5}
 .sg-mie{margin-top:18px; border-top:1px solid var(--velluto3); padding-top:12px}
 .sg-mie h4{color:var(--oro); font-size:13px; letter-spacing:.06em; font-weight:400; margin-bottom:8px}
 .sg-mia{display:flex; align-items:center; gap:9px; padding:6px 4px; font-size:13px; color:var(--dim)}
@@ -3425,6 +3438,30 @@ async function copiaNegliAppunti(testo){
     const ok = document.execCommand('copy'); ta.remove(); return ok;
   } catch(e){ return false; }
 }
+/* Apre il manuale: è `Manuale.html`, lo stesso file che sta accanto all'app — non una
+   copia riscritta a mano. La build desktop se lo porta dietro (copia-html.js), nella
+   versione browser sta nella cartella condivisa insieme a Movienaitor.html. */
+function apriManuale(){
+  let vista = $('#manuale-vista');
+  if (!vista){
+    vista = document.createElement('div');
+    vista.id = 'manuale-vista';
+    vista.className = 'manuale-vista';
+    vista.innerHTML = `<div class="testata">
+        <span class="titolo">📖 Manuale</span>
+        <button class="bottone piccolo secondario" id="manuale-chiudi">Chiudi</button>
+      </div><iframe src="Manuale.html" title="Manuale di Movienaitor"></iframe>`;
+    document.body.appendChild(vista);
+    $('#manuale-chiudi').onclick = chiudiManuale;
+  }
+  void vista.offsetWidth;               // reflow: la transizione parte anche a finestra nascosta
+  vista.classList.add('aperta');
+}
+function chiudiManuale(){
+  const vista = $('#manuale-vista');
+  if (vista) vista.classList.remove('aperta');
+}
+
 /* Fuori dall'app: nel browser una scheda nuova, in Electron il browser di sistema
    (se no si aprirebbe una finestra Electron spoglia, senza barra ne' indirizzo). */
 function apriEsterno(url){
@@ -3497,6 +3534,10 @@ function modaleSegnala(){
     <p style="color:var(--dim); font-size:13.5px">${interne
       ? `Finisce nella cartella del gruppo: l'host la trova nella sua sezione Segnalazioni e la segna come fatta quando l'ha sistemata.`
       : `Movienaitor lo scrivo da solo, e questa cartella è vostra: quello che lasciate qui resta qui. Scrivi lo stesso qui sotto, poi copia e mandamelo su Instagram — è lì che rispondo.`}</p>
+    <div class="sg-guida">
+      <button class="bottone piccolo secondario" id="sg-guida">📖 Guida</button>
+      <div class="dritta">Prima di segnalare, dai un'occhiata al manuale: diversi comportamenti che sembrano errori sono spiegati lì.</div>
+    </div>
     ${interne ? '' : `<div class="sg-ig">
       <svg class="sg-qr" viewBox="-2 -2 33 33" shape-rendering="crispEdges" role="img" aria-label="QR del profilo Instagram ${IG_NOME}">
         <rect x="-2" y="-2" width="33" height="33" fill="#fff"></rect><path d="${IG_QR}" fill="#181114"></path></svg>
@@ -3535,6 +3576,7 @@ function modaleSegnala(){
   };
   $('#sg-tipi').onclick = e => { const b = e.target.closest('[data-t]'); if (!b) return; tipo = b.dataset.t; aggiornaTipo(); };
   $('#sg-annulla').onclick = chiudiModale;
+  $('#sg-guida').onclick = apriManuale;
   if ($('#sg-ig-apri')) $('#sg-ig-apri').onclick = () => apriEsterno(IG_URL);
   $('#sg-invia').onclick = async () => {
     const titolo = $('#sg-tit').value.trim();
@@ -5903,7 +5945,11 @@ $('#modale-fondo') && ($('#modale-fondo').onclick = e => {
   chiudiModale();
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && !$('#modale-fondo').hidden && !modaleProtetta()) chiudiModale();
+  if (e.key !== 'Escape') return;
+  // il manuale sta sopra tutto: se è aperto, Esc chiude quello e lascia stare il modale
+  const manuale = $('#manuale-vista');
+  if (manuale && manuale.classList.contains('aperta')) return chiudiManuale();
+  if (!$('#modale-fondo').hidden && !modaleProtetta()) chiudiModale();
 });
 
 async function modaleAggiungi(id){

@@ -513,6 +513,12 @@ al cambio utente). Per file arbitrari nella cartella il plugin espone
 `fsElencaJson`). Per provare la UI nel browser serve un finto `window.Capacitor.Plugins.MvnSaf`
 (niente SAF fuori dall'APK): si stubba, si chiama `caricaCartella('fake')` e `entra(slug)`.
 
+**Il manuale dentro l'app**: `Manuale.html` (radice) è la fonte unica, aperta dal tasto
+📖 Guida in cima al modulo Segnala, in un iframe a schermo intero (non un div: ha un suo
+`:root`/`body` e ridipingerebbe l'app). Nessuna copia versionata: la portano dentro le
+build — `electron/copia-html.js` in `renderer/`, `app-mobile/scripts/copia-manuale.js` in
+`www/` (passo del workflow prima di `cap sync`). Entrambe le copie sono in `.gitignore`.
+
 **Pubblicare l'APK**: niente più script dedicato (rimosso "Pubblica APK.bat" /
 `tools/pubblica-apk.js` — pubblicavano in `G:\My Drive\4 - Movienaitor\Latest APK`, letta
 solo dal gruppo di Marco). Ora un'unica fonte per chiunque: l'ultima **GitHub Release**,

@@ -105,6 +105,7 @@ app-mobile/
     MvnSafPlugin.java      plugin: selettore cartella (SAF) + read/write dei JSON
     MainActivity.java      registra il plugin
   scripts/patch-android.js copia i sorgenti nativi nel progetto + dipendenza documentfile
+  scripts/copia-manuale.js porta Manuale.html (radice del progetto) dentro www/
   android/                GENERATO in CI da `cap add android` (non versionato)
 ```
 Workflow di build: `.github/workflows/build-apk.yml` (nella radice del repo).
@@ -136,5 +137,12 @@ tantum) — NON serve rifarlo.
   all'installer di sistema via **FileProvider** (`installaApkDaUrl`). `patch-android.js`
   aggiunge il permesso `REQUEST_INSTALL_PACKAGES` e i `file_paths` con la cache. Vale per
   chiunque abbia installato l'app, non serve una cartella condivisa.
+- **Manuale in-app**: il tasto **📖 Guida**, in cima al modulo 🐞 Segnala, apre
+  `Manuale.html` a schermo intero dentro un `<iframe>` — non un div: il manuale è una
+  pagina con un suo `:root` e un suo `body`, riversata nel documento ridipingerebbe
+  l'app. Il file NON è versionato in `www/`: `scripts/copia-manuale.js` lo copia dalla
+  radice del progetto a ogni build (passo del workflow prima di `cap sync`), così l'APK
+  ha sempre il manuale della versione che sta compilando. Sul desktop fa lo stesso
+  `electron/copia-html.js`.
 - **Locandine**: non vengono scaricate da mobile (restano gli URL remoti); ci pensa il PC.
 - **Chiavi TMDB/OMDb**: lette da `config.json` nella cartella (si impostano dal PC).

@@ -189,7 +189,11 @@ L'attivazione rende disponibile la sezione **Pronti alla visione**: elenco dedup
 La modalità host abilita inoltre, nella sola cartella dello sviluppatore (si veda «Segnalazioni» più sotto), la sezione **Segnalazioni**.
 
 ### Segnalazioni
-Il comando 🐞, presente in ogni schermata, apre uno stesso modulo — tipo, titolo, descrizione, gravità — con una destinazione diversa a seconda della cartella:
+Il comando 🐞, presente in ogni schermata, apre uno stesso modulo — tipo, titolo, descrizione, gravità — con una destinazione diversa a seconda della cartella.
+
+In cima al modulo il comando **📖 Guida** apre questo manuale a schermo intero, senza uscire dall'applicazione: diversi comportamenti che sembrano anomalie sono previsti e documentati. È lo stesso file `Manuale.html`, incorporato nell'applicazione a ogni compilazione, quindi sempre allineato alla versione in uso.
+
+Le due destinazioni:
 
 - **Nella cartella dello sviluppatore** — quella in cui `config.json` dichiara `"sviluppo": true` — la segnalazione viene scritta su file. L'host la ritrova nella sezione **Segnalazioni**, ordinata per importanza, e la segna come fatta una volta risolta.
 - **In ogni altra cartella** — il caso previsto per un gruppo diverso da quello dello sviluppatore, dove non esiste un destinatario locale — il modulo, allo stesso invio, **copia il testo negli appunti** e apre il profilo Instagram dello sviluppatore (link e QR, generato internamente, senza risorse esterne), a cui inoltrare il messaggio.

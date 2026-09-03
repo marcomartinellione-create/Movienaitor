@@ -6,6 +6,10 @@ node_modules/
 # Electron
 electron/dist/
 electron/renderer/index.html
+electron/renderer/Manuale.html
+
+# Copie del manuale fatte dalla build: la fonte è Manuale.html nella radice
+app-mobile/www/Manuale.html
 
 # Profili reali degli utenti: restano solo nella cartella Drive, mai nel repo pubblico.
 # (Nel repo c'è esempio-profilo.json come modello.)
