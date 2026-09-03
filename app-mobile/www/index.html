@@ -1525,6 +1525,72 @@ const chiaveLibro = id => '/works/OL' + id + 'W';
 const copertinaLibro = coverId =>
   coverId ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg?default=false` : null;
 
+/* Il cognome, per riconoscere lo stesso autore scritto in modi diversi
+   («José Saramago», «Saramago, José», «J. Saramago»). */
+const cognomeDi = a => String(a || '').trim().split(/\s+/).pop().toLowerCase();
+
+/* Una domanda a Wikidata. `origin=*` è quello che rende la risposta leggibile da una
+   pagina che non sta su wikidata.org — senza, il browser la blocca. */
+async function chiediWikidata(params){
+  const u = 'https://www.wikidata.org/w/api.php?origin=*&format=json&' + new URLSearchParams(params);
+  const r = await fetch(u);
+  if (!r.ok) throw new Error('wikidata ' + r.status);
+  return await r.json();
+}
+
+/* LA COPERTINA DALL'EDIZIONE STRANIERA — vedi SPECIFICA §16.2.
+
+   Open Library non collega le edizioni in lingue diverse dello stesso libro: la scheda
+   italiana e quella portoghese sono due OPERE distinte nei suoi dati, e quella italiana
+   spesso è quella senza copertina. Wikidata invece sa che sono la stessa opera, e ne
+   conosce il titolo in ogni lingua. Il giro è: titolo italiano → Wikidata → titolo
+   originale → si ricerca QUELLO su Open Library → si prende la sua copertina.
+
+   Due guardiani contro la copertina sbagliata:
+     · l'opera di Wikidata si accetta solo se la sua descrizione nomina l'autore
+       («romanzo scritto da José Saramago»), se no un titolo comune pescherebbe
+       un'opera omonima di un altro;
+     · la scheda di Open Library si accetta solo se è dello STESSO autore.
+
+   Resta un margine, ed è una scelta consapevole: la regola è quella LARGA, che accetta
+   qualunque scheda di quell'autore con quel titolo tradotto. Recupera di più (10 su 10
+   nel campione, contro 7 su 10 della regola stretta) ma ogni tanto la copertina è quella
+   di un'antologia che contiene il libro. Il libro sbagliato è comunque sempre dello
+   scrittore giusto.
+
+   Costa tre richieste, ma solo per i libri che una copertina non ce l'hanno. */
+const LINGUE_COPERTINA = ['en', 'pt', 'es', 'fr', 'de'];
+
+async function copertinaDaAltraLingua(titolo, autore){
+  if (!titolo) return null;
+  const cognome = cognomeDi(autore);
+  try {
+    const trovate = await chiediWikidata({action:'wbsearchentities', search:titolo,
+      language:'it', uselang:'it', type:'item', limit:5});
+    for (const cand of (trovate.search || []).slice(0, 3)){
+      // primo guardiano: dev'essere l'opera di QUESTO autore
+      if (cognome && !String(cand.description || '').toLowerCase().includes(cognome)) continue;
+      const ent = await chiediWikidata({action:'wbgetentities', ids:cand.id, props:'labels'});
+      const etichette = ((ent.entities || {})[cand.id] || {}).labels || {};
+      for (const lingua of LINGUE_COPERTINA){
+        const titoloEstero = (etichette[lingua] || {}).value;
+        if (!titoloEstero || titoloEstero === titolo) continue;
+        const q = titoloEstero + (autore ? ' ' + autore : '');
+        const r = await fetch('https://openlibrary.org/search.json?limit=20'
+          + '&fields=key,title,author_name,cover_i&q=' + encodeURIComponent(q));
+        if (!r.ok) continue;
+        const docs = (await r.json()).docs || [];
+        // secondo guardiano: stesso autore
+        const buona = docs.find(d => d.cover_i
+          && (!cognome || (d.author_name || []).some(a => cognomeDi(a) === cognome)));
+        if (buona) return buona.cover_i;
+      }
+      return null;   // l'opera l'abbiamo trovata: se non ha copertine, non ne ha
+    }
+  } catch(e){}      // rete giù, Wikidata lenta: pazienza, resta il segnaposto
+  return null;
+}
+
 async function dettagliLibro(id){
   const campi = 'key,title,author_name,first_publish_year,number_of_pages_median,' +
                 'cover_i,ratings_average,ratings_count,subject,publisher,first_sentence';
@@ -1542,7 +1608,13 @@ async function dettagliLibro(id){
     if (!copertinaId && Array.isArray(w && w.covers)) copertinaId = w.covers.find(x => x > 0) || null;
   } catch(e){}
   if (!trama) trama = ((l.first_sentence || [])[0]) || '';
-  const img = copertinaLibro(copertinaId);
+  /* Open Library non ce l'ha: si prova a chiederla all'edizione straniera dello stesso
+     libro, passando da Wikidata per sapere quale sia. Una sola volta, qui. */
+  let img = copertinaLibro(copertinaId);
+  if (!img){
+    const daFuori = await copertinaDaAltraLingua(l.title, (l.author_name || [])[0]);
+    if (daFuori) img = copertinaLibro(daFuori);
+  }
   return {
     tmdbId:id, titolo:l.title || '', anno:String(l.first_publish_year || ''),
     uscita:l.first_publish_year ? String(l.first_publish_year)+'-01-01' : null,

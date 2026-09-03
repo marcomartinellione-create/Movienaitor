@@ -823,15 +823,30 @@ una edizione e nessuna copertina, e così spariva. **Un libro vero può avere es
 forma di uno scarto.** Perdere un libro che qualcuno sta cercando è molto peggio che
 mostrare una riga in più: la pertinenza la sa Open Library meglio di noi, e si tiene la sua.
 
-**La copertina dall'edizione straniera non si può prendere**, ed è stato verificato:
-l'edizione italiana e quella spagnola dello stesso libro sono **due opere distinte** nei
-dati di Open Library (`OL27720175W` e `OL7922583W`), senza nessun collegamento da seguire —
-`editions.json` dell'italiana dà una sola edizione e zero copertine. Agganciarle per titolo
-non si può (i titoli cambiano con la lingua) e agganciarle per autore + anno è **pericoloso**:
-il record italiano dichiara 2014, che è l'anno di quella ristampa, e l'unico libro di
-Saramago del 2014 è *As intermitências da morte* — si sarebbe attaccata la copertina
-sbagliata, che è peggio di nessuna copertina. Per la coda lunga l'unica strada che funziona
-davvero resta la **copertina scelta a mano**, non ancora fatta.
+**La copertina dall'edizione straniera: il ponte Wikidata.** Open Library **non collega**
+le edizioni in lingue diverse dello stesso libro — l'edizione italiana e quella spagnola
+sono due opere distinte nei suoi dati (`OL27720175W` e `OL7922583W`), e ISBN, codice
+edizione e scheda dell'opera non danno niente. **Wikidata invece sa che sono la stessa
+opera**, e ne conosce il titolo in ogni lingua. Quindi `copertinaDaAltraLingua()` fa:
+
+    titolo italiano → Wikidata (l'opera) → titolo originale → Open Library → copertina
+
+Gratis, senza chiave (`origin=*` sull'API di Wikidata, se no il browser blocca la
+risposta), e **solo per i libri che una copertina non ce l'hanno**, nel momento in cui si
+aprono o si aggiungono — mai nell'elenco della ricerca, dove sarebbero tre richieste per
+riga a ogni pausa di battitura. Misurato: **14 titoli italiani su 15**, ~0,9 s a libro; il
+quindicesimo era un libro inventato apposta, e giustamente non ha trovato niente.
+
+Due guardiani contro la copertina sbagliata: l'opera di Wikidata si accetta solo se la sua
+descrizione **nomina l'autore** («romanzo scritto da José Saramago»), e la scheda di Open
+Library solo se è **dello stesso autore**.
+
+**La regola è quella LARGA, ed è una scelta consapevole di Marco.** Recupera di più (14 su
+15 invece di 7 su 10 della regola stretta) ma ogni tanto la copertina è quella di
+un'antologia che contiene il libro, o di un «opere scelte» — succede per *Il visconte
+dimezzato* e *La casa in collina*. Il libro sbagliato è comunque sempre dello scrittore
+giusto. La regola stretta — pretendere che il titolo trovato **cominci** con il titolo
+tradotto — è a due righe di distanza, se un giorno si cambia idea.
 
 **Google Books è stato provato e scartato.** Ha una copertura migliore, ma **senza chiave
 risponde 429**: la quota anonima è condivisa fra tutti quelli che chiamano senza chiave e
