@@ -599,6 +599,28 @@
   .sg-ig .chi{flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; align-items:flex-start}
   .sg-ig .nome{color:var(--oro2); font-size:15px}
   .sg-ig .come{color:var(--dim); font-size:11.5px; line-height:1.45}
+  /* ── host: pronti alla visione ── */
+  .pp-corpo{flex:1; overflow-y:auto; padding:14px 14px calc(20px + env(safe-area-inset-bottom))}
+  .arch-strumenti{display:flex; gap:8px; align-items:center; margin-bottom:8px}
+  .arch-strumenti .inp{flex:1; min-width:0}
+  .arch-riga{display:flex; gap:11px; align-items:flex-start; padding:10px;
+    border:1px solid var(--linea); border-radius:12px; background:var(--bg2); margin-bottom:9px}
+  .arch-riga.pronto{border-color:var(--oro-dim); background:var(--sel)}
+  .arch-thumb{flex:none; width:46px; height:69px; object-fit:cover; border-radius:6px;
+    background:var(--card)}
+  .arch-info{flex:1; min-width:0}
+  .arch-info h5{margin:0 0 2px; font-size:14.5px; color:var(--testo); font-weight:600}
+  .arch-dove{margin-top:5px; display:flex; flex-wrap:wrap; gap:4px; font-size:11.5px}
+  .arch-flag{flex:none; color:var(--oro2); font-size:16px; padding-top:2px}
+  .sg-card{border:1px solid var(--linea); border-radius:12px; background:var(--bg2);
+    padding:11px 12px; margin-bottom:9px}
+  .sg-card.chiusa{opacity:.55}
+  .sg-cap{display:flex; gap:9px; align-items:flex-start}
+  .sg-cap .main{flex:1; min-width:0}
+  .sg-tit{font-size:14.5px; color:var(--testo); font-weight:600}
+  .sg-desc{margin-top:7px; padding-top:7px; border-top:1px dashed var(--linea);
+    color:var(--dim); font-size:13px; white-space:pre-wrap}
+  .sg-az{display:flex; gap:9px; align-items:center; margin-top:9px}
   /* Il manuale a schermo intero. Iframe e non un div: il manuale è una pagina sua, con
      un suo :root e un suo body — riversata qui dentro ridipingerebbe l'app. */
   .manuale-vista{position:fixed; inset:0; z-index:90; display:flex; flex-direction:column;
@@ -819,6 +841,7 @@ const S = { treeUri:null, config:{}, profili:[], me:null, storico:[], modo:'film
   listaVista:'daVedere',
   presenti:new Set(), fSala:{ durata:null, genere:[], regista:'' }, proiettato:null, tuttiSala:[],
   segnalazioni:[], segnStato:{}, segnEliminate:[], aggiornamento:null,
+  host:false, archivioPronti:new Set(), archivioDove:{}, archQ:'', archSoloDaFare:false,
   providersCache:new Map(),   // tmdbId → [servizi streaming] da TMDB (sessione)
   trofeiCache:new Map(),      // id gioco → [trofei] da RAWG (sessione: richieste care)
   // consigli «Per te»
@@ -1238,6 +1261,8 @@ async function caricaCartella(treeUri){
   await caricaRecensioniMobile();
   await caricaRecensioniAltrove();
   await caricaSegnalazioniM();
+  await caricaArchivioM();
+  S.host = LS.get('host') === '1';
   controllaAggiornamento();   // non blocca l'avvio
 
   LS.set('tree', treeUri);
@@ -3449,6 +3474,11 @@ async function apriImpostazioni(){
     <div id="i-costanti"></div>
     <button class="linkbtn" id="i-salva-cost">Salva i valori</button>
 
+    <div class="etich" style="margin-top:16px">MODALITÀ HOST <span style="color:var(--dim);letter-spacing:0">— chi prepara le serate: l'elenco di tutto quello che il gruppo ha chiesto, con dove trovarlo.</span></div>
+    <div class="campo-r"><label>Attiva</label>
+      <button class="pchip" id="i-host">${S.host ? '✓ attiva' : 'spenta'}</button></div>
+    <div id="i-host-voci"></div>
+
     <div class="etich" style="margin-top:16px">CONSIGLI</div>
     <div class="campo-r"><label>Film esclusi</label><button class="inp" id="i-esclusi">🚫 Gestisci</button></div>
     <div class="etich" style="margin-top:16px">VERSIONE</div>
@@ -3516,6 +3546,26 @@ async function apriImpostazioni(){
     try { await salvaConfig(); }
     catch(e){ return toast('Non riuscito: '+e.message, true); }
     disegnaSalaM(); toast('Valori salvati');
+  };
+
+  // ── host ──
+  const vociHost = () => {
+    const box = $('#i-host-voci'); if (!box) return;
+    box.innerHTML = S.host
+      ? `<div class="campo-r"><label>Pronti alla visione</label><button class="inp" id="i-arch">🗄 Apri</button></div>
+         ${segnInterne() ? `<div class="campo-r"><label>Segnalazioni del gruppo</label><button class="inp" id="i-segn">🐞 Apri</button></div>` : ''}`
+      : '';
+    if ($('#i-arch')) $('#i-arch').onclick = pannelloArchivioM;
+    if ($('#i-segn')) $('#i-segn').onclick = pannelloSegnalazioniM;
+  };
+  vociHost();
+  $('#i-host').onclick = () => {
+    S.host = !S.host;
+    LS.set('host', S.host ? '1' : '');
+    const b = $('#i-host');
+    b.textContent = S.host ? '✓ attiva' : 'spenta';
+    b.classList.toggle('con', S.host);
+    vociHost();
   };
 
   $('#i-esclusi').onclick = modaleScartatiM;
@@ -4127,6 +4177,233 @@ function wlInserisci(v){
 const doveChipM = (label, kind, on) => `<button type="button" class="pchip${on?' con':''}" data-dove="${kind}" data-val="${esc(label)}">${on?'✓ ':''}${esc(label)}</button>`;
 function doveTestoM(d){ d=d||{}; const p=[...(d.streaming||[]),...(d.fisico||[])]; let s=p.map(x=>`<span class="pchip con" style="pointer-events:none">${esc(x)}</span>`).join(' '); if(d.percorso) s+=` <span class="pchip">📂 ${esc((d.percorso.split(/[\\/]/).pop())||d.percorso)}</span>`; return s?('📺 '+s):''; }
 const miaRecMobile = id => S.recensioni.find(r => r.autore===S.me.slug && r.tmdbId===id);
+
+/* ══════════════════ HOST: PRONTI ALLA VISIONE ══════════════════ */
+// Stesso archivio.json del desktop, stessa forma: {pronti:[id], dove:{id:{...}}}.
+// Ogni categoria ha il suo, nella propria sottocartella.
+async function caricaArchivioM(){
+  S.archivioPronti = new Set(); S.archivioDove = {};
+  const txt = await fsLeggiPercorso(PS('archivio.json'));
+  if (!txt) return;
+  try {
+    const j = JSON.parse(txt);
+    if (Array.isArray(j.pronti)) S.archivioPronti = new Set(j.pronti);
+    if (j.dove && typeof j.dove === 'object') S.archivioDove = j.dove;
+  } catch(e){}
+}
+async function salvaArchivioM(){
+  await fsScriviPercorso(PS('archivio.json'),
+    JSON.stringify({pronti:[...S.archivioPronti], dove:S.archivioDove}, null, 2));
+}
+
+// Le voci: un titolo per riga, con chi lo vuole (come sul PC, deduplicato).
+function vociArchivioM(){
+  const mappa = new Map();
+  for (const p of profiliVisibili()) for (const v of listaDi(p)){
+    if (!v.tmdbId || !entryAttiva(v, p.slug)) continue;
+    let e = mappa.get(v.tmdbId);
+    if (!e){ e = {film:v, chi:[]}; mappa.set(v.tmdbId, e); }
+    e.chi.push(p.slug);
+  }
+  let voci = [...mappa.values()];
+  if (S.archSoloDaFare) voci = voci.filter(e => !S.archivioPronti.has(e.film.tmdbId));
+  const q = (S.archQ || '').trim().toLowerCase();
+  if (q) voci = voci.filter(e => String(e.film.titolo || '').toLowerCase().includes(q));
+  voci.sort((a, b) => String(a.film.titolo).localeCompare(String(b.film.titolo)));
+  return {voci, totale: mappa.size};
+}
+
+const nomeDiM = slug => (S.profili.find(p => p.slug === slug) || {}).nome || slug;
+
+function pannelloArchivioM(){
+  apriPannelloPieno('🗄 Pronti alla visione', `
+    <div class="arch-strumenti">
+      <input type="search" class="inp" id="ar-q" placeholder="cerca un titolo…" value="${esc(S.archQ||'')}">
+      <button class="pchip${S.archSoloDaFare ? ' con' : ''}" id="ar-filtro">${S.archSoloDaFare ? '✓ ' : ''}da preparare</button>
+    </div>
+    <div class="meta" id="ar-conta" style="margin:2px 0 10px"></div>
+    <div id="ar-lista"></div>`);
+  disegnaArchivioM();
+  $('#ar-q').oninput = e => { S.archQ = e.target.value; disegnaArchivioM(); };
+  $('#ar-filtro').onclick = () => {
+    S.archSoloDaFare = !S.archSoloDaFare;
+    const b = $('#ar-filtro');
+    b.classList.toggle('con', S.archSoloDaFare);
+    b.textContent = (S.archSoloDaFare ? '✓ ' : '') + 'da preparare';
+    disegnaArchivioM();
+  };
+}
+
+function disegnaArchivioM(){
+  const box = $('#ar-lista'); if (!box) return;
+  const {voci, totale} = vociArchivioM();
+  const conta = $('#ar-conta');
+  if (conta) conta.textContent = voci.length === totale ? `${totale} titoli` : `${voci.length} di ${totale}`;
+  box.innerHTML = voci.map(e => {
+    const v = e.film, pronto = S.archivioPronti.has(v.tmdbId);
+    const dove = pronto ? doveTestoM(S.archivioDove[v.tmdbId]) : '';
+    return `<div class="arch-riga${pronto ? ' pronto' : ''}" data-arch="${v.tmdbId}">
+      ${v.posterUrl ? `<img class="arch-thumb" src="${esc(v.posterUrl)}" alt="" loading="lazy">`
+                    : '<div class="arch-thumb"></div>'}
+      <div class="arch-info">
+        <h5>${esc(v.titolo)}</h5>
+        <div class="meta">${esc(v.anno || '')} · ${fmtMin(v.durata)}</div>
+        <div class="meta">🎟 ${e.chi.map(x => esc(nomeDiM(x))).join(', ')}</div>
+        ${dove ? `<div class="arch-dove">${dove}</div>` : ''}
+      </div>
+      <span class="arch-flag">${pronto ? '✓' : '⚑'}</span>
+    </div>`;
+  }).join('') || '<div class="vuoto">Niente da preparare.</div>';
+
+  box.querySelectorAll('.arch-riga').forEach(el => {
+    const id = parseInt(el.dataset.arch, 10);
+    const voce = voci.find(x => x.film.tmdbId === id);
+    el.onclick = async () => {
+      if (S.archivioPronti.has(id)){
+        // già pronto: si tocca per correggere il dove, non per spegnerlo per sbaglio
+        return modaleDoveProntoM(id, voce.film.titolo);
+      }
+      S.archivioPronti.add(id);
+      try { await salvaArchivioM(); } catch(err){ return toast('Non riuscito: '+err.message, true); }
+      modaleDoveProntoM(id, voce.film.titolo);
+    };
+  });
+}
+
+// Dove si trova un titolo segnato pronto. Il percorso sul PC si può scrivere anche da
+// qui — il dato è condiviso — ma aprirlo no: è una cartella di un altro dispositivo.
+function modaleDoveProntoM(id, titolo){
+  const dv = S.archivioDove[id] = S.archivioDove[id] || {streaming:[], fisico:[], percorso:''};
+  apriModale(`
+    <h3>Dove trovare «${esc(titolo)}»</h3>
+    <div class="etich">STREAMING <button class="linkbtn" id="dp-rileva" style="padding:2px 4px">🔄 rileva</button></div>
+    <div class="compagnia" id="dp-strm">${DOVE_STREAMING.map(x=>doveChipM(x,'streaming',(dv.streaming||[]).includes(x))).join('')}</div>
+    <div class="etich" style="margin-top:12px">FISICO</div>
+    <div class="compagnia" id="dp-fis">${DOVE_FISICO.map(x=>doveChipM(x,'fisico',(dv.fisico||[]).includes(x))).join('')}</div>
+    <div class="etich" style="margin-top:12px">PERCORSO SUL PC</div>
+    <input type="text" class="inp" id="dp-perc" value="${esc(dv.percorso||'')}" placeholder="facoltativo" style="width:100%">
+    <div class="m-az">
+      <button class="ghost" id="dp-togli">Non è pronto</button>
+      <button class="primario" id="dp-ok">Fatto</button>
+    </div>`);
+  const clic = (sel, chiave) => { $(sel).onclick = e => {
+    const b = e.target.closest('[data-dove]'); if (!b) return;
+    const v = b.dataset.val, arr = dv[chiave] = dv[chiave] || [];
+    const i = arr.indexOf(v); if (i >= 0) arr.splice(i, 1); else arr.push(v);
+    const on = arr.includes(v);
+    b.classList.toggle('con', on); b.textContent = (on ? '✓ ' : '') + v;
+  }; };
+  clic('#dp-strm', 'streaming'); clic('#dp-fis', 'fisico');
+  $('#dp-rileva').onclick = async () => {
+    const b = $('#dp-rileva'); b.textContent = '⏳';
+    const sv = await providersFilm(id);
+    b.textContent = '🔄 rileva';
+    const noti = sv.filter(x => DOVE_STREAMING.includes(x));
+    if (!noti.length) return toast('Nessun abbonamento trovato', true);
+    dv.streaming = [...new Set([...(dv.streaming||[]), ...noti])];
+    $('#dp-strm').innerHTML = DOVE_STREAMING.map(x=>doveChipM(x,'streaming',(dv.streaming||[]).includes(x))).join('');
+    clic('#dp-strm', 'streaming');
+    toast('Rilevati: '+noti.join(', '));
+  };
+  $('#dp-togli').onclick = async () => {
+    S.archivioPronti.delete(id); delete S.archivioDove[id];
+    try { await salvaArchivioM(); } catch(e){ return toast('Non riuscito: '+e.message, true); }
+    chiudiModale(); disegnaArchivioM();
+  };
+  $('#dp-ok').onclick = async () => {
+    dv.percorso = $('#dp-perc').value.trim();
+    try { await salvaArchivioM(); } catch(e){ return toast('Non riuscito: '+e.message, true); }
+    chiudiModale(); disegnaArchivioM();
+  };
+}
+
+/* ══════════════════ HOST: GESTIONE DELLE SEGNALAZIONI ══════════════════ */
+// Lo stato lo scrive solo l'host, in segnalazioni-stato.json: come sul desktop.
+async function salvaStatoSegnM(){
+  await fsScriviPercorso('segnalazioni-stato.json',
+    JSON.stringify({stato:S.segnStato, eliminate:S.segnEliminate}, null, 2));
+}
+function pannelloSegnalazioniM(){
+  apriPannelloPieno('🐞 Segnalazioni del gruppo', '<div id="sg-host"></div>');
+  disegnaSegnalazioniHostM();
+}
+// Stessa importanza del desktop: priorità decisa dall'host, poi tipo, poi gravità.
+const SEGN_PESO_TIPO = {bug:30, suggerimento:20, idea:10};
+const SEGN_PESO_GRAV = {blocca:9, rallenta:6, minore:3};
+const SEGN_PRIORITA = {alta:300, media:200, bassa:100};
+const prioritaSegnM = s => (S.segnStato[s.id] || {}).priorita || null;
+function punteggioSegnM(s){
+  const pr = prioritaSegnM(s);
+  return (pr ? SEGN_PRIORITA[pr] || 0 : 0)
+    + (SEGN_PESO_TIPO[s.tipo] || 0)
+    + (s.gravita ? SEGN_PESO_GRAV[s.gravita] || 0 : 0);
+}
+function disegnaSegnalazioniHostM(){
+  const box = $('#sg-host'); if (!box) return;
+  const via = new Set(S.segnEliminate);
+  const chiusa = s => ['fatto','scartato'].includes(statoSegnM(s));
+  const voci = S.segnalazioni.filter(s => !via.has(s.id))
+    .sort((a, b) => (chiusa(a) - chiusa(b)) || (punteggioSegnM(b) - punteggioSegnM(a))
+      || String(b.creato||'').localeCompare(String(a.creato||'')));
+  box.innerHTML = voci.map(s => `
+    <div class="sg-card${chiusa(s) ? ' chiusa' : ''}" data-sg="${esc(s.id)}">
+      <div class="sg-cap">
+        <span>${(SEGN_TIPI[s.tipo] || {ic:'•'}).ic}</span>
+        <div class="main">
+          <div class="sg-tit">${esc(s.titolo)}</div>
+          <div class="meta">${esc(s.autore)} · ${esc(String(s.creato||'').slice(0,10))} · v${esc(s.versione||'')}${s.contesto ? ' · «'+esc(s.contesto)+'»' : ''}</div>
+        </div>
+      </div>
+      ${s.descrizione ? `<div class="sg-desc">${esc(s.descrizione)}</div>` : ''}
+      <div class="sg-az">
+        <select class="inp" data-stato="${esc(s.id)}">
+          ${Object.keys(SEGN_STATI).map(k => `<option value="${k}"${statoSegnM(s)===k?' selected':''}>${SEGN_STATI[k]}</option>`).join('')}
+        </select>
+        <select class="inp" data-prio="${esc(s.id)}">
+          <option value="">priorità</option>
+          ${Object.keys(SEGN_PRIORITA).map(k => `<option value="${k}"${prioritaSegnM(s)===k?' selected':''}>${k}</option>`).join('')}
+        </select>
+        <button class="linkbtn" data-del="${esc(s.id)}">elimina</button>
+      </div>
+    </div>`).join('') || '<div class="vuoto">Nessuna segnalazione. 🎉</div>';
+
+  box.querySelectorAll('[data-stato]').forEach(sel => sel.onchange = async e => {
+    const id = sel.dataset.stato;
+    S.segnStato[id] = {...(S.segnStato[id] || {}), stato: e.target.value};
+    try { await salvaStatoSegnM(); } catch(err){ return toast('Non riuscito: '+err.message, true); }
+    disegnaSegnalazioniHostM();
+  });
+  box.querySelectorAll('[data-prio]').forEach(sel => sel.onchange = async e => {
+    const id = sel.dataset.prio;
+    S.segnStato[id] = {...(S.segnStato[id] || {}), priorita: e.target.value || null};
+    try { await salvaStatoSegnM(); } catch(err){ return toast('Non riuscito: '+err.message, true); }
+    disegnaSegnalazioniHostM();
+  });
+  box.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    S.segnEliminate = [...S.segnEliminate, b.dataset.del];
+    try { await salvaStatoSegnM(); } catch(err){ return toast('Non riuscito: '+err.message, true); }
+    toast('Segnalazione eliminata'); disegnaSegnalazioniHostM();
+  });
+}
+
+/* Un pannello a schermo intero, come il manuale: le due sezioni dell'host non stanno
+   nella barra dei quattro segmenti — su un telefono sei non ci starebbero. */
+function apriPannelloPieno(titolo, html){
+  let v = $('#pannello-pieno');
+  if (!v){
+    v = document.createElement('div');
+    v.id = 'pannello-pieno';
+    v.className = 'manuale-vista';
+    document.body.appendChild(v);
+  }
+  v.innerHTML = `<div class="testata">
+      <span class="titolo">${titolo}</span>
+      <button class="ghost" id="pp-chiudi" style="padding:7px 13px; font-size:12.5px">Chiudi</button>
+    </div><div class="pp-corpo">${html}</div>`;
+  $('#pp-chiudi').onclick = () => v.classList.remove('aperta');
+  void v.offsetWidth;
+  v.classList.add('aperta');
+}
 
 function setPan(pan){
   S.pan = pan;

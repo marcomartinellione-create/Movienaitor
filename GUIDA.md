@@ -222,7 +222,7 @@ Consente di marcare i generi preferiti e quelli da evitare. Il parametro **non m
 **In sintesi.** L'applicazione Android replica le funzioni della versione desktop: elenco, Sala, recensioni e suggerimenti. Al primo avvio è richiesta l'indicazione della **medesima cartella** sincronizzata sul dispositivo.
 
 ### Differenze rispetto alla versione desktop
-La configurazione delle chiavi di accesso è disponibile **esclusivamente da desktop**. Tutte le altre funzioni — selezione dei presenti, registrazione delle sessioni, elenchi, recensioni, categorie di partecipazione, gruppi — sono operative su entrambe le piattaforme.
+Le due versioni espongono le **stesse funzioni**: chiavi di accesso, profilo, coefficienti della formula, modalità host con «Pronti alla visione» e gestione delle segnalazioni sono disponibili su entrambe. Sul telefono le due sezioni dell'host non stanno nella barra ma si aprono da ⚙ Impostazioni.
 
 In orientamento orizzontale, e su tablet, la Sala adotta una **disposizione a due colonne**: schermo a sinistra, partecipanti e riga di stato a destra.
 

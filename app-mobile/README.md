@@ -8,6 +8,10 @@ il tuo `segnalazioni/<slug>.json` e il tuo `consigli/<slug>.json` (regola anti-c
 
 Quattro sezioni: **🎬 Sala**, **🔖 Lista**, **📝 Recensioni**, **✨ Per te**, più il pulsante **🐞 Segnala**.
 
+Da ⚙ Impostazioni si fa tutto il resto, come sul desktop: chiavi delle librerie
+(del gruppo e personali), profilo, coefficienti della formula e **modalità host** — con
+«Pronti alla visione» e la gestione delle segnalazioni, che si aprono a schermo intero.
+
 - **Sala** — stessa logica del desktop: uno **schermo cinema** (proporzione 16/9 come il
   desktop) con il **sipario animato** che si apre sul film, il rango e il punteggio; sotto,
   le **poltrone in velluto** (una per profilo + posti liberi per utenti futuri, tocca per
@@ -22,14 +26,14 @@ Quattro sezioni: **🎬 Sala**, **🔖 Lista**, **📝 Recensioni**, **✨ Per t
   rivederli. Ricerca e filtri agiscono sulla sezione attiva.
 - **📝 Recensioni** — nell'editor, «dove vederlo» rileva i **servizi streaming** da TMDB
   (Italia): all'apertura si spuntano da soli se il campo è vuoto, o col tasto **🔄 rileva**.
-  Serve la chiave TMDB in `config.json` (impostata dal PC).
+  Serve la chiave TMDB, che ora si mette anche dal telefono (⚙ Impostazioni).
 - **✨ Per te** — consigli dai tuoi voti: profilo del gusto ricalcolato ogni volta dalle
   recensioni (le recenti pesano di più), indice di compatibilità con le fasce «Molto in
   linea / Da provare / Forse» e il perché. Filtri nel pannello ≡ (genere, anno, durata,
   voto, «solo dove posso vederlo»), aggiornamento automatico. Gli esclusi si gestiscono da
   ⚙ → «Gestisci». Serve la chiave TMDB e almeno 3 recensioni. Vedi CONCEPT-consigli.md.
-- **🐞 Segnala** — bug / suggerimenti / idee: finiscono in `segnalazioni/<slug>.json`,
-  l'host li gestisce dal PC. Ognuno rivede lo stato delle proprie e può ritirarle.
+- **🐞 Segnala** — bug / suggerimenti / idee. Ognuno rivede lo stato delle proprie e può
+  ritirarle; chi è host le gestisce da ⚙ Impostazioni, anche dal telefono.
 
 Al riavvio **si rientra nell'ultimo profilo senza richiedere la password**: si richiede
 solo quando si **cambia** utente (col 👤). La password è comunque solo anti-errore (in
@@ -145,4 +149,4 @@ tantum) — NON serve rifarlo.
   ha sempre il manuale della versione che sta compilando. Sul desktop fa lo stesso
   `electron/copia-html.js`.
 - **Locandine**: non vengono scaricate da mobile (restano gli URL remoti); ci pensa il PC.
-- **Chiavi TMDB/OMDb**: lette da `config.json` nella cartella (si impostano dal PC).
+- **Chiavi**: da ⚙ Impostazioni come sul desktop — quelle del gruppo in `config.json`, quelle personali nel proprio profilo (prevalgono). Sceglie `chiaveAPI()`.
