@@ -358,6 +358,17 @@ header .spazio{flex:1; min-width:0}
 /* il volume scelto lascia il suo posto vuoto */
 :root[data-modo="libri"] .schermo.aperto .dorso.preso{opacity:0}
 
+/* le quattro categorie di ciascuno, in Impostazioni */
+.modi-mii{display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 4px}
+.modo-flag{display:flex; align-items:center; gap:7px; cursor:pointer; user-select:none;
+  border:1px solid var(--bordo); border-radius:9px; padding:7px 12px 7px 9px;
+  background:var(--bg2); color:var(--dim2); transition:border-color .15s, color .15s}
+.modo-flag:hover{border-color:var(--velluto3)}
+.modo-flag.on{border-color:var(--oro); color:var(--crema); background:var(--velluto2)}
+.modo-flag input{accent-color:var(--oro); margin:0}
+.modo-flag .mf-ic{font-size:15px; line-height:1}
+.modo-flag .mf-nome{font-size:13.5px}
+
 /* ── il volume che vola ──
    Due facce e nient'altro: la costa e la copertina, messe UNA DI FIANCO ALL'ALTRA. La
    costa sta fuori dal riquadro, appoggiata al suo bordo sinistro; la copertina si apre
@@ -1248,8 +1259,9 @@ header .spazio{flex:1; min-width:0}
           <button class="bottone piccolo secondario" id="imp-scartati">🚫 Gestisci esclusi</button>
         </div>
         <div class="campo"><label class="campo-check"><input type="checkbox" id="imp-host"> <span>Modalità host</span></label></div>
-        <div class="campo"><label class="campo-check"><input type="checkbox" id="imp-modo-box"> <span>Casella «film / serie TV» in basso a destra</span></label>
-          <div class="aiuto">Spenta, l'app torna esattamente com'era: solo film, nessuna traccia delle serie.</div></div>
+        <div class="campo"><label>Di cosa ti occupi<span class="aiuto-q" tabindex="0">?<span class="tip">Le categorie che ti interessano. Quelle che togli spariscono dalla tua app, e tu sparisci da loro per gli altri: niente poltrona in Sala e la tua lista non entra nel conto di cosa si fa stasera. Chi non legge, in biblioteca non c'è.</span></span></label>
+          <div class="modi-mii" id="imp-modi"></div>
+          <div class="aiuto">Con una categoria sola, il selettore in basso a destra sparisce e l'app è quella di prima.</div></div>
         <div class="campo"><label>Cartella collegata</label><div class="aiuto" id="imp-cartella">—</div></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px">
           <button class="bottone piccolo secondario" id="imp-cambia-cartella">Cambia cartella</button>
@@ -1600,16 +1612,45 @@ async function cambiaModo(m){
 }
 function aggiornaModoUI(){
   if (!$('#btn-modo')) return;
-  $('#btn-modo').hidden = !S.modoVisibile;
+  // il selettore compare solo se c'è davvero qualcosa fra cui scegliere: con una
+  // categoria sola l'app è quella di prima, senza traccia delle altre
+  $('#btn-modo').hidden = mieiModi().length < 2;
   $('#modo-ic').textContent = datiModo(S.modo).ic;
   $('#modo-nome').textContent = datiModo(S.modo).nome;
 }
+/* Le quattro bandierine delle categorie. Stanno nel mio profilo, quindi le scrivo solo
+   io e le leggono tutti: è così che gli altri sanno di non mettermi una poltrona in
+   biblioteca se non leggo. */
+function disegnaModiMiei(){
+  const box = $('#imp-modi'); if (!box) return;
+  const miei = new Set(mieiModi());
+  box.innerHTML = MODI.map(m => `<label class="modo-flag${miei.has(m.id) ? ' on' : ''}">
+      <input type="checkbox" data-modo="${m.id}"${miei.has(m.id) ? ' checked' : ''}>
+      <span class="mf-ic">${m.ic}</span><span class="mf-nome">${esc(m.nome)}</span></label>`).join('');
+  box.querySelectorAll('input[data-modo]').forEach(cb => cb.onchange = async () => {
+    const scelti = [...box.querySelectorAll('input[data-modo]')].filter(x => x.checked).map(x => x.dataset.modo);
+    if (!scelti.length){
+      // senza nessuna categoria l'app non avrebbe niente da mostrare
+      cb.checked = true;
+      return toast('Almeno una categoria deve restare', true);
+    }
+    const mio = mioProfilo(); if (!mio) return;
+    mio.modi = MODI.map(m => m.id).filter(id => scelti.includes(id));   // sempre nello stesso ordine
+    try { await salvaMioProfilo(); } catch(e){ return toast('Non riuscito: '+e.message, true); }
+    disegnaModiMiei();
+    aggiornaModoUI();
+    // se mi sono tolto la categoria in cui sono, mi sposto nella prima che mi resta
+    if (!scelti.includes(S.modo)) await cambiaModo(scelti[0]);
+    else disegnaTutto();
+  });
+}
+
 function modaleModo(){
   const scheda = m => `<button class="modo-card${S.modo===m.id?' on':''}" data-m="${m.id}">
       <div class="mc-ic">${m.ic}</div><div class="mc-nome">${esc(m.nome)}</div><div class="mc-desc">${esc(m.desc)}</div></button>`;
   apriModale(`<h3>Cosa si guarda</h3>
     <div class="modo-scelta">
-      ${MODI.map(scheda).join('')}
+      ${MODI.filter(m => mieiModi().includes(m.id)).map(scheda).join('')}
     </div>
     <div class="aiuto">Ogni modalità ha le sue liste, il suo storico, le sue recensioni e i suoi
       consigli. Si cambia quando vuoi: i dati dell'altra restano dove sono.</div>
@@ -1636,7 +1677,6 @@ const S = {
   demo:false,
   modo:'film',           // 'film' | 'serie' — vedi CONCEPT-serie.md
   gruppo:null,           // nome del gruppo di visione attivo (null = tutti)
-  modoVisibile:true,     // casella delle modalità a video: spenta, l'app è quella di prima
   host:false,            // questo dispositivo è l'host (tab Archivio)
   me:null,               // slug
   profili:[],            // [{nome, slug, creato, colore, lista:[…]}]
@@ -1722,6 +1762,17 @@ const CHIAVI_MODO = {
 const chiaviModo = () => CHIAVI_MODO[S.modo] || CHIAVI_MODO.film;
 const datiModo = id => MODI.find(m => m.id === id) || MODI[0];
 const modoValido = id => MODI.some(m => m.id === id) ? id : MODI[0].id;
+/* A quali categorie partecipa una persona. Il campo `modi` sta nel suo profilo, che è
+   l'unico file che scrive lei. Se manca — tutti i profili scritti prima di oggi — vale
+   «partecipo a tutto», così non cambia niente per chi non ci mette mano. Una lista vuota
+   sarebbe un profilo che non partecipa a niente: si tratta come se mancasse. */
+const modiDi = p => {
+  const suoi = (p && Array.isArray(p.modi)) ? p.modi.filter(id => MODI.some(m => m.id === id)) : null;
+  return (suoi && suoi.length) ? suoi : MODI.map(m => m.id);
+};
+const partecipa = (p, modo = S.modo) => modiDi(p).includes(modo);
+// le categorie che vedo io: il selettore in basso mostra solo queste
+const mieiModi = () => modiDi(mioProfilo());
 const inSerie = () => S.modo === 'serie';
 const inGiochi = () => S.modo === 'giochi';
 const inLibri = () => S.modo === 'libri';
@@ -1785,9 +1836,12 @@ function visibiliInSala(){
   if (S.me) dentro.add(S.me);
   return dentro;
 }
+/* Chi compare in questa categoria: chi è nel gruppo attivo E partecipa alla categoria.
+   Passano di qui la platea, l'archivio e il conto dei generi, quindi chi ha tolto i
+   videogiochi non ha proprio una poltrona quando si gioca. */
 const profiliVisibili = () => {
   const v = visibiliInSala();
-  return v ? S.profili.filter(p => v.has(p.slug)) : S.profili;
+  return S.profili.filter(p => (!v || v.has(p.slug)) && partecipa(p));
 };
 
 const mioProfilo = () => S.profili.find(p => p.slug === S.me);
@@ -2090,10 +2144,20 @@ async function chiediWikidata(params){
    scrittore giusto.
 
    Costa tre richieste, ma solo per i libri che una copertina non ce l'hanno. */
-const LINGUE_COPERTINA = ['en', 'pt', 'es', 'fr', 'de'];
+/* L'inglese per primo: l'edizione americana è quasi sempre quella meglio schedata su
+   Open Library, sia per la copertina che per il numero di pagine. */
+const LINGUE_ESTERE = ['en', 'pt', 'es', 'fr', 'de'];
 
-async function copertinaDaAltraLingua(titolo, autore){
-  if (!titolo) return null;
+/* Torna quello che l'edizione straniera sa e quella italiana no: `{cover, pagine}`.
+   Le PAGINE non sono un dettaglio: sono la «lunghezza» con cui la Sala filtra i libri,
+   e un libro senza pagine è invisibile al filtro «lunghezza massima».
+   La copertina si prende dalla prima scheda buona che ce l'ha; le pagine invece dalla
+   scheda PIÙ FAMOSA fra quelle buone — quella con più ristampe — perché è la più
+   probabile da citare. Possono venire da due schede diverse: sono comunque lo stesso
+   libro dello stesso autore. */
+async function datiDaAltraLingua(titolo, autore){
+  const vuoto = {cover:null, pagine:null};
+  if (!titolo) return vuoto;
   const cognome = cognomeDi(autore);
   try {
     const trovate = await chiediWikidata({action:'wbsearchentities', search:titolo,
@@ -2103,23 +2167,35 @@ async function copertinaDaAltraLingua(titolo, autore){
       if (cognome && !String(cand.description || '').toLowerCase().includes(cognome)) continue;
       const ent = await chiediWikidata({action:'wbgetentities', ids:cand.id, props:'labels'});
       const etichette = ((ent.entities || {})[cand.id] || {}).labels || {};
-      for (const lingua of LINGUE_COPERTINA){
+      const raccolto = {cover:null, pagine:null};
+      for (const lingua of LINGUE_ESTERE){
         const titoloEstero = (etichette[lingua] || {}).value;
         if (!titoloEstero || titoloEstero === titolo) continue;
-        const q = titoloEstero + (autore ? ' ' + autore : '');
+        // solo il COGNOME: nei record l'autore è scritto in mille modi («C. Pavese»,
+        // «Pavese, Cesare»), e come testo di ricerca cambiava il risultato
+        const q = titoloEstero + (cognome ? ' ' + cognome : '');
         const r = await fetch('https://openlibrary.org/search.json?limit=20'
-          + '&fields=key,title,author_name,cover_i&q=' + encodeURIComponent(q));
+          + '&fields=key,title,author_name,cover_i,number_of_pages_median,edition_count'
+          + '&q=' + encodeURIComponent(q));
         if (!r.ok) continue;
         const docs = (await r.json()).docs || [];
         // secondo guardiano: stesso autore
-        const buona = docs.find(d => d.cover_i
-          && (!cognome || (d.author_name || []).some(a => cognomeDi(a) === cognome)));
-        if (buona) return buona.cover_i;
+        const buone = docs.filter(d => !cognome || (d.author_name || []).some(a => cognomeDi(a) === cognome));
+        if (!raccolto.cover){
+          const conCop = buone.find(d => d.cover_i);
+          if (conCop) raccolto.cover = conCop.cover_i;
+        }
+        if (!raccolto.pagine){
+          const conPag = buone.filter(d => d.number_of_pages_median > 0)
+            .sort((a, b) => (b.edition_count || 0) - (a.edition_count || 0))[0];
+          if (conPag) raccolto.pagine = conPag.number_of_pages_median;
+        }
+        if (raccolto.cover && raccolto.pagine) return raccolto;
       }
-      return null;   // l'opera l'abbiamo trovata: se non ha copertine, non ne ha
+      return raccolto;   // l'opera l'abbiamo trovata: quello che c'era, c'era
     }
-  } catch(e){}      // rete giù, Wikidata lenta: pazienza, resta il segnaposto
-  return null;
+  } catch(e){}          // rete giù, Wikidata lenta: pazienza, si resta senza
+  return vuoto;
 }
 
 async function dettagliLibro(id){
@@ -2142,20 +2218,23 @@ async function dettagliLibro(id){
     if (!copertinaId && Array.isArray(w && w.covers)) copertinaId = w.covers.find(x => x > 0) || null;
   } catch(e){}
   if (!trama) trama = ((l.first_sentence || [])[0]) || '';
-  /* Open Library non ce l'ha: si prova a chiederla all'edizione straniera dello stesso
-     libro, passando da Wikidata per sapere quale sia. Una sola volta, qui: nell'elenco
-     della ricerca sarebbero tre richieste per ogni riga a ogni pausa di battitura. */
+  /* Quello che l'edizione italiana non ha — la copertina, le pagine — si prova a
+     chiederlo all'edizione straniera dello stesso libro, passando da Wikidata per sapere
+     quale sia. Una sola volta, qui: nell'elenco della ricerca sarebbero tre richieste per
+     ogni riga a ogni pausa di battitura. */
   let img = copertinaLibro(copertinaId);
-  if (!img){
-    const daFuori = await copertinaDaAltraLingua(l.title, (l.author_name || [])[0]);
-    if (daFuori) img = copertinaLibro(daFuori);
+  let pagine = l.number_of_pages_median || null;
+  if (!img || !pagine){
+    const fuori = await datiDaAltraLingua(l.title, (l.author_name || [])[0]);
+    if (!img && fuori.cover) img = copertinaLibro(fuori.cover);
+    if (!pagine && fuori.pagine) pagine = fuori.pagine;
   }
   return {
     tmdbId:id, titolo:l.title || '', anno:String(l.first_publish_year || ''),
     uscita:l.first_publish_year ? String(l.first_publish_year)+'-01-01' : null,
     collezione:null, collezioneNome:null, stagioni:null, stato:null,
-    durata:l.number_of_pages_median || null,        // «durata» qui sono PAGINE
-    pagine:l.number_of_pages_median || null,
+    durata:pagine,        // «durata» qui sono PAGINE
+    pagine:pagine,
     regista:(l.author_name || []).slice(0,2).join(', '),          // l'autore
     generi:generiDaSubject(l.subject),
     paese:(l.publisher || []).slice(0,1).join(', '),              // l'editore
@@ -2386,7 +2465,9 @@ function classifica(){
   const cfg = S.config, setP = S.presenti;
   const candidati = new Map();
   for (const pr of S.profili){
-    if (!setP.has(pr.slug)) continue;
+    // chi non partecipa a questa categoria non pesa sulla scelta, nemmeno se fosse
+    // rimasto seduto passando da una categoria all'altra
+    if (!setP.has(pr.slug) || !partecipa(pr)) continue;
     for (const voce of listaDi(pr)){
       if (!voce.tmdbId || !entryAttiva(voce, pr.slug)) continue;
       let c = candidati.get(voce.tmdbId);
@@ -3673,7 +3754,6 @@ function gateNome(conIndietro){
 }
 
 async function entra(){
-  try { S.modoVisibile = localStorage.getItem('mvn_modo_box') !== '0'; } catch(e){}
   try { S.gruppo = localStorage.getItem('mvn_gruppo') || null; } catch(e){}
   S.modo = await leggiModo();   // prima di caricare: i percorsi dipendono dalla modalità
   applicaModo();
@@ -3692,6 +3772,15 @@ async function avviaApp(){
   $('#io-nome').textContent = nomeDi(S.me);
   $('#io-colore').style.background = coloreDi(S.me);
   applicaHost();
+  /* La categoria ricordata potrebbe non essere più fra le mie — me la sono tolta da un
+     altro dispositivo, o e' cambiato il profilo. Qui S.me finalmente si sa, quindi si
+     controlla: se non e' mia, si entra nella prima che mi resta. */
+  if (!partecipa(mioProfilo())){
+    S.modo = mieiModi()[0];
+    applicaModo();
+    await ricordaModo(S.modo);
+    await caricaTutto();
+  }
   aggiornaModoUI();
   // Anche all'avvio: se l'app riapre direttamente in biblioteca, il primo volo partirebbe
   // nello stesso istante in cui lo scaffale va dipinto (vedi scaldaLibreria).
@@ -5104,6 +5193,10 @@ function spegniImmagine(schermo, inner){
 }
 
 async function disegnaSala(){
+  // Cambiando categoria, chi non la fa si alza: se restasse in S.presenti conterebbe
+  // nella classifica pur non avendo una poltrona a video.
+  for (const slug of [...S.presenti])
+    if (!partecipa(profiloDi(slug))) S.presenti.delete(slug);
   disegnaGruppi();
   disegnaPlatea();
   const schermo = $('#schermo'), inner = $('#schermo-inner'), rosaEl = $('#rosa');
@@ -5875,7 +5968,7 @@ function disegnaImpostazioni(){
   if (mio){ $('#imp-chip').style.background = mio.colore; $('#imp-pw').value = mio.password || ''; }
   $('#imp-host').checked = S.host;
   disegnaGruppiImp();
-  $('#imp-modo-box').checked = S.modoVisibile;
+  disegnaModiMiei();
   $('#imp-scegli-colore').onclick = () => {
     const p = mioProfilo(); if (!p) return;
     apriColorPicker(p.colore, async c => {
@@ -6060,13 +6153,7 @@ function agganciaImpostazioni(){
       toast('Gruppo eliminato');
     });
   };
-  $('#imp-modo-box').onchange = async e => {
-    S.modoVisibile = e.target.checked;
-    try { localStorage.setItem('mvn_modo_box', S.modoVisibile ? '1' : '0'); } catch(e2){}
-    // spegnendola si torna ai film: se no si resterebbe chiusi nelle serie senza l'interruttore
-    if (!S.modoVisibile && inSerie()) await cambiaModo('film');
-    aggiornaModoUI(); disegnaImpostazioni();
-  };
+
   $('#imp-host').onchange = async e => {
     S.host = e.target.checked;
     await ricordaHost(S.host);

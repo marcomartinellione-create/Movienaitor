@@ -832,10 +832,22 @@ opera**, e ne conosce il titolo in ogni lingua. Quindi `copertinaDaAltraLingua()
     titolo italiano → Wikidata (l'opera) → titolo originale → Open Library → copertina
 
 Gratis, senza chiave (`origin=*` sull'API di Wikidata, se no il browser blocca la
-risposta), e **solo per i libri che una copertina non ce l'hanno**, nel momento in cui si
-aprono o si aggiungono — mai nell'elenco della ricerca, dove sarebbero tre richieste per
-riga a ogni pausa di battitura. Misurato: **14 titoli italiani su 15**, ~0,9 s a libro; il
-quindicesimo era un libro inventato apposta, e giustamente non ha trovato niente.
+risposta), e **solo per i libri a cui manca qualcosa**, nel momento in cui si aprono o si
+aggiungono — mai nell'elenco della ricerca, dove sarebbero tre richieste per riga a ogni
+pausa di battitura.
+
+Dall'edizione straniera si prende **la copertina e il numero di pagine**. Le pagine non
+sono un dettaglio: sono la «lunghezza» con cui la Sala filtra i libri, e un libro senza
+pagine è invisibile al filtro «lunghezza massima». La copertina si prende dalla prima
+scheda buona che ce l'ha, le pagine dalla **più famosa** fra quelle buone (più ristampe);
+possono venire da due schede diverse, sono comunque lo stesso libro dello stesso autore.
+
+Nella ricerca su Open Library si usa **solo il cognome** dell'autore, non il nome come sta
+scritto nel record: «C. Pavese» e «Cesare Pavese» sono la stessa persona ma come testo di
+ricerca davano risultati diversi, e col primo il ponte non trovava niente.
+
+Misurato: **15 titoli italiani su 16**, copertina *e* pagine, ~0,8 s a libro; il
+sedicesimo era un libro inventato apposta, e giustamente non ha trovato niente.
 
 Due guardiani contro la copertina sbagliata: l'opera di Wikidata si accetta solo se la sua
 descrizione **nomina l'autore** («romanzo scritto da José Saramago»), e la scheda di Open
@@ -925,3 +937,34 @@ porta dietro la percentuale, in `completamento`.
 - Il **simbolino** è un anello che si riempie con la percentuale, con dentro il numero; al
   100% diventa tutto oro e al posto del numero c'è la coppa. Sta accanto al gioco nella
   scheda della recensione e nel blocco dell'editor.
+
+## 18. Le categorie di ciascuno (2026-09-03, desktop e mobile)
+
+Prima c'era un interruttore solo, e per giunta del **dispositivo**: «casella film / serie TV
+in basso a destra», tenuta in `localStorage`. Al suo posto ci sono **quattro bandierine nel
+profilo**, una per categoria, in ⚙ Impostazioni → «Di cosa ti occupi».
+
+Ha **due effetti che vanno insieme**, ed è questo che la rende utile:
+
+- le categorie che non spunti **spariscono dalla tua app** — il selettore in basso a destra
+  offre solo le tue, e con una sola categoria sparisce del tutto (è così che si ottiene il
+  comportamento del vecchio interruttore, senza un'impostazione apposta);
+- e tu **sparisci da quelle categorie per gli altri**: niente poltrona in Sala, e la tua
+  lista non entra nel conto di cosa si fa stasera.
+
+Elena toglie i videogiochi; Marco va in videogiochi e Elena non c'è — né fra le poltrone né
+fra i titoli in cartellone.
+
+### 18.1 Dove sta e come si comporta
+
+- Campo `modi` nel **profilo**, che è l'unico file che ciascuno scrive per sé. Se manca
+  vale **«partecipo a tutto»**: i profili scritti prima continuano a funzionare senza che
+  nessuno li tocchi. Anche una lista vuota si tratta come mancante.
+- Il filtro passa da **`profiliVisibili()`** (platea, archivio, conto dei generi) e da
+  **`classifica()`**, che salta chi non partecipa anche se fosse rimasto seduto passando da
+  una categoria all'altra. Per sicurezza `disegnaSala()` fa alzare chi non partecipa: se
+  restasse in `S.presenti` conterebbe pur non avendo una poltrona a video.
+- **Almeno una categoria deve restare**: togliendo l'ultima l'app non avrebbe niente da
+  mostrare, e la spunta si rimette da sola.
+- Togliendo la categoria in cui si è, si viene spostati nella prima che resta. Lo stesso
+  vale all'avvio, se la categoria ricordata non è più fra le proprie (`avviaApp`).

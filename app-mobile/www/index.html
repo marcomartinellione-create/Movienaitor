@@ -835,6 +835,14 @@ const CHIAVI_MODO = {
 const chiaviModo = () => CHIAVI_MODO[S.modo] || CHIAVI_MODO.film;
 const datiModo = id => MODI.find(m => m.id === id) || MODI[0];
 const modoValido = id => MODI.some(m => m.id === id) ? id : MODI[0].id;
+/* A quali categorie partecipa una persona (campo `modi` nel suo profilo). Se manca vale
+   «partecipo a tutto»: i profili scritti prima continuano a funzionare. Gemello del PC. */
+const modiDi = p => {
+  const suoi = (p && Array.isArray(p.modi)) ? p.modi.filter(id => MODI.some(m => m.id === id)) : null;
+  return (suoi && suoi.length) ? suoi : MODI.map(m => m.id);
+};
+const partecipa = (p, modo = S.modo) => modiDi(p).includes(modo);
+const mieiModi = () => modiDi(S.me);
 const inSerie = () => S.modo === 'serie';
 const inGiochi = () => S.modo === 'giochi';
 const inLibri = () => S.modo === 'libri';
@@ -874,9 +882,11 @@ function visibiliInSala(){
   if (S.me) dentro.add(S.me.slug);
   return dentro;
 }
+/* Chi compare in questa categoria: chi è nel gruppo attivo E partecipa alla categoria.
+   Chi ha tolto i videogiochi non ha proprio una poltrona quando si gioca. */
 const profiliVisibili = () => {
   const v = visibiliInSala();
-  return v ? S.profili.filter(p => v.has(p.slug)) : S.profili;
+  return S.profili.filter(p => (!v || v.has(p.slug)) && partecipa(p));
 };
 // le parole della modalità: con articolo e concordanza, così un testo nuovo nasce già
 // corretto in tutte e due (stesse funzioni del desktop)
@@ -1021,7 +1031,7 @@ function modaleModoM(){
       <div class="mc-nome">${m.ic} ${esc(m.nome)}</div><div class="mc-desc">${esc(m.desc)}</div></button>`;
   apriModale(`<h3>Cosa si guarda</h3>
     <div class="modo-scelta">
-      ${MODI.map(scheda).join('')}
+      ${MODI.filter(m => mieiModi().includes(m.id)).map(scheda).join('')}
     </div>
     <p class="meta" style="font-size:12px">Ogni modalità ha le sue liste, il suo storico e le sue
       recensioni. I dati dell'altra restano dove sono.</p>
@@ -1559,10 +1569,20 @@ async function chiediWikidata(params){
    scrittore giusto.
 
    Costa tre richieste, ma solo per i libri che una copertina non ce l'hanno. */
-const LINGUE_COPERTINA = ['en', 'pt', 'es', 'fr', 'de'];
+/* L'inglese per primo: l'edizione americana è quasi sempre quella meglio schedata su
+   Open Library, sia per la copertina che per il numero di pagine. */
+const LINGUE_ESTERE = ['en', 'pt', 'es', 'fr', 'de'];
 
-async function copertinaDaAltraLingua(titolo, autore){
-  if (!titolo) return null;
+/* Torna quello che l'edizione straniera sa e quella italiana no: `{cover, pagine}`.
+   Le PAGINE non sono un dettaglio: sono la «lunghezza» con cui la Sala filtra i libri,
+   e un libro senza pagine è invisibile al filtro «lunghezza massima».
+   La copertina si prende dalla prima scheda buona che ce l'ha; le pagine invece dalla
+   scheda PIÙ FAMOSA fra quelle buone — quella con più ristampe — perché è la più
+   probabile da citare. Possono venire da due schede diverse: sono comunque lo stesso
+   libro dello stesso autore. */
+async function datiDaAltraLingua(titolo, autore){
+  const vuoto = {cover:null, pagine:null};
+  if (!titolo) return vuoto;
   const cognome = cognomeDi(autore);
   try {
     const trovate = await chiediWikidata({action:'wbsearchentities', search:titolo,
@@ -1572,23 +1592,35 @@ async function copertinaDaAltraLingua(titolo, autore){
       if (cognome && !String(cand.description || '').toLowerCase().includes(cognome)) continue;
       const ent = await chiediWikidata({action:'wbgetentities', ids:cand.id, props:'labels'});
       const etichette = ((ent.entities || {})[cand.id] || {}).labels || {};
-      for (const lingua of LINGUE_COPERTINA){
+      const raccolto = {cover:null, pagine:null};
+      for (const lingua of LINGUE_ESTERE){
         const titoloEstero = (etichette[lingua] || {}).value;
         if (!titoloEstero || titoloEstero === titolo) continue;
-        const q = titoloEstero + (autore ? ' ' + autore : '');
+        // solo il COGNOME: nei record l'autore è scritto in mille modi («C. Pavese»,
+        // «Pavese, Cesare»), e come testo di ricerca cambiava il risultato
+        const q = titoloEstero + (cognome ? ' ' + cognome : '');
         const r = await fetch('https://openlibrary.org/search.json?limit=20'
-          + '&fields=key,title,author_name,cover_i&q=' + encodeURIComponent(q));
+          + '&fields=key,title,author_name,cover_i,number_of_pages_median,edition_count'
+          + '&q=' + encodeURIComponent(q));
         if (!r.ok) continue;
         const docs = (await r.json()).docs || [];
         // secondo guardiano: stesso autore
-        const buona = docs.find(d => d.cover_i
-          && (!cognome || (d.author_name || []).some(a => cognomeDi(a) === cognome)));
-        if (buona) return buona.cover_i;
+        const buone = docs.filter(d => !cognome || (d.author_name || []).some(a => cognomeDi(a) === cognome));
+        if (!raccolto.cover){
+          const conCop = buone.find(d => d.cover_i);
+          if (conCop) raccolto.cover = conCop.cover_i;
+        }
+        if (!raccolto.pagine){
+          const conPag = buone.filter(d => d.number_of_pages_median > 0)
+            .sort((a, b) => (b.edition_count || 0) - (a.edition_count || 0))[0];
+          if (conPag) raccolto.pagine = conPag.number_of_pages_median;
+        }
+        if (raccolto.cover && raccolto.pagine) return raccolto;
       }
-      return null;   // l'opera l'abbiamo trovata: se non ha copertine, non ne ha
+      return raccolto;   // l'opera l'abbiamo trovata: quello che c'era, c'era
     }
-  } catch(e){}      // rete giù, Wikidata lenta: pazienza, resta il segnaposto
-  return null;
+  } catch(e){}          // rete giù, Wikidata lenta: pazienza, si resta senza
+  return vuoto;
 }
 
 async function dettagliLibro(id){
@@ -1608,19 +1640,21 @@ async function dettagliLibro(id){
     if (!copertinaId && Array.isArray(w && w.covers)) copertinaId = w.covers.find(x => x > 0) || null;
   } catch(e){}
   if (!trama) trama = ((l.first_sentence || [])[0]) || '';
-  /* Open Library non ce l'ha: si prova a chiederla all'edizione straniera dello stesso
-     libro, passando da Wikidata per sapere quale sia. Una sola volta, qui. */
+  /* Quello che l'edizione italiana non ha — la copertina, le pagine — si prova a
+     chiederlo all'edizione straniera dello stesso libro, passando da Wikidata. */
   let img = copertinaLibro(copertinaId);
-  if (!img){
-    const daFuori = await copertinaDaAltraLingua(l.title, (l.author_name || [])[0]);
-    if (daFuori) img = copertinaLibro(daFuori);
+  let pagine = l.number_of_pages_median || null;
+  if (!img || !pagine){
+    const fuori = await datiDaAltraLingua(l.title, (l.author_name || [])[0]);
+    if (!img && fuori.cover) img = copertinaLibro(fuori.cover);
+    if (!pagine && fuori.pagine) pagine = fuori.pagine;
   }
   return {
     tmdbId:id, titolo:l.title || '', anno:String(l.first_publish_year || ''),
     uscita:l.first_publish_year ? String(l.first_publish_year)+'-01-01' : null,
     collezione:null, collezioneNome:null, stagioni:null, stato:null,
-    durata:l.number_of_pages_median || null,        // «durata» qui sono PAGINE
-    pagine:l.number_of_pages_median || null,
+    durata:pagine,        // «durata» qui sono PAGINE
+    pagine:pagine,
     regista:(l.author_name || []).slice(0,2).join(', '),          // l'autore
     generi:generiDaSubject(l.subject),
     paese:(l.publisher || []).slice(0,1).join(', '),              // l'editore
@@ -2176,7 +2210,8 @@ function classificaM(){
   const cfg = cfgSala(), setP = S.presenti, f = S.fSala;
   const candidati = new Map();
   for (const pr of S.profili){
-    if (!setP.has(pr.slug)) continue;
+    // chi non partecipa a questa categoria non pesa sulla scelta
+    if (!setP.has(pr.slug) || !partecipa(pr)) continue;
     for (const voce of listaDi(pr)){
       if (!voce.tmdbId || !entryAttiva(voce, pr.slug)) continue;
       let c = candidati.get(voce.tmdbId);
@@ -2558,6 +2593,9 @@ async function scaldaLibreriaM(){
 }
 
 function disegnaSalaM(){
+  // chi non fa questa categoria si alza: se restasse conterebbe senza avere una poltrona
+  for (const slug of [...S.presenti])
+    if (!partecipa(S.profili.find(p => p.slug === slug))) S.presenti.delete(slug);
   disegnaPlateaM();   // le poltrone in velluto, come sul desktop
   $('#m-conta-pres').textContent = S.presenti.size ? '· '+S.presenti.size : '';
   $('#m-btn-filtri-sala').classList.toggle('attivo', filtriSalaAttivi());
@@ -3117,6 +3155,13 @@ async function apriImpostazioni(){
   const p = S.me;
   const render = () => {
     const pos = S.me.generiPositivi || [], neg = S.me.generiNegativi || [];
+    // le categorie di cui mi occupo: stesse bandierine del PC
+    const miei = new Set(mieiModi());
+    const boxModi = $('#i-modi');
+    if (boxModi) boxModi.innerHTML = MODI.map(m =>
+      `<button class="pchip" data-modo="${m.id}"${miei.has(m.id)
+        ? ' style="background:var(--oro);border-color:var(--oro);color:var(--su-oro);font-weight:600"' : ''
+      }>${miei.has(m.id) ? '✓ ' : ''}${m.ic} ${esc(m.nome)}</button>`).join('');
     $('#i-gen').innerHTML = generiTMDB().map(g=>{
       const st = pos.includes(g) ? 'pos' : neg.includes(g) ? 'neg' : '';
       const col = st==='pos'?'#7d9b76':st==='neg'?'#c0504d':'';
@@ -3132,6 +3177,8 @@ async function apriImpostazioni(){
     <div class="etich" style="margin-top:16px">GRUPPI DI VISIONE <span style="color:var(--dim);letter-spacing:0">— quando i profili sono tanti, tieni in Sala solo il tuo giro. Massimo 5, sono tuoi.</span></div>
     <div id="i-gruppi"></div>
     <button class="linkbtn" id="i-gruppo-nuovo" style="margin-top:4px">＋ nuovo gruppo</button>
+    <div class="etich" style="margin-top:16px">DI COSA TI OCCUPI <span style="color:var(--dim);letter-spacing:0">— le categorie che togli spariscono dalla tua app, e tu sparisci da loro per gli altri: niente poltrona in Sala e la tua lista non entra nel conto.</span></div>
+    <div class="compagnia" id="i-modi"></div>
     <div class="etich" style="margin-top:16px">CONSIGLI</div>
     <div class="campo-r"><label>Film esclusi</label><button class="inp" id="i-esclusi">🚫 Gestisci</button></div>
     <div class="etich" style="margin-top:16px">VERSIONE</div>
@@ -3166,6 +3213,20 @@ async function apriImpostazioni(){
     else toast('Sei già all\'ultima versione ✓');
   };
   render();
+  $('#i-modi').onclick = async e => {
+    const b = e.target.closest('[data-modo]'); if (!b) return;
+    const id = b.dataset.modo;
+    const ora = new Set(mieiModi());
+    if (ora.has(id)) ora.delete(id); else ora.add(id);
+    if (!ora.size) return toast('Almeno una categoria deve restare', true);
+    try {
+      await mutaProfilo(pr => { pr.modi = MODI.map(m => m.id).filter(x => ora.has(x)); });
+      render();
+      // se mi sono tolto la categoria in cui sono, mi sposto nella prima che mi resta
+      if (!ora.has(S.modo)){ chiudiModale(); await cambiaModoM(mieiModi()[0]); }
+      else { disegnaSalaM(); disegnaMiaLista(); }
+    } catch(err){ toast('Non riuscito: '+err.message, true); }
+  };
   $('#i-gen').onclick = async e => { const b = e.target.closest('[data-gen]'); if(!b) return; const g = b.dataset.gen;
     try {
       await mutaProfilo(pr => {
