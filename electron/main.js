@@ -135,6 +135,13 @@ function registraIPC(){
     } catch (err) { resolve(false); }
   }));
   ipcMain.handle('mvn:releases', () => shell.openExternal(REPO_RELEASES));
+  // Solo https, e solo dal renderer: apre nel browser di sistema invece che in una
+  // finestra Electron spoglia (target="_blank" farebbe quello).
+  ipcMain.handle('mvn:apriEsterno', (e, url) => {
+    if (typeof url !== 'string' || !/^https:\/\//i.test(url)) return false;
+    shell.openExternal(url);
+    return true;
+  });
   ipcMain.handle('mvn:apriPercorso', async (e, p) => {
     if (!p) return false;
     const err = await shell.openPath(p);   // stringa vuota = aperto con successo

@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('mvnFS', {
   modoRicordato:     ()        => ipcRenderer.invoke('mvn:getModo'),
   ricordaModo:       (m)       => ipcRenderer.invoke('mvn:setModo', m),
   apriReleases:      ()        => ipcRenderer.invoke('mvn:releases'),
+  apriEsterno:       (url)     => ipcRenderer.invoke('mvn:apriEsterno', url),
   apriPercorso:      (p)       => ipcRenderer.invoke('mvn:apriPercorso', p),
   versione:          ()        => ipcRenderer.invoke('mvn:versione')
 });

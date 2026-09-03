@@ -217,8 +217,6 @@
     animation:caricaImmagineEntra .45s ease-out .42s both}
   :root[data-modo="giochi"] .tv-uscita{position:absolute; inset:0; z-index:4; pointer-events:none;
     animation:caricaImmagineEsce .5s ease-in both}
-  :root[data-modo="giochi"] .cartellone.pronto:not(.aperto) .msg{
-    animation:tvMessaggio .3s ease-out .62s both}
   @keyframes caricaCulla{0%{opacity:0} 12%{opacity:1} 82%{opacity:1} 100%{opacity:0}}
   @keyframes caricaRiempie{
     0%{opacity:0; transform:scaleX(0)} 10%{opacity:1; transform:scaleX(.06)}
@@ -264,9 +262,6 @@
     animation:tvImmagineAccende .55s linear .34s both}
   :root[data-modo="serie"] .tv-uscita{position:absolute; inset:0; z-index:4; pointer-events:none;
     animation:tvImmagineSpegne .55s linear both}
-  :root[data-modo="serie"] .cartellone.pronto:not(.aperto) .msg{
-    animation:tvMessaggio .3s ease-out .6s both}
-  @keyframes tvMessaggio{from{opacity:0} to{opacity:1}}
   @keyframes tvImmagineSpegne{
     0%   {transform:scaleY(1);    filter:brightness(1);   opacity:1}
     35%  {transform:scaleY(.6);   filter:brightness(1.5); opacity:1}
@@ -559,7 +554,11 @@
     overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical}
   .cartellone .meta2{color:var(--dim); font-size:11.5px; margin-top:3px; text-shadow:0 1px 6px #000; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical}
   .cartellone .punti{color:var(--oro2)}
-  .cartellone .msg{position:absolute; inset:0; display:flex; flex-direction:column; gap:6px; align-items:center; justify-content:center; text-align:center; color:var(--dim); font-size:13px; padding:18px; line-height:1.55; z-index:6}
+  /* Nasce invisibile: lo accende mostraMessaggio() a uscita finita, se no si leggerebbe
+     sopra l'immagine che se ne sta andando. */
+  .cartellone .msg{position:absolute; inset:0; display:flex; flex-direction:column; gap:6px; align-items:center; justify-content:center; text-align:center; color:var(--dim); font-size:13px; padding:18px; line-height:1.55; z-index:6;
+    opacity:0; transition:opacity .32s ease}
+  .cartellone .msg.visibile{opacity:1}
   /* sipario: tende chiuse di base, si aprono scorrendo quando c'è un film (.aperto) */
   .cartellone .tenda{position:absolute; top:-6px; bottom:-6px; width:54%; z-index:4; pointer-events:none;
     background:repeating-linear-gradient(90deg,#7a3838 0 10px,#5a282c 10px 20px);
@@ -593,6 +592,13 @@
     display:flex; align-items:center; gap:6px; padding:9px 14px; border-radius:999px; font-size:12.5px;
     background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--oro); color:var(--oro2); box-shadow:0 6px 18px #0008}
   .bug-btn{left:12px}
+  /* Il biglietto da visita dell'autore, quando la segnalazione non ha una cartella dove andare. */
+  .sg-ig{display:flex; gap:13px; align-items:center; margin:12px 0 2px; padding:12px;
+    border:1px solid var(--linea); border-radius:12px; background:var(--bg2)}
+  .sg-qr{flex:none; width:96px; height:96px; padding:4px; border-radius:7px; background:#fff}
+  .sg-ig .chi{flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; align-items:flex-start}
+  .sg-ig .nome{color:var(--oro2); font-size:15px}
+  .sg-ig .come{color:var(--dim); font-size:11.5px; line-height:1.45}
   .modo-btn{right:12px}          /* speculare al 🐞 */
   .modo-scelta{display:flex; flex-direction:column; gap:9px; margin:6px 0 4px}
   .modo-card{display:block; text-align:left; padding:12px 13px; border-radius:12px;
@@ -791,7 +797,7 @@
 
 <script>
 /* ══════════════════ STATO ══════════════════ */
-const APP_VERSION = '1.7.16';
+const APP_VERSION = '1.7.17';
 const CONFIG_DEFAULT = { bonusCoralita:0.10, capCoralita:0.30, passoSoddisfazione:0.15, bonusCoppia:1.15, sogliaSpareggio:0.02 };
 const S = { treeUri:null, config:{}, profili:[], me:null, storico:[], modo:'film', gruppo:null,
   filtri:{ q:'', ordina:'aggiunto', dir:'desc', minDes:0, genere:[], annoDa:null, annoA:null },
@@ -2304,6 +2310,23 @@ function rifaiAccensione(schermo){
   }, TEMPO_SIPARIO);
 }
 
+/* Quanto dura l'uscita di ciascuna stanza, in millisecondi: il messaggio a sala vuota
+   aspetta questo tempo prima di comparire. */
+const USCITA_MS = {film:TEMPO_SIPARIO + 60, serie:620, giochi:560, libri:1300};
+
+/* Accende il messaggio a sala vuota. `dopoUscita` dice se c'era qualcosa da spegnere: al
+   primo disegno non c'è, e il messaggio compare subito. */
+function mostraMessaggio(inner, dopoUscita){
+  const m = inner.querySelector('.msg');
+  if (!m) return;
+  clearTimeout(mostraMessaggio._t);
+  if (!dopoUscita){ m.classList.add('visibile'); return; }
+  mostraMessaggio._t = setTimeout(() => {
+    const ora = document.querySelector('#m-schermo-inner .msg');
+    if (ora) ora.classList.add('visibile');
+  }, USCITA_MS[S.modo] || 620);
+}
+
 function spegniImmagine(schermo, inner){
   if (!schermoAnimato() || !schermo.classList.contains('pronto') || !schermo.classList.contains('aperto')) return;
   const fantasma = inner.cloneNode(true);
@@ -2636,9 +2659,11 @@ function disegnaSalaM(){
   if (!S.presenti.size){
     if (inLibri()) disegnaLibreriaM();
     inVetrina = null;
+    const cera = schermo.classList.contains('aperto');   // c'era qualcosa da spegnere?
     spegniImmagine(schermo, inner);
     schermo.classList.remove('aperto');
     inner.innerHTML = '<div class="msg">La sala è vuota…<br><span style="font-size:12px; color:var(--dim)">tocca le poltrone di chi c\'è stasera</span></div>';
+    mostraMessaggio(inner, cera);
     stato.innerHTML = ''; S.tuttiSala = []; aggiornaLC(0);
     return;
   }
@@ -2654,9 +2679,11 @@ function disegnaSalaM(){
       e.regista && e.regista+' di altri registi', e.vincoli && e.vincoli+' per vincoli di compagnia'].filter(Boolean).join(' · ');
     if (inLibri()) disegnaLibreriaM();
     inVetrina = null;
+    const cera = schermo.classList.contains('aperto');   // c'era qualcosa da spegnere?
     spegniImmagine(schermo, inner);
     schermo.classList.remove('aperto');
     inner.innerHTML = `<div class="msg">Niente in cartellone stasera<br><span style="font-size:12px">${esc(motivi || 'le liste dei presenti sono vuote')}</span></div>`;
+    mostraMessaggio(inner, cera);
   } else {
     const f = scelto.film, rango = ris.tutti.indexOf(scelto) + 1;
     // il titolo è cambiato a schermo acceso: la stanza si rifa' la sua animazione
@@ -2947,6 +2974,37 @@ function apriFiltriSala(){
 /* ══════════════════ SEGNALAZIONI (bug & idee) ══════════════════ */
 // Come sul desktop: scrivo SOLO segnalazioni/<mio slug>.json; stato ed eliminazioni le
 // decide l'host in segnalazioni-stato.json (qui si leggono soltanto).
+// Dove vanno le segnalazioni: vedi il gemello sul PC. `sviluppo` sta in config.json,
+// quindi basta accenderlo una volta dal PC e vale anche qui, per tutto il gruppo.
+const IG_URL  = 'https://instagram.com/marco_the_wander';
+const IG_NOME = '@marco_the_wander';
+const IG_QR   = 'M0 0h7v1h-7zM9 0h4v1h-4zM14 0h2v1h-2zM17 0h3v1h-3zM22 0h7v1h-7zM0 1h1v1h-1zM6 1h1v1h-1zM8 1h1v1h-1zM10 1h2v1h-2zM13 1h3v1h-3zM17 1h4v1h-4zM22 1h1v1h-1zM28 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM9 2h1v1h-1zM19 2h1v1h-1zM22 2h1v1h-1zM24 2h3v1h-3zM28 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM9 3h2v1h-2zM12 3h1v1h-1zM14 3h2v1h-2zM18 3h1v1h-1zM22 3h1v1h-1zM24 3h3v1h-3zM28 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM8 4h1v1h-1zM10 4h2v1h-2zM15 4h1v1h-1zM18 4h3v1h-3zM22 4h1v1h-1zM24 4h3v1h-3zM28 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM9 5h1v1h-1zM12 5h1v1h-1zM15 5h1v1h-1zM17 5h1v1h-1zM19 5h2v1h-2zM22 5h1v1h-1zM28 5h1v1h-1zM0 6h7v1h-7zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h1v1h-1zM20 6h1v1h-1zM22 6h7v1h-7zM10 7h1v1h-1zM13 7h1v1h-1zM16 7h5v1h-5zM0 8h1v1h-1zM2 8h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM14 8h4v1h-4zM19 8h2v1h-2zM24 8h1v1h-1zM27 8h1v1h-1zM0 9h2v1h-2zM3 9h1v1h-1zM5 9h1v1h-1zM9 9h2v1h-2zM12 9h1v1h-1zM16 9h3v1h-3zM20 9h3v1h-3zM25 9h1v1h-1zM28 9h1v1h-1zM0 10h5v1h-5zM6 10h1v1h-1zM13 10h1v1h-1zM17 10h2v1h-2zM22 10h1v1h-1zM24 10h1v1h-1zM26 10h3v1h-3zM1 11h1v1h-1zM3 11h2v1h-2zM7 11h3v1h-3zM12 11h1v1h-1zM15 11h1v1h-1zM17 11h1v1h-1zM20 11h1v1h-1zM27 11h1v1h-1zM1 12h1v1h-1zM6 12h2v1h-2zM9 12h2v1h-2zM12 12h1v1h-1zM16 12h2v1h-2zM19 12h5v1h-5zM25 12h1v1h-1zM27 12h2v1h-2zM0 13h1v1h-1zM3 13h3v1h-3zM7 13h1v1h-1zM12 13h2v1h-2zM16 13h2v1h-2zM20 13h3v1h-3zM25 13h1v1h-1zM28 13h1v1h-1zM0 14h1v1h-1zM4 14h3v1h-3zM8 14h1v1h-1zM12 14h1v1h-1zM14 14h1v1h-1zM17 14h2v1h-2zM21 14h3v1h-3zM25 14h1v1h-1zM27 14h2v1h-2zM2 15h2v1h-2zM7 15h1v1h-1zM9 15h1v1h-1zM11 15h4v1h-4zM16 15h3v1h-3zM22 15h2v1h-2zM25 15h1v1h-1zM27 15h1v1h-1zM1 16h2v1h-2zM4 16h7v1h-7zM14 16h1v1h-1zM17 16h1v1h-1zM20 16h4v1h-4zM25 16h1v1h-1zM27 16h2v1h-2zM1 17h1v1h-1zM4 17h2v1h-2zM7 17h2v1h-2zM11 17h1v1h-1zM14 17h1v1h-1zM16 17h1v1h-1zM20 17h1v1h-1zM22 17h1v1h-1zM25 17h2v1h-2zM28 17h1v1h-1zM0 18h1v1h-1zM2 18h1v1h-1zM6 18h1v1h-1zM12 18h2v1h-2zM17 18h1v1h-1zM20 18h1v1h-1zM22 18h1v1h-1zM27 18h2v1h-2zM1 19h3v1h-3zM5 19h1v1h-1zM10 19h1v1h-1zM16 19h3v1h-3zM20 19h3v1h-3zM24 19h2v1h-2zM27 19h1v1h-1zM0 20h1v1h-1zM2 20h1v1h-1zM4 20h3v1h-3zM8 20h1v1h-1zM10 20h3v1h-3zM15 20h1v1h-1zM19 20h6v1h-6zM8 21h1v1h-1zM10 21h1v1h-1zM13 21h1v1h-1zM15 21h2v1h-2zM18 21h3v1h-3zM24 21h1v1h-1zM26 21h3v1h-3zM0 22h7v1h-7zM9 22h2v1h-2zM14 22h1v1h-1zM17 22h1v1h-1zM19 22h2v1h-2zM22 22h1v1h-1zM24 22h2v1h-2zM27 22h2v1h-2zM0 23h1v1h-1zM6 23h1v1h-1zM9 23h1v1h-1zM11 23h10v1h-10zM24 23h2v1h-2zM27 23h2v1h-2zM0 24h1v1h-1zM2 24h3v1h-3zM6 24h1v1h-1zM8 24h1v1h-1zM10 24h2v1h-2zM14 24h1v1h-1zM16 24h2v1h-2zM20 24h5v1h-5zM27 24h2v1h-2zM0 25h1v1h-1zM2 25h3v1h-3zM6 25h1v1h-1zM14 25h1v1h-1zM16 25h3v1h-3zM23 25h2v1h-2zM26 25h3v1h-3zM0 26h1v1h-1zM2 26h3v1h-3zM6 26h1v1h-1zM8 26h3v1h-3zM14 26h1v1h-1zM16 26h1v1h-1zM19 26h1v1h-1zM23 26h3v1h-3zM28 26h1v1h-1zM0 27h1v1h-1zM6 27h1v1h-1zM9 27h2v1h-2zM12 27h4v1h-4zM17 27h1v1h-1zM19 27h3v1h-3zM27 27h1v1h-1zM0 28h7v1h-7zM8 28h5v1h-5zM14 28h4v1h-4zM19 28h4v1h-4zM27 28h2v1h-2z';
+const segnInterne = () => !!(S.config && S.config.sviluppo);
+
+/* Copia negli appunti; la WebView serve da http://localhost, che e' contesto sicuro,
+   ma tengo la strada vecchia di riserva. */
+async function copiaNegliAppunti(testo){
+  try { await navigator.clipboard.writeText(testo); return true; } catch(e){}
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = testo; ta.style.cssText = 'position:fixed; top:0; left:0; opacity:0';
+    document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand('copy'); ta.remove(); return ok;
+  } catch(e){ return false; }
+}
+
+/* La segnalazione in chiaro, pronta da incollare in un messaggio. */
+function testoSegnalazione(s, nome){
+  const tipo = (SEGN_TIPI[s.tipo] || {}).label || s.tipo;
+  const grav = s.gravita && SEGN_GRAVITA[s.gravita] ? ` \u00b7 ${SEGN_GRAVITA[s.gravita]}` : '';
+  return [
+    `Movienaitor \u00b7 ${tipo}${grav}`,
+    s.titolo,
+    s.descrizione ? '\n' + s.descrizione : '',
+    `\n\u2014 sezione \u00ab${s.contesto}\u00bb \u00b7 ${datiModo(S.modo).nome} \u00b7 v${s.versione} \u00b7 ${nome || s.autore}`
+  ].filter(Boolean).join('\n');
+}
+
 const SEGN_TIPI = {
   bug:         {label:'Bug',          ic:'⚠', desc:'Qualcosa non funziona come dovrebbe'},
   suggerimento:{label:'Suggerimento', ic:'✦', desc:'Una funzione pensata, con un\'idea di come dovrebbe funzionare'},
@@ -2982,10 +3040,21 @@ function modaleSegnalaM(){
   if (!S.me) return;
   let tipo = 'bug';
   const contesto = S.pan;
-  const mie = S.segnalazioni.filter(s => s.autore === S.me.slug && !S.segnEliminate.includes(s.id));
+  const interne = segnInterne();
+  const mie = interne ? S.segnalazioni.filter(s => s.autore === S.me.slug && !S.segnEliminate.includes(s.id)) : [];
   apriModale(`
     <h3>🐞 Segnala</h3>
-    <p class="meta">Un problema o un'idea per Movienaitor. Finisce nella cartella del gruppo: l'host la vede sul PC e la segna come fatta quando l'ha sistemata.</p>
+    <p class="meta">${interne
+      ? `Un problema o un'idea per Movienaitor. Finisce nella cartella del gruppo: l'host la vede sul PC e la segna come fatta quando l'ha sistemata.`
+      : `Movienaitor lo scrivo da solo, e questa cartella è vostra: quello che lasciate qui resta qui. Scrivi lo stesso qui sotto, poi copia e mandamelo su Instagram — è lì che rispondo.`}</p>
+    ${interne ? '' : `<div class="sg-ig">
+      <svg class="sg-qr" viewBox="-2 -2 33 33" shape-rendering="crispEdges" role="img" aria-label="QR del profilo Instagram ${IG_NOME}">
+        <rect x="-2" y="-2" width="33" height="33" fill="#fff"></rect><path d="${IG_QR}" fill="#181114"></path></svg>
+      <div class="chi">
+        <div class="nome">${IG_NOME}</div>
+        <button class="primario" id="sg-ig-apri" style="padding:7px 13px; font-size:12.5px">Apri Instagram ↗</button>
+        <div class="come">Inquadra il QR, oppure apri il profilo da qui e mandami un messaggio.</div>
+      </div></div>`}
     <div class="sg-tipi" id="sg-tipi">${Object.keys(SEGN_TIPI).map(k=>`
       <button class="sg-tipo${k===tipo?' on':''}" data-t="${k}">
         <span class="lb">${SEGN_TIPI[k].ic} ${SEGN_TIPI[k].label}</span>
@@ -2996,8 +3065,8 @@ function modaleSegnalaM(){
     <textarea class="sg-in" id="sg-desc" placeholder="Cosa succede, cosa ti aspettavi, come farlo ricapitare…"></textarea>
     <div id="sg-grav-riga"><div class="etich">QUANTO PESA</div>
       <select class="sg-in" id="sg-grav">${Object.keys(SEGN_GRAVITA).map(g=>`<option value="${g}">${SEGN_GRAVITA[g]}</option>`).join('')}</select></div>
-    <div class="meta" style="margin-top:8px; font-size:11.5px">Registro in automatico: sezione «${esc(contesto)}» · app mobile v${APP_VERSION} · ${esc(S.me.nome)}</div>
-    <div class="m-az"><button class="ghost" id="sg-annulla">Annulla</button><button class="primario" id="sg-invia">📨 Invia</button></div>
+    <div class="meta" style="margin-top:8px; font-size:11.5px">${interne ? 'Registro' : 'Aggiungo al testo'} in automatico: sezione «${esc(contesto)}» · ${esc(datiModo(S.modo).nome)} · app mobile v${APP_VERSION} · ${esc(S.me.nome)}</div>
+    <div class="m-az"><button class="ghost" id="sg-annulla">${interne ? 'Annulla' : 'Chiudi'}</button><button class="primario" id="sg-invia">${interne ? '📨 Invia' : '📋 Copia il messaggio'}</button></div>
     ${mie.length ? `<div style="margin-top:14px"><div class="etich">LE TUE SEGNALAZIONI</div>${mie.map(s=>`
       <div class="sg-mia"><span>${(SEGN_TIPI[s.tipo]||{ic:'•'}).ic}</span><span class="t">${esc(s.titolo)}</span>
         <span class="sg-chip st-${statoSegnM(s)}">${SEGN_STATI[statoSegnM(s)]}</span>
@@ -3012,6 +3081,7 @@ function modaleSegnalaM(){
   };
   $('#sg-tipi').onclick = e => { const b = e.target.closest('[data-t]'); if(!b) return; tipo = b.dataset.t; agg(); };
   $('#sg-annulla').onclick = chiudiModale;
+  if ($('#sg-ig-apri')) $('#sg-ig-apri').onclick = () => window.open(IG_URL, '_blank', 'noopener');
   $('#sg-invia').onclick = async () => {
     const titolo = $('#sg-tit').value.trim();
     if (!titolo){ toast('Serve almeno un titolo', true); $('#sg-tit').focus(); return; }
@@ -3019,6 +3089,17 @@ function modaleSegnalaM(){
     const s = { id:`${Date.now().toString(36)}-${S.me.slug}`, tipo, titolo,
       descrizione:$('#sg-desc').value.trim(), gravita: tipo === 'bug' ? $('#sg-grav').value : null,
       contesto, versione:APP_VERSION+'-mobile', creato:new Date().toISOString(), autore:S.me.slug };
+    // Fuori dalla cartella dell'autore non c'e' niente da salvare: il modulo diventa un
+    // messaggio gia' scritto, coi dati tecnici che altrimenti nessuno allega.
+    if (!interne){
+      const ok = await copiaNegliAppunti(testoSegnalazione(s, S.me.nome));
+      if (!ok){ btn.disabled = false; btn.textContent = '📋 Copia il messaggio';
+        return toast('Copia non riuscita: seleziona il testo a mano', true); }
+      window.open(IG_URL, '_blank', 'noopener');
+      chiudiModale();
+      toast('Messaggio copiato: incollalo su Instagram 📋');
+      return;
+    }
     S.segnalazioni.push(s);
     try { await salvaMieSegnalazioniM(); }
     catch(e){
