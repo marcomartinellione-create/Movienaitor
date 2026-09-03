@@ -3017,10 +3017,16 @@ function apriManuale(){
     vista.innerHTML = `<div class="testata">
         <span class="titolo">📖 Manuale</span>
         <button class="ghost" id="manuale-chiudi" style="padding:7px 13px; font-size:12.5px">Chiudi</button>
-      </div><iframe src="Manuale.html" title="Manuale di Movienaitor"></iframe>`;
+      </div><iframe title="Manuale di Movienaitor"></iframe>`;
     document.body.appendChild(vista);
     $('#manuale-chiudi').onclick = chiudiManuale;
   }
+  // La stanza di adesso: il riquadro viene riusato, quindi l'indirizzo va rimesso, se no
+  // chi cambia categoria e riapre la guida se la ritrova coi colori di prima.
+  const iframe = vista.querySelector('iframe');
+  const src = `Manuale.html?modo=${encodeURIComponent(S.modo)}`;
+  if (!iframe.getAttribute('src') || !iframe.getAttribute('src').endsWith('=' + S.modo))
+    iframe.setAttribute('src', src);
   void vista.offsetWidth;               // reflow: la transizione parte anche a finestra nascosta
   vista.classList.add('aperta');
 }

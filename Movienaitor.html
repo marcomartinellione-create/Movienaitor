@@ -3450,10 +3450,17 @@ function apriManuale(){
     vista.innerHTML = `<div class="testata">
         <span class="titolo">📖 Manuale</span>
         <button class="bottone piccolo secondario" id="manuale-chiudi">Chiudi</button>
-      </div><iframe src="Manuale.html" title="Manuale di Movienaitor"></iframe>`;
+      </div><iframe title="Manuale di Movienaitor"></iframe>`;
     document.body.appendChild(vista);
     $('#manuale-chiudi').onclick = chiudiManuale;
   }
+  // La stanza di adesso, così la guida si veste come la sezione da cui si apre. Il
+  // riquadro viene riusato, quindi l'indirizzo va rimesso: se no chi cambia categoria
+  // e riapre la guida se la ritrova coi colori di prima.
+  const iframe = vista.querySelector('iframe');
+  const src = `Manuale.html?modo=${encodeURIComponent(S.modo)}`;
+  if (!iframe.getAttribute('src') || !iframe.getAttribute('src').endsWith('=' + S.modo))
+    iframe.setAttribute('src', src);
   void vista.offsetWidth;               // reflow: la transizione parte anche a finestra nascosta
   vista.classList.add('aperta');
 }

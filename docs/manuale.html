@@ -6,14 +6,34 @@
 <title>Movienaitor — Manuale</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-  /* La sala: velluto bordeaux, oro, crema — la tavolozza della modalità Film dell'app.
-     Un solo mondo visivo, dipinto per intero. */
+  /* Le quattro stanze dell'app, stessi colori. Aperta dall'app la guida riceve
+     ?modo=serie|giochi|libri e si veste come la stanza da cui arriva; aperta da sola
+     resta la sala dei film. L'oro non cambia mai: nell'app è definito una volta per
+     tutte le categorie, ed è la costante che tiene insieme l'identità. */
   :root{
     --fondo:#191014; --fondo2:#221419; --velluto2:#2c181d; --velluto3:#4a2830;
     --oro:#c9a45c; --oro2:#e0c07d; --oro-dim:#8a7347;
     --crema:#f2e7d5; --dim:#b8a68e; --dim2:#7d6f5c;
     --rosso:#a85454; --verde:#7d9b76;
     --bordo:#4a2c33; --bordo2:#3a2229;
+  }
+  :root[data-modo="serie"]{     /* il salotto: blu notte */
+    --fondo:#0f1620; --fondo2:#151f2c; --velluto2:#182333; --velluto3:#2a3b52;
+    --crema:#e9eff7; --dim:#a8b7c9; --dim2:#6e8094;
+    --rosso:#5a8cb5; --verde:#76a08f;
+    --bordo:#2c3e55; --bordo2:#223041;
+  }
+  :root[data-modo="giochi"]{    /* la postazione: viola */
+    --fondo:#120d1c; --fondo2:#191227; --velluto2:#221a38; --velluto3:#3d2c63;
+    --crema:#efe9fb; --dim:#b3a8cd; --dim2:#7a6d99;
+    --rosso:#8b6ff0; --verde:#7fb59a;
+    --bordo:#3d2c63; --bordo2:#2a1f45;
+  }
+  :root[data-modo="libri"]{     /* la biblioteca: verde */
+    --fondo:#101711; --fondo2:#16201a; --velluto2:#1b2a21; --velluto3:#2f4a3a;
+    --crema:#f0ece0; --dim:#b3bda9; --dim2:#7b8874;
+    --rosso:#6fa583; --verde:#7fb59a;
+    --bordo:#2f4a3a; --bordo2:#22352a;
   }
   *{box-sizing:border-box}
   /* Stesse barre di scorrimento dell'app (che usa questi identici valori): dentro la
@@ -135,6 +155,45 @@
   .coll .attesa{color:var(--dim2); font-size:13.5px; font-style:italic}
   .chiusa{border-top:1px solid var(--bordo); margin-top:54px; padding-top:24px;
     color:var(--dim2); font-size:15px; font-style:italic}
+
+  /* ── telefono in verticale ──────────────────────────────────────────────
+     Le misure sopra sono pensate per una pagina larga: su 375px i margini
+     mangiano un sesto della riga e le spaziature fra i capitoli fanno scorrere
+     a vuoto. Qui si stringe tutto di un passo, senza cambiare le proporzioni. */
+  @media (max-width:560px){
+    body{font-size:16px; line-height:1.62}
+    .impalcatura{padding:0 16px 64px}
+
+    header.copertina{padding:34px 0 22px; margin-bottom:26px}
+    .marchio{margin:0 0 12px}
+    h1{font-size:40px; margin:0 0 10px}
+    .occhio{font-size:16.5px}
+
+    .indice{padding:14px 14px 10px; margin:0 0 28px}
+    .indice a{padding:10px 8px; font-size:15px}  /* ~40px: si toccano col dito */
+
+    section.cap{margin:0 0 38px}
+    .cap-testa{gap:10px; margin:0 0 14px; padding-bottom:10px}
+    h3{margin:22px 0 7px; font-size:19px}
+    p{margin:0 0 12px}
+    ul{gap:9px}
+
+    .essenziale{padding:14px 16px; margin:0 0 18px; border-radius:0 6px 6px 0}
+    .essenziale p{font-size:16.5px}
+    .marca{margin:20px 0 9px; padding-top:11px}
+
+    .guasto>b{padding:11px 14px; font-size:15.5px}
+    .guasto>div{padding:12px 14px 13px}
+    .guasto p{font-size:15px}
+
+    /* il riquadro in colonna: di fianco, il QR lascia al testo una striscia
+       troppo stretta e ogni riga va a capo due volte */
+    .collegamenti{gap:12px; margin:0 0 34px}
+    .coll{flex-direction:column; align-items:flex-start; gap:12px; padding:14px}
+    .coll .qr{width:132px; height:132px}
+    .coll .qr.vuoto{width:132px; height:132px}
+    .chiusa{margin-top:38px; padding-top:18px; font-size:14px}
+  }
 </style>
 </head>
 <body>
@@ -243,6 +302,14 @@
   'use strict';
   const $ = s => document.querySelector(s);
   const G = JSON.parse(document.getElementById('dati').textContent);
+
+  /* La stanza da cui è stata aperta, se l'app l'ha detto: ?modo=serie|giochi|libri.
+     Senza parametro (doppio clic sul file) resta la sala dei film. */
+  {
+    const modo = new URLSearchParams(location.search).get('modo');
+    if (['serie', 'giochi', 'libri'].includes(modo))
+      document.documentElement.dataset.modo = modo;
+  }
   const num = i => String(i).padStart(2, '0');
 
   /* I riquadri in fondo: QR + link. Il tracciato del QR sta nei dati (lo scrive
