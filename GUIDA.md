@@ -4,6 +4,10 @@
 > cartella — un file autonomo, apribile con un doppio clic, senza connessione né account.
 > Le due copie vengono mantenute allineate.
 
+- **Il progetto su GitHub** — codice, versioni da scaricare e novità di ogni aggiornamento:
+  <https://github.com/marcomartinellione-create/Movienaitor>
+- **Video tutorial** — una panoramica in video di come si usa: *non ancora pubblicato.*
+
 ## 1. Descrizione
 
 **In sintesi.** Movienaitor è un'applicazione per la **selezione condivisa di un titolo** fra più partecipanti e per l'**archiviazione delle relative recensioni**. Nata per la scelta del film, gestisce oggi quattro categorie: film, serie TV, videogiochi e libri.

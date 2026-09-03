@@ -16,7 +16,14 @@
     --bordo:#4a2c33; --bordo2:#3a2229;
   }
   *{box-sizing:border-box}
-  html{scroll-behavior:smooth}
+  /* Stesse barre di scorrimento dell'app (che usa questi identici valori): dentro la
+     guida non deve comparire la barra bianca di sistema. Vale per la pagina, per
+     l'indice e per le tabelle che scorrono in orizzontale. */
+  ::-webkit-scrollbar{width:10px; height:10px}
+  ::-webkit-scrollbar-thumb{background:var(--velluto3); border-radius:5px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--bordo)}
+  ::-webkit-scrollbar-track{background:transparent}
+  html{scroll-behavior:smooth; scrollbar-color:var(--velluto3) transparent}
   @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto} *{transition:none!important}}
   body{background:var(--fondo); color:var(--crema);
     font-family:"Lora",Georgia,serif; font-size:17px; line-height:1.7; -webkit-font-smoothing:antialiased}
@@ -108,6 +115,24 @@
     letter-spacing:.12em; text-transform:uppercase; color:var(--rosso);
     border:1px solid var(--rosso); border-radius:20px; padding:2px 9px; margin:0 0 10px}
 
+  /* ── i due riquadri in apertura: dove trovare progetto e video ── */
+  .collegamenti{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:16px; margin:0 0 48px}
+  .coll{display:flex; gap:15px; align-items:center; padding:15px;
+    border:1px solid var(--bordo2); border-radius:12px; background:var(--fondo2)}
+  /* 124px: l'URL di GitHub fa un QR da 33 moduli, sotto questa misura i moduli
+     scendono sotto i 3px e la fotocamera fatica. */
+  .coll .qr{flex:none; width:124px; height:124px; padding:6px; border-radius:8px; background:#fff}
+  /* il posto del QR quando l'indirizzo non c'è ancora: cornice vuota, non un codice finto */
+  .coll .qr.vuoto{background:transparent; border:1px dashed var(--velluto3);
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    font-family:"IBM Plex Mono",monospace; font-size:9.5px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--dim2); padding:10px; line-height:1.5}
+  .coll .chi{flex:1; min-width:0}
+  .coll .et{color:var(--oro2); font-family:"Marcellus",Georgia,serif; font-size:18px; margin:0 0 5px}
+  .coll .nota{color:var(--dim); font-size:14px; line-height:1.5; margin:0 0 8px; max-width:none}
+  .coll .vai{font-size:14px}
+  .coll .attesa{color:var(--dim2); font-size:13.5px; font-style:italic}
   .chiusa{border-top:1px solid var(--bordo); margin-top:54px; padding-top:24px;
     color:var(--dim2); font-size:15px; font-style:italic}
 </style>
@@ -196,7 +221,21 @@
    "corpo": "\u003cp class=\"marca\">Numerazione\u003c/p>\u003cp>Lo schema è a tre cifre; le revisioni ordinarie incrementano l'ultima. Le due piattaforme condividono la numerazione ma non necessariamente la stessa revisione, potendo l'APK essere compilato successivamente.\u003c/p>\u003cp>È disponibile una \u003cstrong>modalità dimostrativa\u003c/strong>, accessibile dalla schermata iniziale, che avvia l'applicazione con dati fittizi e senza scritture su disco.\u003c/p>"
   }
  ],
- "chiusa": "Manuale riferito alla versione 1.7.17. Le specifiche di dettaglio — formule, formati dei file, motivazioni delle scelte progettuali — sono documentate in SPECIFICA.md all'interno del progetto."
+ "chiusa": "Manuale riferito alla versione 1.7.17. Le specifiche di dettaglio — formule, formati dei file, motivazioni delle scelte progettuali — sono documentate in SPECIFICA.md all'interno del progetto.",
+ "collegamenti": [
+  {
+   "etichetta": "Il progetto su GitHub",
+   "nota": "Codice, versioni da scaricare e novità di ogni aggiornamento.",
+   "url": "https://github.com/marcomartinellione-create/Movienaitor",
+   "moduli": 33,
+   "d": "M0 0h7v1h-7zM11 0h1v1h-1zM14 0h1v1h-1zM22 0h1v1h-1zM26 0h7v1h-7zM0 1h1v1h-1zM6 1h1v1h-1zM8 1h1v1h-1zM10 1h2v1h-2zM13 1h2v1h-2zM16 1h1v1h-1zM18 1h1v1h-1zM20 1h3v1h-3zM26 1h1v1h-1zM32 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM8 2h1v1h-1zM10 2h1v1h-1zM13 2h1v1h-1zM15 2h1v1h-1zM21 2h2v1h-2zM26 2h1v1h-1zM28 2h3v1h-3zM32 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM8 3h4v1h-4zM15 3h1v1h-1zM17 3h1v1h-1zM20 3h1v1h-1zM24 3h1v1h-1zM26 3h1v1h-1zM28 3h3v1h-3zM32 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM13 4h1v1h-1zM15 4h1v1h-1zM19 4h3v1h-3zM23 4h2v1h-2zM26 4h1v1h-1zM28 4h3v1h-3zM32 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM9 5h2v1h-2zM13 5h2v1h-2zM16 5h3v1h-3zM20 5h2v1h-2zM26 5h1v1h-1zM32 5h1v1h-1zM0 6h7v1h-7zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h1v1h-1zM20 6h1v1h-1zM22 6h1v1h-1zM24 6h1v1h-1zM26 6h7v1h-7zM8 7h1v1h-1zM10 7h1v1h-1zM18 7h1v1h-1zM0 8h1v1h-1zM6 8h1v1h-1zM8 8h1v1h-1zM13 8h3v1h-3zM17 8h1v1h-1zM25 8h2v1h-2zM29 8h3v1h-3zM0 9h1v1h-1zM3 9h3v1h-3zM7 9h2v1h-2zM12 9h1v1h-1zM14 9h2v1h-2zM18 9h2v1h-2zM21 9h3v1h-3zM28 9h3v1h-3zM0 10h4v1h-4zM6 10h3v1h-3zM10 10h2v1h-2zM15 10h1v1h-1zM20 10h3v1h-3zM24 10h1v1h-1zM28 10h1v1h-1zM30 10h2v1h-2zM3 11h1v1h-1zM5 11h1v1h-1zM7 11h2v1h-2zM12 11h1v1h-1zM14 11h1v1h-1zM16 11h1v1h-1zM18 11h1v1h-1zM20 11h1v1h-1zM22 11h1v1h-1zM24 11h7v1h-7zM1 12h6v1h-6zM9 12h1v1h-1zM13 12h4v1h-4zM20 12h1v1h-1zM24 12h1v1h-1zM26 12h2v1h-2zM4 13h2v1h-2zM7 13h2v1h-2zM10 13h2v1h-2zM13 13h2v1h-2zM16 13h1v1h-1zM18 13h4v1h-4zM23 13h1v1h-1zM25 13h3v1h-3zM31 13h2v1h-2zM1 14h1v1h-1zM3 14h2v1h-2zM6 14h3v1h-3zM11 14h3v1h-3zM17 14h2v1h-2zM22 14h1v1h-1zM24 14h3v1h-3zM29 14h3v1h-3zM0 15h6v1h-6zM11 15h1v1h-1zM13 15h1v1h-1zM15 15h1v1h-1zM19 15h1v1h-1zM22 15h1v1h-1zM25 15h1v1h-1zM27 15h1v1h-1zM29 15h2v1h-2zM32 15h1v1h-1zM0 16h1v1h-1zM5 16h2v1h-2zM8 16h2v1h-2zM11 16h3v1h-3zM16 16h2v1h-2zM19 16h1v1h-1zM22 16h1v1h-1zM24 16h2v1h-2zM27 16h2v1h-2zM32 16h1v1h-1zM2 17h4v1h-4zM7 17h1v1h-1zM13 17h9v1h-9zM23 17h1v1h-1zM26 17h1v1h-1zM29 17h2v1h-2zM32 17h1v1h-1zM0 18h2v1h-2zM5 18h3v1h-3zM10 18h2v1h-2zM14 18h3v1h-3zM19 18h1v1h-1zM23 18h5v1h-5zM29 18h2v1h-2zM32 18h1v1h-1zM0 19h1v1h-1zM3 19h1v1h-1zM5 19h1v1h-1zM7 19h2v1h-2zM10 19h2v1h-2zM15 19h1v1h-1zM19 19h2v1h-2zM22 19h1v1h-1zM26 19h1v1h-1zM28 19h3v1h-3zM5 20h2v1h-2zM9 20h1v1h-1zM11 20h3v1h-3zM15 20h3v1h-3zM19 20h1v1h-1zM22 20h1v1h-1zM25 20h1v1h-1zM27 20h3v1h-3zM31 20h2v1h-2zM0 21h2v1h-2zM3 21h1v1h-1zM7 21h4v1h-4zM12 21h2v1h-2zM16 21h2v1h-2zM19 21h1v1h-1zM23 21h1v1h-1zM28 21h2v1h-2zM0 22h1v1h-1zM4 22h1v1h-1zM6 22h2v1h-2zM9 22h2v1h-2zM12 22h6v1h-6zM20 22h1v1h-1zM25 22h1v1h-1zM29 22h1v1h-1zM31 22h1v1h-1zM0 23h1v1h-1zM4 23h2v1h-2zM8 23h2v1h-2zM14 23h1v1h-1zM20 23h1v1h-1zM22 23h1v1h-1zM24 23h4v1h-4zM29 23h2v1h-2zM0 24h3v1h-3zM4 24h3v1h-3zM10 24h2v1h-2zM13 24h3v1h-3zM19 24h2v1h-2zM23 24h7v1h-7zM31 24h1v1h-1zM8 25h1v1h-1zM10 25h1v1h-1zM13 25h4v1h-4zM18 25h2v1h-2zM23 25h2v1h-2zM28 25h1v1h-1zM30 25h1v1h-1zM32 25h1v1h-1zM0 26h7v1h-7zM13 26h1v1h-1zM15 26h4v1h-4zM20 26h1v1h-1zM22 26h3v1h-3zM26 26h1v1h-1zM28 26h1v1h-1zM30 26h2v1h-2zM0 27h1v1h-1zM6 27h1v1h-1zM9 27h2v1h-2zM12 27h2v1h-2zM16 27h1v1h-1zM18 27h1v1h-1zM22 27h3v1h-3zM28 27h5v1h-5zM0 28h1v1h-1zM2 28h3v1h-3zM6 28h1v1h-1zM13 28h3v1h-3zM18 28h2v1h-2zM22 28h1v1h-1zM24 28h6v1h-6zM31 28h1v1h-1zM0 29h1v1h-1zM2 29h3v1h-3zM6 29h1v1h-1zM9 29h2v1h-2zM16 29h6v1h-6zM23 29h3v1h-3zM27 29h3v1h-3zM31 29h2v1h-2zM0 30h1v1h-1zM2 30h3v1h-3zM6 30h1v1h-1zM9 30h4v1h-4zM16 30h2v1h-2zM19 30h1v1h-1zM23 30h1v1h-1zM25 30h1v1h-1zM27 30h3v1h-3zM31 30h2v1h-2zM0 31h1v1h-1zM6 31h1v1h-1zM10 31h1v1h-1zM12 31h1v1h-1zM15 31h2v1h-2zM22 31h1v1h-1zM25 31h1v1h-1zM27 31h4v1h-4zM0 32h7v1h-7zM8 32h7v1h-7zM17 32h1v1h-1zM19 32h1v1h-1zM22 32h4v1h-4zM27 32h1v1h-1zM31 32h1v1h-1z"
+  },
+  {
+   "etichetta": "Video tutorial",
+   "nota": "Una panoramica in video di come si usa.",
+   "url": null
+  }
+ ]
 }
 </script>
 <script>
@@ -206,6 +245,29 @@
   const G = JSON.parse(document.getElementById('dati').textContent);
   const num = i => String(i).padStart(2, '0');
 
+  /* I riquadri in fondo: QR + link. Il tracciato del QR sta nei dati (lo scrive
+     strumenti/qr.py); senza indirizzo resta la cornice vuota, non un codice finto. */
+  function collegamenti(){
+    const voci = G.collegamenti || [];
+    if (!voci.length) return '';
+    return `<div class="collegamenti">` + voci.map(c => `
+      <div class="coll">
+        ${c.d
+          ? `<svg class="qr" viewBox="-2 -2 ${c.moduli + 4} ${c.moduli + 4}" shape-rendering="crispEdges"
+               role="img" aria-label="QR: ${c.etichetta}">
+               <rect x="-2" y="-2" width="${c.moduli + 4}" height="${c.moduli + 4}" fill="#fff"></rect>
+               <path d="${c.d}" fill="#181114"></path></svg>`
+          : `<div class="qr vuoto">in arrivo</div>`}
+        <div class="chi">
+          <p class="et">${c.etichetta}</p>
+          <p class="nota">${c.nota || ''}</p>
+          ${c.url
+            ? `<a class="vai" href="${c.url}" target="_blank" rel="noopener">Apri ↗</a>`
+            : `<span class="attesa">Non ancora pubblicato.</span>`}
+        </div>
+      </div>`).join('') + `</div>`;
+  }
+
   function disegna(){
     const testo = $('#testo'), indice = $('#indice');
     testo.innerHTML = `
@@ -214,6 +276,7 @@
         <h1>${G.titolo || ''}</h1>
         <p class="occhio">${G.occhio || ''}</p>
       </header>` +
+      collegamenti() +
       G.capitoli.map((c, i) => `
       <section class="cap" id="${c.id}">
         <div class="cap-testa"><span class="cap-num">${num(i + 1)}</span>

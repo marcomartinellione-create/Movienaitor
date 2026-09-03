@@ -513,6 +513,12 @@ al cambio utente). Per file arbitrari nella cartella il plugin espone
 `fsElencaJson`). Per provare la UI nel browser serve un finto `window.Capacitor.Plugins.MvnSaf`
 (niente SAF fuori dall'APK): si stubba, si chiama `caricaCartella('fake')` e `entra(slug)`.
 
+**I QR del manuale**: in apertura ci sono due riquadri (GitHub, video tutorial). I QR non
+sono immagini ma un tracciato SVG dentro il blob JSON, generato da `strumenti/qr.py`
+(serve il modulo `qrcode`). Il video non esiste ancora: il suo riquadro è un segnaposto
+senza QR — meglio della cornice con dentro un codice che porta altrove. Quando ci sarà:
+`python strumenti/qr.py youtube https://…` e basta.
+
 **Il manuale dentro l'app**: `Manuale.html` (radice) è la fonte unica, aperta dal tasto
 📖 Guida in cima al modulo Segnala, in un iframe a schermo intero (non un div: ha un suo
 `:root`/`body` e ridipingerebbe l'app). Nessuna copia versionata: la portano dentro le
