@@ -15,3 +15,6 @@ app-mobile/www/Manuale.html
 # (Nel repo c'è esempio-profilo.json come modello.)
 profili/
 
+
+# Versione di prova navigabile dal browser: generata, non versionata
+app-mobile/www/prova.html
