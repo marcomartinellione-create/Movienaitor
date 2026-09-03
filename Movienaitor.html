@@ -191,7 +191,10 @@ header .spazio{flex:1; min-width:0}
 .tenda.dx{right:-4px; box-shadow:inset 22px 0 34px rgba(0,0,0,.55)}
 /* Il fermo-immagine del titolo precedente, mentre il sipario si chiude: sta SOTTO le
    tende (z-index 4), così il cambio avviene a sipario chiuso e non si vede. */
-.sipario-copia{position:absolute; inset:0; z-index:3; pointer-events:none}
+.sipario-copia{position:absolute; inset:0; z-index:3; pointer-events:none;
+  /* il fondo serve: l'immagine dello schermo sta a opacity .85, e senza qualcosa
+     sotto si intravedeva il titolo nuovo attraverso quel 15% */
+  background:var(--schermo-off)}
 .schermo.aperto .tenda.sx{transform:translateX(calc(-100% + 30px))}
 .schermo.aperto .tenda.dx{transform:translateX(calc(100% - 30px))}
 /* ---------- modalità serie: il salotto ----------

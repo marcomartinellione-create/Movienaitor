@@ -567,7 +567,10 @@
   .cartellone .tenda.sx{left:-4px; box-shadow:inset -18px 0 28px rgba(0,0,0,.55)}
   .cartellone .tenda.dx{right:-4px; box-shadow:inset 18px 0 28px rgba(0,0,0,.55)}
   /* il fermo-immagine del titolo precedente, sotto le tende, mentre il sipario si chiude */
-  .sipario-copia{position:absolute; inset:0; z-index:3; pointer-events:none}
+  .sipario-copia{position:absolute; inset:0; z-index:3; pointer-events:none;
+    /* il fondo serve: l'immagine dello schermo sta a opacity .85, e senza qualcosa
+       sotto si intravedeva il titolo nuovo attraverso quel 15% */
+    background:var(--schermo-off)}
   .cartellone.aperto .tenda.sx{transform:translateX(calc(-100% + 22px))}
   .cartellone.aperto .tenda.dx{transform:translateX(calc(100% - 22px))}
   /* tasto Play (registra la serata come sul desktop) */

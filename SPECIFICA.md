@@ -1005,3 +1005,8 @@ Rimedio: prima di riscrivere `schermo-inner` se ne tiene una **copia** (`.sipari
 e la si toglie dopo `TEMPO_SIPARIO` — cioè esattamente quando il sipario è chiuso e sta per
 riaprirsi. Chi guarda vede: vecchio titolo → tende che chiudono sul vecchio → tende che
 riaprono sul nuovo.
+
+⚠️ La copia deve avere un **fondo opaco** (`background:var(--schermo-off)`). Sembra un
+dettaglio e non lo è: l'immagine dello schermo sta a `opacity:.85`, quindi senza niente
+sotto la copia si intravedeva il titolo nuovo attraverso quel 15% — le due immagini
+sovrapposte in trasparenza.
