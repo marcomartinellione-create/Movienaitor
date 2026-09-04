@@ -336,4 +336,4 @@ Lo schema è a tre cifre; le revisioni ordinarie incrementano l'ultima. Le due p
 
 ---
 
-*Manuale riferito alla versione 1.7.21. Le specifiche di dettaglio — formule, formati dei file, motivazioni delle scelte progettuali — sono documentate in SPECIFICA.md all'interno del progetto.*
+*Manuale riferito alla versione 1.7.22. Le specifiche di dettaglio — formule, formati dei file, motivazioni delle scelte progettuali — sono documentate in SPECIFICA.md all'interno del progetto.*
