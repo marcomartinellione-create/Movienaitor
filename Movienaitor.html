@@ -3415,6 +3415,64 @@ function modaleConsiglio(x){
   $('#cg-si').onclick = () => { chiudiModale(); modaleAggiungi(f.tmdbId); };
 }
 
+/* ══════════════════ CODICI DEI GUASTI ══════════════════
+   Ogni guasto ha una sigla: chi lo incontra la riferisce e si sa già di che si tratta,
+   senza doverlo ricostruire a parole. Le validazioni non hanno codice: non sono guasti.
+   `rimedio` è quello che può fare chi legge; se non c'è, non è colpa sua. */
+const ERRORI = {
+  // ── aggiornamento dell'app ──
+  'AGG-01': {cosa:'Nessuna connessione a internet.',
+             rimedio:'Riprova quando sei in rete.'},
+  'AGG-02': {cosa:'GitHub ha temporaneamente bloccato le richieste da questa rete.',
+             rimedio:'Riprova fra un\'ora: il limite è per rete, non per persona.'},
+  'AGG-03': {cosa:'GitHub ha risposto con un errore.',
+             rimedio:'Di solito passa da sé; se insiste, scarica l\'app a mano.'},
+  'AGG-04': {cosa:'La risposta di GitHub non è leggibile.'},
+  'AGG-05': {cosa:'Non risulta pubblicata nessuna versione.'},
+  'AGG-06': {cosa:'L\'ultima versione non ha un file da installare allegato.'},
+  'AGG-07': {cosa:'Scaricamento dell\'aggiornamento non riuscito.',
+             rimedio:'Riprova, oppure scarica l\'app a mano dalla pagina delle versioni.'},
+  'AGG-08': {cosa:'Manca il consenso a installare app da questa fonte.',
+             rimedio:'Concedilo a Movienaitor nelle impostazioni che si sono aperte, poi riprova.'},
+
+  // ── librerie online ──
+  'RETE-01': {cosa:'Manca la chiave della libreria.',
+              rimedio:'Mettila in ⚙ Impostazioni: è gratuita e vale per tutto il gruppo.'},
+  'RETE-02': {cosa:'La libreria non ha risposto.',
+              rimedio:'Controlla la connessione e riprova.'},
+  'RETE-03': {cosa:'La libreria ha rifiutato la chiave.',
+              rimedio:'Ricontrolla la chiave in ⚙ Impostazioni: spazi in più la invalidano.'},
+
+  // ── cartella condivisa ──
+  'CART-01': {cosa:'Scrittura nella cartella condivisa non riuscita.',
+              rimedio:'Controlla che la cartella sia raggiungibile e che ci sia spazio.'},
+  'CART-02': {cosa:'Lettura della cartella condivisa non riuscita.',
+              rimedio:'Se la cartella è stata spostata, riselezionala.'},
+  'CART-03': {cosa:'Il permesso sulla cartella non è più valido.',
+              rimedio:'Riseleziona la cartella dalla schermata iniziale: i dati restano dove sono.'},
+
+  // ── sistema ──
+  'SIST-01': {cosa:'Copia negli appunti non riuscita.',
+              rimedio:'Seleziona il testo e copialo a mano.'},
+};
+/* Il testo da mostrare: prima il codice, che è quello che serve riferire. */
+function testoErrore(codice, dettaglio){
+  const e = ERRORI[codice] || {cosa:'Errore non catalogato.'};
+  return `[${codice}] ${e.cosa}${dettaglio ? ' — ' + dettaglio : ''}`;
+}
+/* Guasto in un toast: il codice si vede sempre, il rimedio quando c'è. */
+function guasto(codice, dettaglio){
+  const e = ERRORI[codice] || {};
+  ultimoGuasto = {codice, dettaglio, quando: Date.now()};
+  toast(testoErrore(codice, dettaglio) + (e.rimedio ? ' ' + e.rimedio : ''), true);
+  return codice;
+}
+/* L'ultimo guasto capitato, per allegarlo a una segnalazione scritta subito dopo: se
+   no bisogna sperare che chi segnala si ricordi il codice, e non succede. */
+let ultimoGuasto = null;
+const guastoRecente = () => (ultimoGuasto && Date.now() - ultimoGuasto.quando < 30 * 60000)
+  ? ultimoGuasto : null;
+
 /* ════════════════════════ SEGNALAZIONI (bug & idee) ════════════════════════ */
 // Anti-conflitto come per i profili: ognuno scrive SOLO il proprio
 // `segnalazioni/<slug>.json`; lo stato (fatto / in lavorazione / eliminata) lo scrive
@@ -3592,14 +3650,15 @@ function modaleSegnala(){
       id:`${Date.now().toString(36)}-${S.me}`, tipo, titolo,
       descrizione:$('#sg-desc').value.trim(),
       gravita: tipo === 'bug' ? $('#sg-grav').value : null,
-      contesto, versione:APP_VERSION, creato:new Date().toISOString(), autore:S.me
+      contesto, versione:APP_VERSION, creato:new Date().toISOString(), autore:S.me,
+      guasto: guastoRecente() ? testoErrore(guastoRecente().codice, guastoRecente().dettaglio) : null
     };
     // Fuori dalla cartella dell'autore non c'e' niente da salvare: il modulo diventa un
     // messaggio gia' scritto, con dentro i dati tecnici che altrimenti nessuno allega.
     if (!interne){
       const testo = testoSegnalazione(s);
       const ok = await copiaNegliAppunti(testo);
-      if (!ok) return toast('Copia non riuscita: seleziona il testo a mano', true);
+      if (!ok) return guasto('SIST-01');
       apriEsterno(IG_URL);
       chiudiModale();
       toast('Messaggio copiato: incollalo nel messaggio su Instagram 📋');
@@ -3607,7 +3666,7 @@ function modaleSegnala(){
     }
     S.segnalazioni.push(s);
     try { await salvaMieSegnalazioni(); }
-    catch(e){ S.segnalazioni = S.segnalazioni.filter(x => x !== s); return toast('Invio non riuscito: '+e.message, true); }
+    catch(e){ S.segnalazioni = S.segnalazioni.filter(x => x !== s); return guasto('CART-01', e.message); }
     chiudiModale(); disegnaSegnalazioni(); aggiornaBadgeSegnalazioni();
     toast('Segnalazione inviata, grazie! 🐞');
   };
@@ -3628,7 +3687,8 @@ function testoSegnalazione(s){
     `Movienaitor · ${tipo}${grav}`,
     s.titolo,
     s.descrizione ? '\n' + s.descrizione : '',
-    `\n— sezione «${s.contesto}» · ${datiModo(S.modo).nome} · v${s.versione} · ${nomeDi(s.autore)}`
+    `\n— sezione «${s.contesto}» · ${datiModo(S.modo).nome} · v${s.versione} · ${nomeDi(s.autore)}`,
+    s.guasto ? `  ultimo guasto: ${s.guasto}` : ''
   ].filter(Boolean).join('\n');
 }
 

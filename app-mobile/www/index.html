@@ -1068,7 +1068,7 @@ async function cambiaModoM(m){
     const slug = S.me && S.me.slug;
     if (slug && S.profili.some(p => p.slug === slug)) entra(slug);
   } catch(e){
-    toast('Rilettura non riuscita: '+e.message, true);
+    guasto('CART-02', e.message);
   } finally {
     caricamento(false);
   }
@@ -1528,7 +1528,7 @@ function entra(slug){
   // compariva un richiamo per una chiave che lì non serve a niente.
   const chiaveMancante = inLibri() ? '' : (inGiochi() ? (chiaveAPI('rawgKey') ? '' : 'RAWG')
                                                       : (chiaveAPI('tmdbKey') ? '' : 'TMDB'));
-  if (chiaveMancante) toast(`Manca la chiave ${chiaveMancante}: mettila in ⚙ Impostazioni.`, true);
+  if (chiaveMancante) guasto('RETE-01', chiaveMancante);
   $('#hdr').style.display = 'flex';
   $('#m-modo').style.display = 'flex';
   applicaModo();
@@ -1902,7 +1902,7 @@ async function eseguiRicerca(){
     box.querySelectorAll('[data-add]').forEach(b => b.onclick = () => modaleAggiungi(parseInt(b.dataset.add,10)));
   } catch(e){
     if (mio !== cercaSeq) return;
-    box.innerHTML = `<div class="vuoto">Ricerca non riuscita: ${esc(e.message==='nokey'?'manca la chiave TMDB: mettila in ⚙ Impostazioni':e.message)}</div>`;
+    box.innerHTML = `<div class="vuoto">${esc(e.message==='nokey' ? testoErrore('RETE-01','TMDB') : testoErrore('RETE-02', e.message))}</div>`;
   }
 }
 
@@ -1939,7 +1939,7 @@ async function modaleAggiungi(id){
       await mutaLista(p => { const L = listaDi(p); if (!L.some(v=>v.tmdbId===voce.tmdbId)) L.push(voce); });
       chiudiModale(); disegnaMiaLista(); eseguiRicerca();
       toast(`«${voce.titolo}» aggiunto 🍿`);
-    } catch(e){ $('#m-ok').disabled=false; $('#m-ok').textContent='🎬 Aggiungi'; toast('Salvataggio non riuscito: '+e.message, true); }
+    } catch(e){ $('#m-ok').disabled=false; $('#m-ok').textContent='🎬 Aggiungi'; guasto('CART-01', e.message); }
   };
 }
 
@@ -2945,7 +2945,7 @@ function modalePlayM(r){
     if (serie){ voce.stagione = stagione; voce.episodi = episodi; }
     if (giochi) voce.stato = statoScelto;
     try { await registraVisioneM(voce); }
-    catch(e){ $('#mp-ok').disabled=false; $('#mp-ok').textContent = giochi ? (statoScelto === 'finito' ? "✓ L'abbiamo finito" : '▶ Buona partita') : '▶ Buona visione'; return toast('Registrazione non riuscita: '+e.message, true); }
+    catch(e){ $('#mp-ok').disabled=false; $('#mp-ok').textContent = giochi ? (statoScelto === 'finito' ? "✓ L'abbiamo finito" : '▶ Buona partita') : '▶ Buona visione'; return guasto('CART-01', e.message); }
     chiudiModale();
     $('#m-luci-tit').textContent = `${f.titolo}${giochi ? ' — '+(statoScelto === 'finito' ? 'finito' : 'in corso') : ''} — registrato per ${voce.partecipanti.length} ${giochi ? 'giocatori' : 'spettatori'}`;
     $('#m-luci').classList.add('giu');
@@ -3081,7 +3081,8 @@ function testoSegnalazione(s, nome){
     `Movienaitor \u00b7 ${tipo}${grav}`,
     s.titolo,
     s.descrizione ? '\n' + s.descrizione : '',
-    `\n\u2014 sezione \u00ab${s.contesto}\u00bb \u00b7 ${datiModo(S.modo).nome} \u00b7 v${s.versione} \u00b7 ${nome || s.autore}`
+    `\n\u2014 sezione \u00ab${s.contesto}\u00bb \u00b7 ${datiModo(S.modo).nome} \u00b7 v${s.versione} \u00b7 ${nome || s.autore}`,
+    s.guasto ? `  ultimo guasto: ${s.guasto}` : ''
   ].filter(Boolean).join('\n');
 }
 
@@ -3173,13 +3174,14 @@ function modaleSegnalaM(){
     const btn = $('#sg-invia'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
     const s = { id:`${Date.now().toString(36)}-${S.me.slug}`, tipo, titolo,
       descrizione:$('#sg-desc').value.trim(), gravita: tipo === 'bug' ? $('#sg-grav').value : null,
-      contesto, versione:APP_VERSION+'-mobile', creato:new Date().toISOString(), autore:S.me.slug };
+      contesto, versione:APP_VERSION+'-mobile', creato:new Date().toISOString(), autore:S.me.slug,
+      guasto: guastoRecente() ? testoErrore(guastoRecente().codice, guastoRecente().dettaglio) : null };
     // Fuori dalla cartella dell'autore non c'e' niente da salvare: il modulo diventa un
     // messaggio gia' scritto, coi dati tecnici che altrimenti nessuno allega.
     if (!interne){
       const ok = await copiaNegliAppunti(testoSegnalazione(s, S.me.nome));
       if (!ok){ btn.disabled = false; btn.textContent = '📋 Copia il messaggio';
-        return toast('Copia non riuscita: seleziona il testo a mano', true); }
+        return guasto('SIST-01'); }
       window.open(IG_URL, '_blank', 'noopener');
       chiudiModale();
       toast('Messaggio copiato: incollalo su Instagram 📋');
@@ -3202,6 +3204,64 @@ function modaleSegnalaM(){
   });
   agg();
 }
+
+/* ══════════════════ CODICI DEI GUASTI ══════════════════
+   Ogni guasto ha una sigla: chi lo incontra la riferisce e si sa già di che si tratta,
+   senza doverlo ricostruire a parole. Le validazioni non hanno codice: non sono guasti.
+   `rimedio` è quello che può fare chi legge; se non c'è, non è colpa sua. */
+const ERRORI = {
+  // ── aggiornamento dell'app ──
+  'AGG-01': {cosa:'Nessuna connessione a internet.',
+             rimedio:'Riprova quando sei in rete.'},
+  'AGG-02': {cosa:'GitHub ha temporaneamente bloccato le richieste da questa rete.',
+             rimedio:'Riprova fra un\'ora: il limite è per rete, non per persona.'},
+  'AGG-03': {cosa:'GitHub ha risposto con un errore.',
+             rimedio:'Di solito passa da sé; se insiste, scarica l\'app a mano.'},
+  'AGG-04': {cosa:'La risposta di GitHub non è leggibile.'},
+  'AGG-05': {cosa:'Non risulta pubblicata nessuna versione.'},
+  'AGG-06': {cosa:'L\'ultima versione non ha un file da installare allegato.'},
+  'AGG-07': {cosa:'Scaricamento dell\'aggiornamento non riuscito.',
+             rimedio:'Riprova, oppure scarica l\'app a mano dalla pagina delle versioni.'},
+  'AGG-08': {cosa:'Manca il consenso a installare app da questa fonte.',
+             rimedio:'Concedilo a Movienaitor nelle impostazioni che si sono aperte, poi riprova.'},
+
+  // ── librerie online ──
+  'RETE-01': {cosa:'Manca la chiave della libreria.',
+              rimedio:'Mettila in ⚙ Impostazioni: è gratuita e vale per tutto il gruppo.'},
+  'RETE-02': {cosa:'La libreria non ha risposto.',
+              rimedio:'Controlla la connessione e riprova.'},
+  'RETE-03': {cosa:'La libreria ha rifiutato la chiave.',
+              rimedio:'Ricontrolla la chiave in ⚙ Impostazioni: spazi in più la invalidano.'},
+
+  // ── cartella condivisa ──
+  'CART-01': {cosa:'Scrittura nella cartella condivisa non riuscita.',
+              rimedio:'Controlla che la cartella sia raggiungibile e che ci sia spazio.'},
+  'CART-02': {cosa:'Lettura della cartella condivisa non riuscita.',
+              rimedio:'Se la cartella è stata spostata, riselezionala.'},
+  'CART-03': {cosa:'Il permesso sulla cartella non è più valido.',
+              rimedio:'Riseleziona la cartella dalla schermata iniziale: i dati restano dove sono.'},
+
+  // ── sistema ──
+  'SIST-01': {cosa:'Copia negli appunti non riuscita.',
+              rimedio:'Seleziona il testo e copialo a mano.'},
+};
+/* Il testo da mostrare: prima il codice, che è quello che serve riferire. */
+function testoErrore(codice, dettaglio){
+  const e = ERRORI[codice] || {cosa:'Errore non catalogato.'};
+  return `[${codice}] ${e.cosa}${dettaglio ? ' — ' + dettaglio : ''}`;
+}
+/* Guasto in un toast: il codice si vede sempre, il rimedio quando c'è. */
+function guasto(codice, dettaglio){
+  const e = ERRORI[codice] || {};
+  ultimoGuasto = {codice, dettaglio, quando: Date.now()};
+  toast(testoErrore(codice, dettaglio) + (e.rimedio ? ' ' + e.rimedio : ''), true);
+  return codice;
+}
+/* L'ultimo guasto capitato, per allegarlo a una segnalazione scritta subito dopo: se
+   no bisogna sperare che chi segnala si ricordi il codice, e non succede. */
+let ultimoGuasto = null;
+const guastoRecente = () => (ultimoGuasto && Date.now() - ultimoGuasto.quando < 30 * 60000)
+  ? ultimoGuasto : null;
 
 /* ══════════════════ AGGIORNAMENTO DELL'APK ══════════════════ */
 // Fonte unica: l'ultima GitHub Release, dove finiscono sia l'exe che l'APK a ogni
@@ -3230,22 +3290,21 @@ async function controllaAggiornamentoGitHub(){
     r = await fetch(`https://api.github.com/repos/${GH_REPO}/releases/latest`,
       {headers:{Accept:'application/vnd.github+json'}});
   } catch(e){
-    return {ok:false, motivo:'Nessuna connessione a internet.'};
+    return {ok:false, codice:'AGG-01'};
   }
   if (!r.ok){
     // 403 con questo header = quota esaurita: 60 richieste l'ora per indirizzo, e su
     // una rete condivisa la consumano tutti insieme.
     const quota = r.status === 403 && r.headers.get('x-ratelimit-remaining') === '0';
-    return {ok:false, motivo: quota
-      ? 'GitHub ha temporaneamente bloccato le richieste da questa rete: riprova fra un\'ora.'
-      : `GitHub ha risposto ${r.status}.`};
+    return quota ? {ok:false, codice:'AGG-02'}
+                 : {ok:false, codice:'AGG-03', dettaglio:'HTTP ' + r.status};
   }
   let j;
-  try { j = await r.json(); } catch(e){ return {ok:false, motivo:'Risposta di GitHub illeggibile.'}; }
+  try { j = await r.json(); } catch(e){ return {ok:false, codice:'AGG-04'}; }
   const versione = String(j.tag_name || '').replace(/^v/, '');
   const asset = (j.assets || []).find(a => /\.apk$/i.test(a.name));
-  if (!versione) return {ok:false, motivo:'Nessuna versione pubblicata.'};
-  if (!asset) return {ok:false, motivo:`La versione ${versione} non ha un APK allegato.`};
+  if (!versione) return {ok:false, codice:'AGG-05'};
+  if (!asset) return {ok:false, codice:'AGG-06', dettaglio:'versione ' + versione};
   const note = (j.name || '').replace(/^v?[\d.]+\s*[:—-]?\s*/, '') || (j.body || '').split('\n')[0] || '';
   return {ok:true, agg:{versione, url:asset.browser_download_url, note}};
 }
@@ -3273,7 +3332,9 @@ async function controllaAggiornamento(){
 function pannelloControlloFallito(e){
   apriModale(`
     <h3>Non sono riuscito a controllare</h3>
-    <p class="meta">${esc(e.motivo || 'Motivo sconosciuto.')}</p>
+    <div class="campo-r"><label>Codice</label><span style="font-family:monospace">${esc(e.codice || '—')}</span></div>
+    <p class="meta">${esc((ERRORI[e.codice] || {}).cosa || 'Guasto non catalogato.')}${e.dettaglio ? ' ('+esc(e.dettaglio)+')' : ''}</p>
+    ${(ERRORI[e.codice] || {}).rimedio ? `<p class="meta">${esc(ERRORI[e.codice].rimedio)}</p>` : ''}
     <div class="campo-r"><label>Versione installata</label><span>${esc(e.corrente || '—')}</span></div>
     <p class="meta" style="line-height:1.6">Puoi scaricare l'ultima versione a mano dalla
     pagina delle versioni: l'APK si installa sopra a quello che hai, e i tuoi dati non si
@@ -3302,13 +3363,13 @@ function pannelloAggiornamento(){
       const r = await saf().installaApkDaUrl({ url: a.url });
       if (r && r.permesso === false){
         chiudiModale();
-        toast('Attiva «Installa app sconosciute» per Movienaitor, poi riprova', true);
+        guasto('AGG-08');
         return;
       }
       chiudiModale();
     } catch(e){
       b.disabled = false; b.textContent = '⬇ Installa';
-      toast('Non riuscito: ' + (e.message || e), true);
+      guasto('AGG-07', e.message || String(e));
     }
   };
 }
@@ -3638,7 +3699,7 @@ async function apriImpostazioni(){
         else pr.generiPositivi.push(g);
       });
       render();
-    } catch(err){ toast('Salvataggio non riuscito: '+err.message, true); } };
+    } catch(err){ guasto('CART-01', err.message); } };
   $('#i-chiudi').onclick = chiudiModale;
 }
 
@@ -4678,7 +4739,7 @@ function editorRecMobile(recOrig, opts={}){
         leggiCampi();
         if (voto || bozza.sezioni.some(s => !sezioneVuota(s))){
           try { await salvaRecensioneMobile(bozza); }
-          catch(e){ return toast('Salvataggio non riuscito: '+e.message, true); }
+          catch(e){ return guasto('CART-01', e.message); }
         }
       }
       const suo = modoDi(r);
@@ -4744,7 +4805,7 @@ function editorRecMobile(recOrig, opts={}){
     // chip corrispondenti, senza toccare quelli già scelti a mano.
     const rilevaStreaming=async(silenzioso)=>{
       if(bozza.tmdbId==null){ if(!silenzioso) toast('Nessun film collegato',true); return; }
-      if(!chiaveAPI('tmdbKey')){ if(!silenzioso) toast('Manca la chiave TMDB: mettila in ⚙ Impostazioni',true); return; }
+      if(!chiaveAPI('tmdbKey')){ if(!silenzioso) guasto('RETE-01','TMDB'); return; }
       const btn=$('#m-re-rileva'); if(btn && !silenzioso) btn.textContent='⏳…';
       const sv=await providersFilm(bozza.tmdbId);
       if(btn) btn.textContent='🔄 rileva';
@@ -4767,7 +4828,7 @@ function editorRecMobile(recOrig, opts={}){
       const haRoba = voto || bozza.sezioni.some(s => !sezioneVuota(s));
       if (ed && haRoba){
         try { await salvaRecensioneMobile(bozza); }
-        catch(e){ return toast('Salvataggio non riuscito: '+e.message, true); }
+        catch(e){ return guasto('CART-01', e.message); }
       }
       const gia = miaRecensioneM(bozza.tmdbId, stagione);
       if (gia){ chiudiModale(); disegnaRecMobile(); return editorRecMobile(gia); }
@@ -4802,7 +4863,7 @@ function modaleCercaFilmM(onScegli, opts={}){
     t=setTimeout(async()=>{ try{ const res=await cercaFilm(q);
       $('#rnm-ris').innerHTML=res.map(f=>`<div class="rn-item" data-id="${f.id}">${miniaturaRisultato(f)?`<img src="${esc(miniaturaRisultato(f))}" loading="lazy" alt="">`:'<div class="rn-mini"></div>'}<div><div>${esc(f.title)}</div><div style="color:var(--dim);font-size:12px">${(f.release_date||'').slice(0,4)}</div></div></div>`).join('')||'<div style="color:var(--dim);padding:8px">Nessun risultato</div>';
       $('#rnm-ris').querySelectorAll('.rn-item').forEach(el=>el.onclick=()=>onScegli(parseInt(el.dataset.id,10)));
-    }catch(e){ $('#rnm-ris').innerHTML=`<div style="color:var(--dim);padding:8px">${e.message==='nokey'?'Manca la chiave TMDB':'Ricerca non riuscita'}</div>`; } },350); };
+    }catch(e){ $('#rnm-ris').innerHTML=`<div style="color:var(--dim);padding:8px">${esc(e.message==='nokey' ? testoErrore('RETE-01','TMDB') : testoErrore('RETE-02', e.message))}</div>`; } },350); };
   $('#rnm-q').oninput=cerca; if(opts.query){ $('#rnm-q').value=opts.query; cerca(); }
   setTimeout(()=>$('#rnm-q').focus(),50);
 }

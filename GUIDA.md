@@ -232,6 +232,29 @@ In orientamento orizzontale, e su tablet, la Sala adotta una **disposizione a du
 
 **In sintesi.** Le anomalie ricorrenti sono riconducibili a tre cause: **assenza di una chiave di accesso**, **sincronizzazione non ancora completata**, **indisponibilità del dato nella libreria di origine**. Quest'ultima non costituisce un malfunzionamento dell'applicazione.
 
+### Codici dei guasti
+Ogni guasto è identificato da una sigla, riportata nel messaggio fra parentesi quadre — per esempio `[AGG-02]`. Nella segnalazione il codice viene allegato automaticamente, se il guasto è avvenuto negli ultimi trenta minuti: non è necessario annotarlo.
+
+Le validazioni («serve almeno un titolo») non hanno codice: non sono guasti.
+
+<table><thead><tr><th>Codice</th><th>Significato</th><th>Rimedio</th></tr></thead><tbody>
+<tr><td>`AGG-01`</td><td>Nessuna connessione a internet.</td><td>Riprovare in rete.</td></tr>
+<tr><td>`AGG-02`</td><td>GitHub ha bloccato temporaneamente le richieste dalla rete in uso.</td><td>Attendere un'ora: il limite è per rete, non per utente.</td></tr>
+<tr><td>`AGG-03`</td><td>GitHub ha risposto con un errore (il codice HTTP è riportato).</td><td>Di norma si risolve da sé; in caso contrario scaricare l'applicazione manualmente.</td></tr>
+<tr><td>`AGG-04`</td><td>Risposta di GitHub illeggibile.</td><td>—</td></tr>
+<tr><td>`AGG-05`</td><td>Nessuna versione pubblicata.</td><td>—</td></tr>
+<tr><td>`AGG-06`</td><td>L'ultima versione non ha un file di installazione allegato.</td><td>—</td></tr>
+<tr><td>`AGG-07`</td><td>Scaricamento dell'aggiornamento non riuscito.</td><td>Riprovare, oppure scaricare manualmente dalla pagina delle versioni.</td></tr>
+<tr><td>`AGG-08`</td><td>Manca il consenso a installare applicazioni da questa fonte.</td><td>Concederlo nelle impostazioni che l'applicazione apre, quindi riprovare.</td></tr>
+<tr><td>`RETE-01`</td><td>Manca la chiave della libreria (è indicata quale).</td><td>Inserirla in ⚙ Impostazioni.</td></tr>
+<tr><td>`RETE-02`</td><td>La libreria non ha risposto.</td><td>Verificare la connessione e riprovare.</td></tr>
+<tr><td>`RETE-03`</td><td>La libreria ha rifiutato la chiave.</td><td>Ricontrollare la chiave: spazi iniziali o finali ne determinano il rifiuto.</td></tr>
+<tr><td>`CART-01`</td><td>Scrittura nella cartella condivisa non riuscita.</td><td>Verificare che la cartella sia raggiungibile e che vi sia spazio.</td></tr>
+<tr><td>`CART-02`</td><td>Lettura della cartella condivisa non riuscita.</td><td>Se la cartella è stata spostata, riselezionarla.</td></tr>
+<tr><td>`CART-03`</td><td>Il permesso sulla cartella non è più valido.</td><td>Riselezionare la cartella dalla schermata iniziale: i dati non subiscono alterazioni.</td></tr>
+<tr><td>`SIST-01`</td><td>Copia negli appunti non riuscita.</td><td>Selezionare e copiare il testo manualmente.</td></tr>
+</tbody></table>
+
 ### Casistica
 
 #### Messaggio «Manca la chiave TMDB» all'avvio
