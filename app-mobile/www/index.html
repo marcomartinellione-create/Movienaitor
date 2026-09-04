@@ -842,6 +842,7 @@ const S = { treeUri:null, config:{}, profili:[], me:null, storico:[], modo:'film
   presenti:new Set(), fSala:{ durata:null, genere:[], regista:'' }, proiettato:null, tuttiSala:[],
   segnalazioni:[], segnStato:{}, segnEliminate:[], aggiornamento:null,
   host:false, archivioPronti:new Set(), archivioDove:{}, archQ:'', archSoloDaFare:false,
+  aggEsito:null,               // com'è andato l'ultimo controllo degli aggiornamenti
   providersCache:new Map(),   // tmdbId → [servizi streaming] da TMDB (sessione)
   trofeiCache:new Map(),      // id gioco → [trofei] da RAWG (sessione: richieste care)
   // consigli «Per te»
@@ -3221,26 +3222,43 @@ async function versioneInstallata(){
   try { const r = await saf().versioneApp(); if (r && r.versione) return r.versione; } catch(e){}
   return APP_VERSION;
 }
+/* Torna sempre un esito, mai un null muto: chi chiama deve poter distinguere «sei
+   all'ultima versione» da «non sono riuscito a chiedere», che sono cose diverse. */
 async function controllaAggiornamentoGitHub(){
+  let r;
   try {
-    const r = await fetch(`https://api.github.com/repos/${GH_REPO}/releases/latest`,
+    r = await fetch(`https://api.github.com/repos/${GH_REPO}/releases/latest`,
       {headers:{Accept:'application/vnd.github+json'}});
-    if (!r.ok) return null;
-    const j = await r.json();
-    const versione = String(j.tag_name || '').replace(/^v/, '');
-    const asset = (j.assets || []).find(a => /\.apk$/i.test(a.name));
-    if (!versione || !asset) return null;
-    const note = (j.name || '').replace(/^v?[\d.]+\s*[:—-]?\s*/, '') || (j.body || '').split('\n')[0] || '';
-    return {versione, url:asset.browser_download_url, note};
-  } catch(e){ return null; }   // offline, o GitHub irraggiungibile: si riprova al prossimo controllo
+  } catch(e){
+    return {ok:false, motivo:'Nessuna connessione a internet.'};
+  }
+  if (!r.ok){
+    // 403 con questo header = quota esaurita: 60 richieste l'ora per indirizzo, e su
+    // una rete condivisa la consumano tutti insieme.
+    const quota = r.status === 403 && r.headers.get('x-ratelimit-remaining') === '0';
+    return {ok:false, motivo: quota
+      ? 'GitHub ha temporaneamente bloccato le richieste da questa rete: riprova fra un\'ora.'
+      : `GitHub ha risposto ${r.status}.`};
+  }
+  let j;
+  try { j = await r.json(); } catch(e){ return {ok:false, motivo:'Risposta di GitHub illeggibile.'}; }
+  const versione = String(j.tag_name || '').replace(/^v/, '');
+  const asset = (j.assets || []).find(a => /\.apk$/i.test(a.name));
+  if (!versione) return {ok:false, motivo:'Nessuna versione pubblicata.'};
+  if (!asset) return {ok:false, motivo:`La versione ${versione} non ha un APK allegato.`};
+  const note = (j.name || '').replace(/^v?[\d.]+\s*[:—-]?\s*/, '') || (j.body || '').split('\n')[0] || '';
+  return {ok:true, agg:{versione, url:asset.browser_download_url, note}};
 }
 async function controllaAggiornamento(){
   S.aggiornamento = null;
   const box = $('#m-upd'); if (box) box.hidden = true;
   const corrente = await versioneInstallata();
 
-  const trovato = await controllaAggiornamentoGitHub();
-  if (!trovato || !versioneMaggiore(trovato.versione, corrente)) return;
+  const esito = await controllaAggiornamentoGitHub();
+  S.aggEsito = {...esito, corrente, quando: Date.now()};   // lo legge «Cerca aggiornamenti»
+  if (!esito.ok) return;
+  const trovato = esito.agg;
+  if (!versioneMaggiore(trovato.versione, corrente)) return;
   S.aggiornamento = {...trovato, corrente};
   if (box){
     box.hidden = false;
@@ -3250,6 +3268,24 @@ async function controllaAggiornamento(){
       <span class="vai">Installa ›</span>`;
   }
 }
+/* Quando il controllo non riesce non si può far finta di niente: si dice il motivo e si
+   lascia la via d'uscita, cioè scaricare l'APK a mano dalla pagina delle versioni. */
+function pannelloControlloFallito(e){
+  apriModale(`
+    <h3>Non sono riuscito a controllare</h3>
+    <p class="meta">${esc(e.motivo || 'Motivo sconosciuto.')}</p>
+    <div class="campo-r"><label>Versione installata</label><span>${esc(e.corrente || '—')}</span></div>
+    <p class="meta" style="line-height:1.6">Puoi scaricare l'ultima versione a mano dalla
+    pagina delle versioni: l'APK si installa sopra a quello che hai, e i tuoi dati non si
+    toccano.</p>
+    <div class="m-az">
+      <button class="ghost" id="cf-chiudi">Chiudi</button>
+      <button class="primario" id="cf-apri">Apri la pagina ↗</button>
+    </div>`);
+  $('#cf-chiudi').onclick = chiudiModale;
+  $('#cf-apri').onclick = () => window.open('https://github.com/' + GH_REPO + '/releases/latest', '_blank', 'noopener');
+}
+
 function pannelloAggiornamento(){
   const a = S.aggiornamento; if (!a) return;
   apriModale(`
@@ -3573,8 +3609,10 @@ async function apriImpostazioni(){
     const b = $('#i-agg'); b.disabled = true; b.innerHTML = '<span class="spin"></span>';
     await controllaAggiornamento();
     b.disabled = false; b.textContent = 'Cerca aggiornamenti';
-    if (S.aggiornamento) pannelloAggiornamento();
-    else toast('Sei già all\'ultima versione ✓');
+    if (S.aggiornamento) return pannelloAggiornamento();
+    const e = S.aggEsito || {};
+    if (e.ok) toast(`Sei già all'ultima versione ✓ (${e.corrente})`);
+    else pannelloControlloFallito(e);
   };
   render();
   $('#i-modi').onclick = async e => {
