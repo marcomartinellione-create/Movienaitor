@@ -792,6 +792,14 @@ header .spazio{flex:1; min-width:0}
 .cg-info{color:var(--dim2); font-size:12.5px}
 .cg-info b{color:var(--dim)}
 .cg-card{position:relative}
+/* Il «+» sta sulla locandina, in basso a destra: aggiunge senza aprire la scheda. */
+.cg-piu{position:absolute; right:6px; bottom:6px; z-index:2; width:30px; height:30px;
+  border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:17px; line-height:1; color:var(--su-oro); cursor:pointer;
+  background:linear-gradient(180deg,var(--oro2),var(--oro)); border:1px solid var(--oro-dim);
+  box-shadow:0 3px 10px rgba(0,0,0,.5); transition:transform var(--rapida)}
+.cg-piu:hover{transform:scale(1.12)}
+.cg-piu:disabled{opacity:.5; cursor:default}
 .cg-fascia{position:absolute; top:8px; left:8px; z-index:2; font-size:10.5px; font-weight:700; letter-spacing:.03em;
   padding:3px 9px; border-radius:20px; border:1px solid transparent; white-space:nowrap}
 .cg-fascia.alta{background:var(--oro); color:var(--su-oro)}
@@ -858,6 +866,15 @@ header .spazio{flex:1; min-width:0}
 .sg-campo textarea{min-height:120px; resize:vertical; line-height:1.5}
 .sg-ctx{color:var(--dim2); font-size:12px; margin-top:10px}
 /* Il biglietto da visita dell'autore, quando la segnalazione non ha una cartella dove andare. */
+/* Le due strade fuori dalla cartella di chi scrive l'app: privata e pubblica, pari
+   grado, e quando il testo è negli appunti il riquadro si accende per dire «tocca a te». */
+.sg-vie{margin:14px 0 2px; display:flex; flex-direction:column; gap:10px;
+  border:1px solid var(--velluto3); border-radius:12px; padding:12px; background:var(--bg2);
+  transition:border-color var(--rapida), box-shadow var(--rapida)}
+.sg-vie.pronto{border-color:var(--oro-dim); box-shadow:0 0 0 2px rgba(198,160,90,.14)}
+.sg-vie .dove{color:var(--dim2); font-size:11.5px; letter-spacing:.09em}
+.sg-vie.pronto .dove{color:var(--oro2)}
+.sg-vie .sg-ig{margin:0}
 .sg-ig{display:flex; gap:16px; align-items:center; margin:14px 0 2px; padding:14px;
   border:1px solid var(--velluto3); border-radius:12px; background:var(--velluto)}
 .sg-qr{flex:none; width:112px; height:112px; padding:5px; border-radius:8px; background:#fff}
@@ -953,6 +970,14 @@ header .spazio{flex:1; min-width:0}
    mandava la spunta a capo, staccata dalla sua etichetta */
 .campo-check{display:flex !important; align-items:center; gap:9px; color:var(--dim); font-size:13px; cursor:pointer; margin:0}
 .imp-costanti{display:grid; grid-template-columns:1fr 1fr; gap:10px 14px}
+/* Conferma che riguarda un titolo: la locandina accanto alla domanda. */
+.cf-riga{display:flex; gap:14px; align-items:flex-start}
+.cf-poster{flex:none; width:78px; aspect-ratio:2/3; border-radius:8px; overflow:hidden;
+  position:relative; background:var(--velluto2); border:1px solid var(--bordo2)}
+.cf-poster img, .cf-poster .segnaposto{position:absolute; inset:0; width:100%; height:100%;
+  object-fit:cover; display:block}
+.riga-sviluppo{display:flex; align-items:center; gap:12px; margin-top:6px}
+.riga-sviluppo .acceso{color:var(--verde); font-size:13.5px}
 
 /* modale "lista completa" */
 .lc-q{width:100%; background:var(--bg2); border:1px solid var(--velluto3); color:var(--crema); padding:9px 12px; border-radius:9px; margin-bottom:12px}
@@ -1283,6 +1308,7 @@ header .spazio{flex:1; min-width:0}
           <button class="bottone piccolo secondario" id="imp-scartati">🚫 Gestisci esclusi</button>
         </div>
         <div class="campo"><label class="campo-check"><input type="checkbox" id="imp-host"> <span>Modalità host</span></label></div>
+        <div class="campo" id="imp-sviluppo" hidden></div>
         <div class="campo"><label>Di cosa ti occupi<span class="aiuto-q" tabindex="0">?<span class="tip">Le categorie che ti interessano. Quelle che togli spariscono dalla tua app, e tu sparisci da loro per gli altri: niente poltrona in Sala e la tua lista non entra nel conto di cosa si fa stasera. Chi non legge, in biblioteca non c'è.</span></span></label>
           <div class="modi-mii" id="imp-modi"></div>
           <div class="aiuto">Con una categoria sola, il selettore in basso a destra sparisce e l'app è quella di prima.</div></div>
@@ -3333,7 +3359,8 @@ function disegnaConsigli(){
     const f = x.film;
     return `<div class="rec-card cg-card" data-i="${i}">
       <div class="rec-poster"><img hidden alt=""><div class="segnaposto" style="background:url('${segnapostoSVG(f.titolo, f.tmdbId)}') center/cover"></div>
-        <div class="cg-fascia ${x.fascia.cl}">${x.fascia.txt}</div></div>
+        <div class="cg-fascia ${x.fascia.cl}">${x.fascia.txt}</div>
+        <button class="cg-piu" data-piu="${i}" title="Aggiungi alla tua lista">＋</button></div>
       <div class="corpo"><h5>${esc(f.titolo)}</h5>
         <div class="sub">${esc(f.anno||'')}${f.regista?' · '+esc(String(f.regista).split(',')[0]):''}</div>
         ${x.perche.length ? `<div class="cg-perche">${esc(x.perche[0])}</div>` : ''}
@@ -3344,7 +3371,18 @@ function disegnaConsigli(){
     const el = g.querySelector(`.cg-card[data-i="${i}"]`);
     if (!el) return;
     mostraLocandina(el.querySelector('.rec-poster'), x.film);
-    el.onclick = () => modaleConsiglio(x);
+    el.onclick = e => { if (!e.target.closest('[data-piu]')) modaleConsiglio(x); };
+    // il «+» aggiunge e basta: chi vuole prima leggere il perché apre la scheda
+    el.querySelector('[data-piu]').onclick = async ev => {
+      ev.stopPropagation();
+      const b = ev.currentTarget; b.disabled = true;
+      try {
+        const messo = await aggiungiInLista(x.film);
+        toast(messo ? `«${x.film.titolo}» aggiunto alla tua lista 🍿` : 'È già nella tua lista');
+      } catch(err){ b.disabled = false; return guasto('CART-01', err.message); }
+      S.cgLista = S.cgLista.filter(y => y !== x);
+      disegnaConsigli();
+    };
   });
 }
 
@@ -3382,6 +3420,20 @@ function modaleScartati(){
     });
 }
 
+/* Mette in lista una scheda che abbiamo già: niente giro di rete, niente pannello in
+   più. Torna false se il titolo c'era già. */
+async function aggiungiInLista(d, desiderio = 3, comp = null){
+  const mio = mioProfilo();
+  if (listaDi(mio).find(v => v.tmdbId === d.tmdbId && entryAttiva(v, S.me))) return false;
+  const voce = {...d, desiderio, conChi: comp ? comp.conChi : [], nonCon: comp ? comp.nonCon : [],
+                aggiunto: new Date().toISOString()};
+  listaDi(mio).push(voce);
+  await salvaMioProfilo();
+  disegnaCatalogo(); disegnaFiltri(); disegnaSala();
+  salvaImmagini(voce).then(() => { S.urlCache.clear(); disegnaCatalogo(); });
+  return true;
+}
+
 function modaleConsiglio(x){
   const f = x.film, prof = S.cgProfilo || profiloGusto(S.me);
   apriModale(`
@@ -3398,10 +3450,18 @@ function modaleConsiglio(x){
     </div>
     <div id="m-strm" class="strm-riga" style="margin:10px 0 0"></div>
     ${f.trama ? `<div class="trama">${esc(f.trama)}</div>` : ''}
+    <div class="m-blocco"><label>QUANTO VOGLIO ${inLibri() ? 'LEGGERLO' : (inGiochi() ? 'GIOCARCI' : (inSerie() ? 'VEDERLA' : 'VEDERLO'))}</label>
+      <div id="cg-stelle">${stelleHTML(3)}</div></div>
     <div class="m-azioni">
       <button class="bottone piccolo secondario" id="cg-no">Non mi interessa</button>
       <button class="bottone piccolo" id="cg-si">${datiModo(S.modo).ic} Aggiungi alla mia lista</button>
     </div>`);
+  let cgDesiderio = 3;
+  $('#cg-stelle').onclick = e => {
+    const st = e.target.closest('span[data-v]'); if (!st) return;
+    cgDesiderio = parseInt(st.dataset.v, 10);
+    $('#cg-stelle').innerHTML = stelleHTML(cgDesiderio);
+  };
   mostraLocandina($('#modale .m-poster'), f);
   providersFilm(f.tmdbId).then(sv => { const b = $('#m-strm');
     if (b && sv.length) b.innerHTML = `<span class="lab">📺 In streaming:</span> ${badgeStreaming(sv)}`; });
@@ -3412,7 +3472,16 @@ function modaleConsiglio(x){
     chiudiModale(); disegnaConsigli();
     toast('Non te lo propongo più');
   };
-  $('#cg-si').onclick = () => { chiudiModale(); modaleAggiungi(f.tmdbId); };
+  // salva da qui: la scheda ce l'abbiamo già tutta, non serve riscaricarla in un altro pannello
+  $('#cg-si').onclick = async () => {
+    const b = $('#cg-si'); b.disabled = true;
+    let messo;
+    try { messo = await aggiungiInLista(f, cgDesiderio); }
+    catch(e){ b.disabled = false; return guasto('CART-01', e.message); }
+    S.cgLista = S.cgLista.filter(y => y !== x);
+    chiudiModale(); disegnaConsigli();
+    toast(messo ? `«${f.titolo}» aggiunto alla tua lista 🍿` : 'È già nella tua lista');
+  };
 }
 
 /* ══════════════════ CODICI DEI GUASTI ══════════════════
@@ -3483,6 +3552,10 @@ const guastoRecente = () => (ultimoGuasto && Date.now() - ultimoGuasto.quando < 
 const IG_URL  = 'https://instagram.com/marco_the_wander';
 const IG_NOME = '@marco_the_wander';
 const IG_QR   = 'M0 0h7v1h-7zM9 0h4v1h-4zM14 0h2v1h-2zM17 0h3v1h-3zM22 0h7v1h-7zM0 1h1v1h-1zM6 1h1v1h-1zM8 1h1v1h-1zM10 1h2v1h-2zM13 1h3v1h-3zM17 1h4v1h-4zM22 1h1v1h-1zM28 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM9 2h1v1h-1zM19 2h1v1h-1zM22 2h1v1h-1zM24 2h3v1h-3zM28 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM9 3h2v1h-2zM12 3h1v1h-1zM14 3h2v1h-2zM18 3h1v1h-1zM22 3h1v1h-1zM24 3h3v1h-3zM28 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM8 4h1v1h-1zM10 4h2v1h-2zM15 4h1v1h-1zM18 4h3v1h-3zM22 4h1v1h-1zM24 4h3v1h-3zM28 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM9 5h1v1h-1zM12 5h1v1h-1zM15 5h1v1h-1zM17 5h1v1h-1zM19 5h2v1h-2zM22 5h1v1h-1zM28 5h1v1h-1zM0 6h7v1h-7zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h1v1h-1zM20 6h1v1h-1zM22 6h7v1h-7zM10 7h1v1h-1zM13 7h1v1h-1zM16 7h5v1h-5zM0 8h1v1h-1zM2 8h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM14 8h4v1h-4zM19 8h2v1h-2zM24 8h1v1h-1zM27 8h1v1h-1zM0 9h2v1h-2zM3 9h1v1h-1zM5 9h1v1h-1zM9 9h2v1h-2zM12 9h1v1h-1zM16 9h3v1h-3zM20 9h3v1h-3zM25 9h1v1h-1zM28 9h1v1h-1zM0 10h5v1h-5zM6 10h1v1h-1zM13 10h1v1h-1zM17 10h2v1h-2zM22 10h1v1h-1zM24 10h1v1h-1zM26 10h3v1h-3zM1 11h1v1h-1zM3 11h2v1h-2zM7 11h3v1h-3zM12 11h1v1h-1zM15 11h1v1h-1zM17 11h1v1h-1zM20 11h1v1h-1zM27 11h1v1h-1zM1 12h1v1h-1zM6 12h2v1h-2zM9 12h2v1h-2zM12 12h1v1h-1zM16 12h2v1h-2zM19 12h5v1h-5zM25 12h1v1h-1zM27 12h2v1h-2zM0 13h1v1h-1zM3 13h3v1h-3zM7 13h1v1h-1zM12 13h2v1h-2zM16 13h2v1h-2zM20 13h3v1h-3zM25 13h1v1h-1zM28 13h1v1h-1zM0 14h1v1h-1zM4 14h3v1h-3zM8 14h1v1h-1zM12 14h1v1h-1zM14 14h1v1h-1zM17 14h2v1h-2zM21 14h3v1h-3zM25 14h1v1h-1zM27 14h2v1h-2zM2 15h2v1h-2zM7 15h1v1h-1zM9 15h1v1h-1zM11 15h4v1h-4zM16 15h3v1h-3zM22 15h2v1h-2zM25 15h1v1h-1zM27 15h1v1h-1zM1 16h2v1h-2zM4 16h7v1h-7zM14 16h1v1h-1zM17 16h1v1h-1zM20 16h4v1h-4zM25 16h1v1h-1zM27 16h2v1h-2zM1 17h1v1h-1zM4 17h2v1h-2zM7 17h2v1h-2zM11 17h1v1h-1zM14 17h1v1h-1zM16 17h1v1h-1zM20 17h1v1h-1zM22 17h1v1h-1zM25 17h2v1h-2zM28 17h1v1h-1zM0 18h1v1h-1zM2 18h1v1h-1zM6 18h1v1h-1zM12 18h2v1h-2zM17 18h1v1h-1zM20 18h1v1h-1zM22 18h1v1h-1zM27 18h2v1h-2zM1 19h3v1h-3zM5 19h1v1h-1zM10 19h1v1h-1zM16 19h3v1h-3zM20 19h3v1h-3zM24 19h2v1h-2zM27 19h1v1h-1zM0 20h1v1h-1zM2 20h1v1h-1zM4 20h3v1h-3zM8 20h1v1h-1zM10 20h3v1h-3zM15 20h1v1h-1zM19 20h6v1h-6zM8 21h1v1h-1zM10 21h1v1h-1zM13 21h1v1h-1zM15 21h2v1h-2zM18 21h3v1h-3zM24 21h1v1h-1zM26 21h3v1h-3zM0 22h7v1h-7zM9 22h2v1h-2zM14 22h1v1h-1zM17 22h1v1h-1zM19 22h2v1h-2zM22 22h1v1h-1zM24 22h2v1h-2zM27 22h2v1h-2zM0 23h1v1h-1zM6 23h1v1h-1zM9 23h1v1h-1zM11 23h10v1h-10zM24 23h2v1h-2zM27 23h2v1h-2zM0 24h1v1h-1zM2 24h3v1h-3zM6 24h1v1h-1zM8 24h1v1h-1zM10 24h2v1h-2zM14 24h1v1h-1zM16 24h2v1h-2zM20 24h5v1h-5zM27 24h2v1h-2zM0 25h1v1h-1zM2 25h3v1h-3zM6 25h1v1h-1zM14 25h1v1h-1zM16 25h3v1h-3zM23 25h2v1h-2zM26 25h3v1h-3zM0 26h1v1h-1zM2 26h3v1h-3zM6 26h1v1h-1zM8 26h3v1h-3zM14 26h1v1h-1zM16 26h1v1h-1zM19 26h1v1h-1zM23 26h3v1h-3zM28 26h1v1h-1zM0 27h1v1h-1zM6 27h1v1h-1zM9 27h2v1h-2zM12 27h4v1h-4zM17 27h1v1h-1zM19 27h3v1h-3zM27 27h1v1h-1zM0 28h7v1h-7zM8 28h5v1h-5zM14 28h4v1h-4zM19 28h4v1h-4zM27 28h2v1h-2z';
+// L'altra strada: pubblica, numerata, e chi segnala può seguirne il seguito.
+const GH_URL  = 'https://github.com/marcomartinellione-create/Movienaitor/issues';
+const GH_NOME = 'Issues su GitHub';
+const GH_QR   = 'M0 0h7v1h-7zM8 0h3v1h-3zM14 0h2v1h-2zM18 0h2v1h-2zM23 0h3v1h-3zM30 0h7v1h-7zM0 1h1v1h-1zM6 1h1v1h-1zM8 1h2v1h-2zM11 1h1v1h-1zM14 1h1v1h-1zM18 1h1v1h-1zM20 1h1v1h-1zM22 1h1v1h-1zM26 1h1v1h-1zM28 1h1v1h-1zM30 1h1v1h-1zM36 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM8 2h1v1h-1zM10 2h1v1h-1zM12 2h2v1h-2zM15 2h1v1h-1zM20 2h2v1h-2zM24 2h5v1h-5zM30 2h1v1h-1zM32 2h3v1h-3zM36 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM11 3h1v1h-1zM13 3h5v1h-5zM19 3h3v1h-3zM24 3h2v1h-2zM27 3h2v1h-2zM30 3h1v1h-1zM32 3h3v1h-3zM36 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM8 4h4v1h-4zM15 4h1v1h-1zM17 4h3v1h-3zM26 4h1v1h-1zM28 4h1v1h-1zM30 4h1v1h-1zM32 4h3v1h-3zM36 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM9 5h3v1h-3zM13 5h2v1h-2zM16 5h3v1h-3zM21 5h1v1h-1zM23 5h1v1h-1zM25 5h1v1h-1zM28 5h1v1h-1zM30 5h1v1h-1zM36 5h1v1h-1zM0 6h7v1h-7zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h1v1h-1zM20 6h1v1h-1zM22 6h1v1h-1zM24 6h1v1h-1zM26 6h1v1h-1zM28 6h1v1h-1zM30 6h7v1h-7zM11 7h1v1h-1zM13 7h1v1h-1zM15 7h1v1h-1zM19 7h1v1h-1zM21 7h1v1h-1zM23 7h1v1h-1zM25 7h1v1h-1zM27 7h2v1h-2zM0 8h1v1h-1zM3 8h6v1h-6zM10 8h2v1h-2zM13 8h1v1h-1zM16 8h1v1h-1zM18 8h1v1h-1zM20 8h2v1h-2zM23 8h2v1h-2zM26 8h1v1h-1zM28 8h2v1h-2zM32 8h1v1h-1zM34 8h3v1h-3zM2 9h4v1h-4zM8 9h1v1h-1zM12 9h1v1h-1zM14 9h1v1h-1zM17 9h1v1h-1zM20 9h1v1h-1zM22 9h1v1h-1zM25 9h1v1h-1zM27 9h1v1h-1zM31 9h3v1h-3zM35 9h1v1h-1zM0 10h1v1h-1zM2 10h3v1h-3zM6 10h2v1h-2zM9 10h3v1h-3zM14 10h1v1h-1zM21 10h1v1h-1zM24 10h2v1h-2zM27 10h2v1h-2zM30 10h1v1h-1zM34 10h1v1h-1zM36 10h1v1h-1zM0 11h1v1h-1zM2 11h3v1h-3zM10 11h1v1h-1zM12 11h1v1h-1zM15 11h1v1h-1zM17 11h1v1h-1zM26 11h2v1h-2zM31 11h6v1h-6zM1 12h1v1h-1zM5 12h3v1h-3zM9 12h1v1h-1zM12 12h2v1h-2zM16 12h1v1h-1zM19 12h2v1h-2zM24 12h1v1h-1zM28 12h1v1h-1zM30 12h2v1h-2zM33 12h2v1h-2zM36 12h1v1h-1zM1 13h1v1h-1zM3 13h1v1h-1zM7 13h1v1h-1zM9 13h1v1h-1zM11 13h2v1h-2zM15 13h4v1h-4zM22 13h2v1h-2zM25 13h3v1h-3zM32 13h2v1h-2zM0 14h1v1h-1zM5 14h2v1h-2zM9 14h2v1h-2zM14 14h2v1h-2zM17 14h1v1h-1zM19 14h1v1h-1zM21 14h2v1h-2zM27 14h2v1h-2zM30 14h1v1h-1zM32 14h3v1h-3zM36 14h1v1h-1zM0 15h1v1h-1zM3 15h1v1h-1zM7 15h2v1h-2zM11 15h1v1h-1zM13 15h1v1h-1zM17 15h2v1h-2zM23 15h2v1h-2zM27 15h5v1h-5zM33 15h4v1h-4zM2 16h6v1h-6zM9 16h2v1h-2zM12 16h2v1h-2zM15 16h3v1h-3zM19 16h3v1h-3zM23 16h1v1h-1zM25 16h1v1h-1zM27 16h1v1h-1zM30 16h1v1h-1zM34 16h1v1h-1zM36 16h1v1h-1zM2 17h2v1h-2zM11 17h1v1h-1zM14 17h1v1h-1zM16 17h1v1h-1zM18 17h1v1h-1zM20 17h1v1h-1zM23 17h7v1h-7zM31 17h1v1h-1zM33 17h1v1h-1zM2 18h1v1h-1zM4 18h3v1h-3zM8 18h2v1h-2zM11 18h5v1h-5zM20 18h1v1h-1zM22 18h2v1h-2zM25 18h1v1h-1zM27 18h3v1h-3zM32 18h1v1h-1zM34 18h1v1h-1zM36 18h1v1h-1zM4 19h1v1h-1zM7 19h2v1h-2zM10 19h2v1h-2zM18 19h1v1h-1zM24 19h2v1h-2zM27 19h1v1h-1zM29 19h2v1h-2zM32 19h2v1h-2zM36 19h1v1h-1zM1 20h1v1h-1zM3 20h2v1h-2zM6 20h1v1h-1zM9 20h2v1h-2zM14 20h4v1h-4zM24 20h1v1h-1zM27 20h7v1h-7zM3 21h2v1h-2zM7 21h2v1h-2zM10 21h1v1h-1zM12 21h1v1h-1zM14 21h2v1h-2zM18 21h2v1h-2zM21 21h1v1h-1zM23 21h1v1h-1zM26 21h2v1h-2zM29 21h1v1h-1zM32 21h1v1h-1zM34 21h1v1h-1zM2 22h1v1h-1zM6 22h1v1h-1zM8 22h2v1h-2zM13 22h3v1h-3zM17 22h2v1h-2zM22 22h3v1h-3zM27 22h3v1h-3zM31 22h1v1h-1zM33 22h1v1h-1zM36 22h1v1h-1zM2 23h2v1h-2zM7 23h2v1h-2zM12 23h1v1h-1zM14 23h4v1h-4zM20 23h3v1h-3zM24 23h1v1h-1zM26 23h1v1h-1zM30 23h7v1h-7zM0 24h5v1h-5zM6 24h1v1h-1zM10 24h1v1h-1zM13 24h7v1h-7zM21 24h1v1h-1zM23 24h2v1h-2zM27 24h1v1h-1zM30 24h2v1h-2zM36 24h1v1h-1zM0 25h3v1h-3zM4 25h2v1h-2zM10 25h1v1h-1zM14 25h1v1h-1zM16 25h1v1h-1zM19 25h2v1h-2zM26 25h4v1h-4zM32 25h3v1h-3zM0 26h2v1h-2zM5 26h2v1h-2zM8 26h1v1h-1zM10 26h1v1h-1zM12 26h3v1h-3zM16 26h1v1h-1zM19 26h3v1h-3zM23 26h2v1h-2zM26 26h2v1h-2zM29 26h2v1h-2zM35 26h2v1h-2zM0 27h1v1h-1zM3 27h2v1h-2zM9 27h2v1h-2zM12 27h1v1h-1zM14 27h2v1h-2zM20 27h1v1h-1zM22 27h2v1h-2zM27 27h1v1h-1zM30 27h1v1h-1zM33 27h3v1h-3zM0 28h1v1h-1zM2 28h6v1h-6zM11 28h3v1h-3zM16 28h1v1h-1zM18 28h1v1h-1zM20 28h1v1h-1zM22 28h1v1h-1zM25 28h1v1h-1zM28 28h5v1h-5zM34 28h1v1h-1zM8 29h2v1h-2zM12 29h2v1h-2zM15 29h1v1h-1zM18 29h3v1h-3zM22 29h1v1h-1zM27 29h2v1h-2zM32 29h1v1h-1zM34 29h1v1h-1zM0 30h7v1h-7zM8 30h1v1h-1zM10 30h1v1h-1zM13 30h3v1h-3zM19 30h5v1h-5zM25 30h1v1h-1zM28 30h1v1h-1zM30 30h1v1h-1zM32 30h1v1h-1zM36 30h1v1h-1zM0 31h1v1h-1zM6 31h1v1h-1zM8 31h3v1h-3zM12 31h1v1h-1zM15 31h1v1h-1zM17 31h2v1h-2zM22 31h1v1h-1zM24 31h2v1h-2zM27 31h2v1h-2zM32 31h1v1h-1zM35 31h2v1h-2zM0 32h1v1h-1zM2 32h3v1h-3zM6 32h1v1h-1zM8 32h1v1h-1zM10 32h1v1h-1zM13 32h3v1h-3zM21 32h2v1h-2zM24 32h1v1h-1zM26 32h7v1h-7zM36 32h1v1h-1zM0 33h1v1h-1zM2 33h3v1h-3zM6 33h1v1h-1zM8 33h2v1h-2zM11 33h1v1h-1zM13 33h1v1h-1zM16 33h3v1h-3zM21 33h1v1h-1zM24 33h2v1h-2zM28 33h3v1h-3zM33 33h3v1h-3zM0 34h1v1h-1zM2 34h3v1h-3zM6 34h1v1h-1zM10 34h1v1h-1zM13 34h5v1h-5zM19 34h3v1h-3zM23 34h1v1h-1zM27 34h3v1h-3zM32 34h5v1h-5zM0 35h1v1h-1zM6 35h1v1h-1zM9 35h2v1h-2zM12 35h3v1h-3zM16 35h2v1h-2zM19 35h2v1h-2zM24 35h1v1h-1zM26 35h1v1h-1zM30 35h1v1h-1zM32 35h5v1h-5zM0 36h7v1h-7zM8 36h2v1h-2zM11 36h1v1h-1zM13 36h4v1h-4zM20 36h1v1h-1zM23 36h2v1h-2zM28 36h4v1h-4zM33 36h1v1h-1zM36 36h1v1h-1z';
 const segnInterne = () => !!S.config.sviluppo;
 
 /* Copia negli appunti, con la strada vecchia di riserva: sotto Electron il protocollo
@@ -3598,18 +3671,30 @@ function modaleSegnala(){
     <h3>🐞 Segnala un problema o un'idea</h3>
     <p style="color:var(--dim); font-size:13.5px">${interne
       ? `Finisce nella cartella del gruppo: l'host la trova nella sua sezione Segnalazioni e la segna come fatta quando l'ha sistemata.`
-      : `Movienaitor lo scrivo da solo, e questa cartella è vostra: quello che lasciate qui resta qui. Scrivi lo stesso qui sotto, poi copia e mandamelo su Instagram — è lì che rispondo.`}</p>
+      : `Movienaitor lo scrivo da solo, e questa cartella è vostra: quello che lasciate qui resta qui. Scrivi lo stesso qui sotto, poi copia il messaggio e scegli dove mandarmelo.`}</p>
     <div class="sg-guida">
       <button class="bottone piccolo secondario" id="sg-guida">📖 Guida</button>
       <div class="dritta">Prima di segnalare, dai un'occhiata al manuale: diversi comportamenti che sembrano errori sono spiegati lì.</div>
     </div>
-    ${interne ? '' : `<div class="sg-ig">
-      <svg class="sg-qr" viewBox="-2 -2 33 33" shape-rendering="crispEdges" role="img" aria-label="QR del profilo Instagram ${IG_NOME}">
-        <rect x="-2" y="-2" width="33" height="33" fill="#fff"></rect><path d="${IG_QR}" fill="#181114"></path></svg>
-      <div class="chi">
-        <div class="nome">${IG_NOME}</div>
-        <button class="bottone piccolo" id="sg-ig-apri">Apri Instagram ↗</button>
-        <div class="come">Inquadra il QR col telefono, oppure apri il profilo da qui e mandami un messaggio.</div>
+    ${interne ? '' : `<div class="sg-vie" id="sg-vie">
+      <div class="dove" id="sg-dove">DOVE MANDARMELO — scegli tu</div>
+      <div class="sg-ig">
+        <svg class="sg-qr" viewBox="-2 -2 33 33" shape-rendering="crispEdges" role="img" aria-label="QR del profilo Instagram ${IG_NOME}">
+          <rect x="-2" y="-2" width="33" height="33" fill="#fff"></rect><path d="${IG_QR}" fill="#181114"></path></svg>
+        <div class="chi">
+          <div class="nome">${IG_NOME}</div>
+          <button class="bottone piccolo" id="sg-ig-apri">Apri Instagram ↗</button>
+          <div class="come">In privato, come un messaggio qualsiasi. Inquadra il QR col telefono, oppure apri il profilo da qui.</div>
+        </div>
+      </div>
+      <div class="sg-ig">
+        <svg class="sg-qr" viewBox="-2 -2 41 41" shape-rendering="crispEdges" role="img" aria-label="QR delle Issues su GitHub">
+          <rect x="-2" y="-2" width="41" height="41" fill="#fff"></rect><path d="${GH_QR}" fill="#181114"></path></svg>
+        <div class="chi">
+          <div class="nome">${GH_NOME}</div>
+          <button class="bottone piccolo" id="sg-gh-apri">Apri le Issues ↗</button>
+          <div class="come">Resta scritta e prende un numero: puoi vedere se è stata sistemata senza chiedermelo. Serve un account GitHub, e la si apre con «New issue».</div>
+        </div>
       </div></div>`}
     <div class="sg-tipi" id="sg-tipi">${Object.keys(SEGN_TIPI).map(k => `
       <button type="button" class="sg-tipo${k === tipo ? ' on' : ''}" data-t="${k}">
@@ -3643,6 +3728,7 @@ function modaleSegnala(){
   $('#sg-annulla').onclick = chiudiModale;
   $('#sg-guida').onclick = apriManuale;
   if ($('#sg-ig-apri')) $('#sg-ig-apri').onclick = () => apriEsterno(IG_URL);
+  if ($('#sg-gh-apri')) $('#sg-gh-apri').onclick = () => apriEsterno(GH_URL);
   $('#sg-invia').onclick = async () => {
     const titolo = $('#sg-tit').value.trim();
     if (!titolo){ toast('Serve almeno un titolo', true); $('#sg-tit').focus(); return; }
@@ -3659,9 +3745,13 @@ function modaleSegnala(){
       const testo = testoSegnalazione(s);
       const ok = await copiaNegliAppunti(testo);
       if (!ok) return guasto('SIST-01');
-      apriEsterno(IG_URL);
-      chiudiModale();
-      toast('Messaggio copiato: incollalo nel messaggio su Instagram 📋');
+      // Le strade sono due e la scelta è di chi segnala: il modulo resta aperto, il testo
+      // è negli appunti, i due pulsanti aspettano solo di essere premuti.
+      $('#sg-vie').classList.add('pronto');
+      $('#sg-dove').textContent = '📋 COPIATO — ora scegli dove incollarlo';
+      $('#sg-invia').textContent = 'Copiato ✓';
+      $('#sg-vie').scrollIntoView({block:'nearest', behavior:'smooth'});
+      toast('Messaggio copiato: incollalo su Instagram o in una issue 📋');
       return;
     }
     S.segnalazioni.push(s);
@@ -4621,7 +4711,7 @@ function editorRecensione(recOrig, opts={}){
     if ($('#re-del')) $('#re-del').onclick = () => confermaModale(`Eliminare la recensione di «${m.titolo}»${bozza.stagione?` — Stagione ${bozza.stagione}`:''}?`, 'Elimina', async () => {
       try { await eliminaRecensione(bozza); chiudiModale(); disegnaRecensioni(); toast('Recensione eliminata'); }
       catch(e){ toast('Non riuscito: '+e.message, true); }
-    });
+    }, m);
   }
   render();
 }
@@ -5760,7 +5850,7 @@ function disegnaCatalogo(){
       : '';
     confermaModale(
       `Togliere «${esc(tit)}» dai già visti? Sparisce dal tuo storico; le serate a cui hanno partecipato altri restano nel loro.` + avviso,
-      'Rimuovi', () => rimuoviDaiVisti(id, tit));
+      'Rimuovi', () => rimuoviDaiVisti(id, tit), {tmdbId:id, titolo:tit});
   });
 }
 
@@ -5806,7 +5896,7 @@ function agganciaCard(v){
       : (inSerie()
         ? `Segnare «${v.titolo}» come vista fino in fondo? Esce dalla tua lista e finisce fra i già visti.`
         : `Segnare «${v.titolo}» come visto? Esce dalla tua lista e finisce fra i già visti.`);
-    confermaModale(dom, conStato() ? '✓ Finito' : '✓ Visto', () => segnaVisto(v));
+    confermaModale(dom, conStato() ? '✓ Finito' : '✓ Visto', () => segnaVisto(v), v);
   };
   el.querySelector('.btn-togli').onclick = () => confermaModale(`Togliere «${v.titolo}» dalla tua lista?`, 'Rimuovi', async () => {
     const mio = mioProfilo();
@@ -5814,7 +5904,7 @@ function agganciaCard(v){
     await salvaMioProfilo();
     disegnaCatalogo(); disegnaFiltri(); disegnaSala(); disegnaArchivio();
     toast(`«${v.titolo}» tolto dalla lista`);
-  });
+  }, v);
 }
 
 async function rimuoviDaiVisti(id, titolo){
@@ -5911,14 +6001,21 @@ function agganciaRicerca(){
 function apriModale(html){ $('#modale').innerHTML = html; $('#modale').classList.remove('editor-grande'); $('#modale-fondo').hidden = false; }
 function chiudiModale(){ $('#modale-fondo').hidden = true; wlChiudi(); }
 
-// conferma generica (sì/no)
-function confermaModale(testo, okLabel, onOk){
+// conferma generica (sì/no). `voce` è facoltativa: quando la domanda riguarda un titolo
+// preciso la locandina compare accanto al testo — è il momento in cui serve essere sicuri
+// di quale sia, e finora era l'unico posto dove non si vedeva.
+function confermaModale(testo, okLabel, onOk, voce){
   apriModale(`<h3>Conferma</h3>
-    <p style="color:var(--dim); line-height:1.6">${esc(testo)}</p>
+    <div class="cf-riga">
+      ${voce ? `<div class="cf-poster"><img hidden alt="">
+        <div class="segnaposto" style="background:url('${segnapostoSVG(voce.titolo, voce.tmdbId)}') center/cover"></div></div>` : ''}
+      <p style="color:var(--dim); line-height:1.6; margin:0">${esc(testo)}</p>
+    </div>
     <div class="m-azioni">
       <button class="bottone piccolo secondario" id="cf-no">Annulla</button>
       <button class="bottone piccolo" id="cf-si">${esc(okLabel || 'OK')}</button>
     </div>`);
+  if (voce) mostraLocandina($('#modale .cf-poster'), voce);
   $('#cf-no').onclick = chiudiModale;
   $('#cf-si').onclick = () => { chiudiModale(); onOk(); };
 }
@@ -6217,6 +6314,7 @@ function disegnaImpostazioni(){
   disegnaMieChiavi();
   if ($('#imp-rawg')) $('#imp-rawg').value = S.config.rawgKey || '';
   $('#imp-versione').textContent = APP_VERSION;
+  disegnaSviluppo();
   // Ctrl+Alt sul numero di versione accende le segnalazioni interne per questa cartella:
   // serve a chi l'app la scrive, e non ha motivo di stare in bella vista fra le opzioni.
   $('#imp-versione').onclick = async e => {
@@ -6224,7 +6322,7 @@ function disegnaImpostazioni(){
     S.config.sviluppo = !S.config.sviluppo;
     try { await FS.writeJSON(['config.json'], S.config); }
     catch(err){ S.config.sviluppo = !S.config.sviluppo; return toast('Non riuscito: '+err.message, true); }
-    applicaHost(); disegnaSegnalazioni();
+    applicaHost(); disegnaSegnalazioni(); disegnaSviluppo();
     toast(S.config.sviluppo ? 'Segnalazioni interne attive per questa cartella 🐞'
                             : 'Le segnalazioni rimandano a Instagram');
   };
@@ -6251,6 +6349,24 @@ function disegnaImpostazioni(){
   disegnaBonusGenere();
   disegnaServizi();
 }
+/* Accesa è nascosta a chi non la usa, ma non a chi ce l'ha: chi l'ha accesa deve poterla
+   spegnere senza ricordarsi una scorciatoia. */
+function disegnaSviluppo(){
+  const box = $('#imp-sviluppo'); if (!box) return;
+  box.hidden = !S.config.sviluppo;
+  if (!S.config.sviluppo) return;
+  box.innerHTML = `<label>Modalità sviluppatore <span class="aiuto-q" tabindex="0">?<span class="tip">Le segnalazioni di questo gruppo restano nella cartella invece di passare da Instagram, e l'host ha la sezione per gestirle. Vale per tutta la cartella condivisa.</span></span></label>
+    <div class="riga-sviluppo"><span class="acceso">attiva</span>
+      <button class="bottone piccolo secondario" id="imp-sviluppo-off">Disattiva</button></div>`;
+  $('#imp-sviluppo-off').onclick = async () => {
+    S.config.sviluppo = false;
+    try { await FS.writeJSON(['config.json'], S.config); }
+    catch(e){ S.config.sviluppo = true; return guasto('CART-01', e.message); }
+    applicaHost(); disegnaSegnalazioni(); disegnaSviluppo();
+    toast('Modalità sviluppatore disattivata');
+  };
+}
+
 function disegnaServizi(){
   const p = mioProfilo(); if (!p || !$('#imp-servizi')) return;
   const miei = p.serviziStreaming || [];

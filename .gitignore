@@ -18,3 +18,4 @@ profili/
 
 # Versione di prova navigabile dal browser: generata, non versionata
 app-mobile/www/prova.html
+__pycache__/

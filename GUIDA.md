@@ -89,6 +89,8 @@ Nella parte superiore è riportata la **distribuzione dei generi** dell'elenco i
 ### Titoli già fruiti
 La sezione inferiore raccoglie le sessioni confermate e i titoli recensiti. Da essa un titolo può essere **reinserito nell'elenco** per una nuova fruizione.
 
+I pannelli che riguardano un titolo — la scheda di modifica, le conferme di rimozione e di fruizione — riportano la **copertina** accanto al testo. In sua assenza il riquadro riporta il titolo.
+
 La scheda di un titolo espone inoltre due comandi:
 
 - **Visto** — registra la fruizione individuale senza passare dalla Sala. La sessione risulta con il solo titolare fra i partecipanti e **non incide sull'indice di soddisfazione degli altri profili**, non avendo impegnato una sessione collettiva.
@@ -162,6 +164,8 @@ Le recensioni concorrono al profilo con peso decrescente nel tempo e crescente r
 
 Il comando **«non mi interessa»** esclude permanentemente un titolo; l'elenco delle esclusioni è consultabile e reversibile da ⚙ Impostazioni.
 
+Il comando **＋**, sovrapposto alla copertina, inserisce il titolo nell'elenco con indice di preferenza 3 **senza aprire alcuna scheda**. La scheda del suggerimento, che riporta i motivi della proposta, espone a sua volta l'indice di preferenza e salva direttamente: in nessuno dei due percorsi la scheda del titolo viene riscaricata.
+
 Ogni categoria utilizza la propria libreria come fonte. Per i libri, in assenza di una funzione di raccomandazione nativa, si impiega la ricerca per soggetto ordinata per valutazione.
 
 ---
@@ -200,9 +204,15 @@ In cima al modulo il comando **📖 Guida** apre questo manuale a schermo intero
 Le due destinazioni:
 
 - **Nella cartella dello sviluppatore** — quella in cui `config.json` dichiara `"sviluppo": true` — la segnalazione viene scritta su file. L'host la ritrova nella sezione **Segnalazioni**, ordinata per importanza, e la segna come fatta una volta risolta.
-- **In ogni altra cartella** — il caso previsto per un gruppo diverso da quello dello sviluppatore, dove non esiste un destinatario locale — il modulo, allo stesso invio, **copia il testo negli appunti** e apre il profilo Instagram dello sviluppatore (link e QR, generato internamente, senza risorse esterne), a cui inoltrare il messaggio.
+- **In ogni altra cartella** — il caso previsto per un gruppo diverso da quello dello sviluppatore, dove non esiste un destinatario locale — il modulo, allo stesso invio, **copia il testo negli appunti** e lascia aperto il riquadro delle destinazioni, evidenziato. Le destinazioni sono due, con link e QR generati internamente, senza risorse esterne:
+    - **Instagram** — messaggio privato al profilo dello sviluppatore;
+    - **Issues su GitHub** — la segnalazione resta pubblica e numerata, e può essere seguita fino alla chiusura. Richiede un account GitHub; si apre con «New issue».
 
-Il flag `sviluppo` si attiva con **Ctrl+Alt e clic sul numero di versione**, in ⚙ Impostazioni: un clic semplice non ha effetto, e la voce non compare fra le opzioni visibili. Vale per l'intera cartella condivisa, quindi anche per l'app mobile collegata alla stessa cartella.
+  La scelta è di chi segnala: l'applicazione non apre più una destinazione d'ufficio.
+
+Il flag `sviluppo` si attiva con **Ctrl+Alt e clic sul numero di versione**, in ⚙ Impostazioni; sul telefono, con **cinque tocchi consecutivi** sul numero di versione. In entrambi i casi un tocco singolo non ha effetto e la voce non compare fra le opzioni visibili.
+
+A flag attivo la voce **diventa visibile**, in ⚙ Impostazioni, con il comando **Disattiva**: chi l'ha attivata può spegnerla senza ricordare la combinazione. Il flag risiede in `config.json` e vale per l'intera cartella condivisa, quindi anche per l'app mobile collegata alla stessa cartella.
 
 ### Categorie di partecipazione
 Quattro selettori, uno per categoria, determinano a quali categorie il profilo partecipa. La disattivazione produce **due effetti simultanei**:
