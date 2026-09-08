@@ -161,6 +161,9 @@ Pubblicare una nuova versione (per chi sviluppa):
    | `Manuale.html` | stessa riga, dentro il blob JSON |
    | `docs/manuale.html` | rigenerato al passo 2, non si tocca a mano |
 
+   I due `package-lock.json` portano anch'essi un numero di versione, ma si allinea
+   da sé al prossimo `npm install`: non vanno toccati a mano.
+
 2. Manuale allineato alle modifiche (`GUIDA.md` e `Manuale.html`, stesso testo), poi
    `node strumenti/pagina.js` per rifare `docs/manuale.html`: è quello che GitHub Pages
    pubblica, e senza questo passo la pagina resta indietro.
