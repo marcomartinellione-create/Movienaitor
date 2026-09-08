@@ -148,16 +148,39 @@ formule sono in [SPECIFICA.md](SPECIFICA.md); il layout della Sala segue `Stile 
 
 Pubblicare una nuova versione (per chi sviluppa):
 
-1. Bump `version` in `electron/package.json`, `APP_VERSION` in `Movienaitor.html` e in
-   `app-mobile/www/index.html` (e `version` in `app-mobile/package.json`).
-2. `cd electron && npm run dist` → `dist/Movienaitor-Setup-<v>.exe` + `latest.yml`.
-3. L'azione **Build APK** (`.github/workflows/build-apk.yml`) parte da sola a ogni push
-   che tocca `app-mobile/`: a fine corsa scarica l'artifact con
-   `gh run download <run-id> -n movienaitor-apk -D dist` e rinominalo
-   `Movienaitor-<v>.apk`.
-4. `gh release create v<v> "dist/Movienaitor-Setup-<v>.exe" "dist/latest.yml" "dist/Movienaitor-<v>.apk" -t "v<v>" -n "note"`
-   (oppure `npm run publish` per i soli asset desktop) — così chi trova il repo da fuori
-   ha exe e APK nella stessa release.
+1. Bump del numero di versione in **sette** file — le copie dentro le build
+   (`electron/renderer/`, `app-mobile/www/Manuale.html`) si rifanno da sole:
+
+   | File | Dove |
+   |---|---|
+   | `electron/package.json` | `"version"` |
+   | `app-mobile/package.json` | `"version"` — da qui il `versionName` dell'APK |
+   | `Movienaitor.html` | `APP_VERSION` |
+   | `app-mobile/www/index.html` | `APP_VERSION` |
+   | `GUIDA.md` | riga di chiusura «Manuale riferito alla versione …» |
+   | `Manuale.html` | stessa riga, dentro il blob JSON |
+   | `docs/manuale.html` | rigenerato al passo 2, non si tocca a mano |
+
+2. Manuale allineato alle modifiche (`GUIDA.md` e `Manuale.html`, stesso testo), poi
+   `node strumenti/pagina.js` per rifare `docs/manuale.html`: è quello che GitHub Pages
+   pubblica, e senza questo passo la pagina resta indietro.
+3. `cd electron && npm run dist` → `dist/Movienaitor-Setup-<v>.exe`, il suo `.blockmap`
+   e `latest.yml`.
+4. APK, due strade equivalenti:
+   - **in locale:** `cd app-mobile && .\build-apk.ps1` → `Desktop\Movienaitor-APK\Movienaitor.apk`.
+     Lancialo nudo: con `2>&1` o una pipe i warning di npm diventano errori terminanti;
+   - **in cloud:** l'azione **Build APK** (`.github/workflows/build-apk.yml`) parte da sé
+     a ogni push che tocca `app-mobile/`; a fine corsa
+     `gh run download <run-id> -n movienaitor-apk -D dist`.
+
+   In entrambi i casi rinominalo `Movienaitor-<v>.apk`.
+5. Commit, poi **tag e push del tag**: `git tag -a v<v> -m "…" && git push origin v<v>`.
+   L'app mobile legge `tag_name` dalla release, quindi senza tag non vede niente.
+6. `gh release create v<v> --title "v<v>" --notes-file note.md "…-Setup-<v>.exe" "…-Setup-<v>.exe.blockmap" "latest.yml" "Movienaitor-<v>.apk"`
+
+   Tutti e quattro gli allegati servono: `latest.yml` e il `.blockmap` sono
+   l'aggiornamento automatico del PC, l'APK quello del telefono. La **prima riga** delle
+   note diventa il testo che l'app mobile mostra come novità.
 
 ## Sviluppo
 
