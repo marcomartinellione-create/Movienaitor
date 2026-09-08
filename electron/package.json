@@ -1,7 +1,7 @@
 {
   "name": "movienaitor",
   "productName": "Movienaitor",
-  "version": "1.7.22",
+  "version": "1.7.23",
   "description": "Movienaitor — la sala dei film tra amici (wrapper desktop)",
   "author": "Marco",
   "main": "main.js",
