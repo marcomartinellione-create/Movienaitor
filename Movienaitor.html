@@ -569,6 +569,7 @@ header .spazio{flex:1; min-width:0}
 #risultati{position:absolute; top:100%; left:0; right:0; z-index:30; margin-top:6px; background:var(--bg2);
   border:1px solid var(--oro-dim); border-radius:12px; overflow:hidden; box-shadow:var(--ombra); max-height:420px; overflow-y:auto}
 .risultato{display:flex; gap:12px; padding:10px 14px; cursor:pointer; align-items:center}
+.risultato.avviso-wd{cursor:default; font-size:12px; color:var(--dim); line-height:1.4}
 .risultato:hover{background:var(--velluto2)}
 .risultato img,.risultato .mini{width:40px; height:60px; object-fit:cover; border-radius:6px; background:var(--velluto3); flex:none}
 .risultato .r-anno{color:var(--dim2); font-size:13px}
@@ -1651,6 +1652,7 @@ async function cambiaModo(m){
   aggiornaModoUI();
   disegnaTutto();
   riservaFiltri();   // dopo il ridisegno, se la Sala è a video
+  forseConverti();
   } catch(e){
     toast('Rilettura non riuscita: '+e.message, true);
   } finally {
@@ -2085,15 +2087,8 @@ async function cercaFilm(q){
   if (inLibri()) return await cercaLibri(q);
   // I videogiochi non stanno su TMDB: la loro libreria è RAWG (CONCEPT-giochi.md §6).
   // I campi si normalizzano qui su quelli dei film, come già per le serie.
-  if (inGiochi()){
-    if (!chiaveAPI('rawgKey')) throw new Error('nokey');
-    const r = await fetch(`https://api.rawg.io/api/games?key=${chiaveAPI('rawgKey')}&page_size=8&search=${encodeURIComponent(q)}`);
-    if (!r.ok) throw new Error('rawg '+r.status);
-    return ((await r.json()).results || []).slice(0, 8).map(g => ({
-      id:g.id, title:g.name, release_date:g.released || '', poster_path:null,
-      posterUrl:g.background_image || null
-    }));
-  }
+  // Se RAWG non risponde, la ricerca passa a Wikidata (vedi cercaGiochi).
+  if (inGiochi()) return await cercaGiochi(q);
   if (!chiaveAPI('tmdbKey')) throw new Error('nokey');
   const r = await fetch(`https://api.themoviedb.org/3/search/${inSerie()?'tv':'movie'}?api_key=${chiaveAPI('tmdbKey')}&language=it-IT&include_adult=false&query=${encodeURIComponent(q)}`);
   if (!r.ok) throw new Error('tmdb '+r.status);
@@ -2299,20 +2294,72 @@ async function dettagliLibro(id){
   };
 }
 
-// La scheda di un gioco, normalizzata sugli stessi campi di un film: chi la legge non sa
-// nemmeno che la fonte è un'altra. Vedi CONCEPT-giochi.md §6.
-async function dettagliGioco(id){
+/* ══════════ VIDEOGIOCHI: RAWG, E WIKIDATA QUANDO RAWG NON C'È ══════════
+   RAWG è la libreria dei giochi, ma è un servizio solo, e il 5/11/2026 è rimasto giù per
+   ore: Cloudflare rispondeva 522 a tutto, sito compreso, e la ricerca non trovava niente.
+   Da allora, se RAWG non risponde, ricerca e scheda passano a Wikidata: non vuole chiavi,
+   si interroga direttamente dal browser e per circa 60.000 giochi conserva lo slug RAWG
+   (proprietà P9968). Un gioco preso da lì entra in lista PROVVISORIO:
+   - il suo id è il numero del Q di Wikidata col segno meno (Q17185964 → -17185964): non
+     si scontra mai con un id RAWG, che è positivo, ed è uguale per tutto il gruppo, così
+     due persone che aggiungono lo stesso gioco durante il guasto si ritrovano;
+   - si porta dietro lo slug RAWG, se Wikidata lo conosce;
+   - appena RAWG torna a rispondere diventa una voce RAWG vera (convertiProvvisori).
+   Una chiave che manca o che RAWG rifiuta NON passa a Wikidata: quello non è un guasto da
+   aspettare, è una cosa da sistemare, e va detta. */
+const WIKIDATA = 'https://www.wikidata.org/w/api.php';
+const giocoProvvisorio = id => typeof id === 'number' && id < 0;
+
+// fetch con un tempo massimo: da giù, Cloudflare tiene la richiesta appesa una ventina di
+// secondi prima di dire 522, e nessuno aspetta tanto una ricerca
+async function fetchConTempo(url, ms, headers){
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
+  try { return await fetch(url, {signal:ctl.signal, headers}); }
+  finally { clearTimeout(t); }
+}
+// RAWG, con gli errori già smistati: 'nokey' (manca la chiave), 'rawgkey' (rifiutata),
+// 'rawggiu' (non risponde, o risponde da guasto). Gli altri restano 'rawg <stato>'.
+// Quando RAWG non risponde ci si ricorda per due minuti di non chiedergli niente: se no
+// ogni lettera scritta nella ricerca aspetterebbe di nuovo otto secondi per niente.
+let rawgGiuFinoA = 0;
+async function chiamaRAWG(percorso, parametri = {}){
   const k = chiaveAPI('rawgKey');
   if (!k) throw new Error('nokey');
-  const r = await fetch(`https://api.rawg.io/api/games/${id}?key=${k}`);
-  if (!r.ok) throw new Error('rawg '+r.status);
-  const g = await r.json();
+  if (Date.now() < rawgGiuFinoA) throw new Error('rawggiu');
+  const giu = () => { rawgGiuFinoA = Date.now() + 120000; return new Error('rawggiu'); };
+  let r;
+  try { r = await fetchConTempo(`https://api.rawg.io/api/${percorso}?` + new URLSearchParams({key:k, ...parametri}), 8000); }
+  catch(e){ throw giu(); }
+  if (r.status === 401 || r.status === 403) throw new Error('rawgkey');
+  if (r.status === 429 || r.status >= 500) throw giu();
+  if (!r.ok) throw new Error('rawg ' + r.status);
+  return await r.json();
+}
+// Wikimedia chiede a chi usa le sue API di presentarsi: chi non lo fa viene rallentato per
+// primo. Dal browser lo User-Agent non si può cambiare, Api-User-Agent sì (ed è ammesso).
+const PRESENTAZIONE_WD = {'Api-User-Agent':'Movienaitor (app personale per gruppi di amici)'};
+async function chiamaWikidata(parametri){
+  let r;
+  try { r = await fetchConTempo(WIKIDATA + '?' + new URLSearchParams({format:'json', origin:'*', ...parametri}), 10000, PRESENTAZIONE_WD); }
+  catch(e){ throw new Error('wikidata non risponde'); }
+  if (!r.ok) throw new Error('wikidata ' + r.status);
+  return await r.json();
+}
+// Il messaggio per chi cerca un gioco, col codice del guasto davanti.
+function erroreRicercaGiochi(e){
+  if (e.message === 'nokey')   return testoErrore('RETE-01', 'RAWG');
+  if (e.message === 'rawgkey') return testoErrore('RETE-03', 'RAWG');
+  return testoErrore('RETE-02', /^wikidata/.test(e.message) ? 'RAWG e Wikidata' : 'RAWG');
+}
+
+// La scheda RAWG, normalizzata sugli stessi campi di un film: chi la legge non sa nemmeno
+// che la fonte è un'altra. «durata» qui sono ORE per finirlo, non minuti.
+function schedaRAWG(g){
   const nomi = a => (a || []).map(x => x.name).filter(Boolean);
   // il voto: Metacritic è la fonte buona (0-100), la media degli utenti RAWG (0-5) il ripiego
   let voto = null, votoFonte = 'rawg';
   if (g.metacritic){ voto = Math.round(g.metacritic) / 10; votoFonte = 'metacritic'; }
   else if (g.rating){ voto = Math.round(g.rating * 20) / 10; }
-  // «durata» qui vuol dire ore per finirlo: alimenta il filtro «impegno massimo»
   const ore = g.playtime || null;
   // RAWG dà key art orizzontale, non una copertina verticale: nelle caselle verticali
   // viene ritagliata al centro, sullo schermone della Sala sta meglio di una locandina
@@ -2334,6 +2381,262 @@ async function dettagliGioco(id){
     posterUrl:img, sfondoUrl:g.background_image_additional || img,
     locandina:null, sfondo:null
   };
+}
+
+// ── Wikidata ──
+const etichettaWD = (e, lingua) => {
+  const l = (e && e.labels) || {};
+  // «mul» è l'etichetta valida in tutte le lingue: per molti giochi è l'unica che c'è
+  return ((lingua ? (l[lingua] || l.mul) : (l.it || l.en || l.mul)) || {}).value || '';
+};
+const valoriWD = (claims, p) => ((claims || {})[p] || [])
+  .filter(c => c.rank !== 'deprecated')
+  .map(c => ((c.mainsnak || {}).datavalue || {}).value).filter(v => v != null);
+// Wikidata tiene una data di uscita per paese e per piattaforma: vale la più vecchia fra
+// quelle che dicono almeno l'anno. Le parti che non sa (mese, giorno) arrivano come 00.
+function uscitaWD(claims){
+  const d = valoriWD(claims, 'P577').filter(v => v.precision >= 9)
+    .map(v => String(v.time).replace(/^\+/, '').slice(0, 10)).sort()[0];
+  return d ? d.replace(/-00/g, '-01') : null;
+}
+const fileCommons = f => f ? 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(f) + '?width=500' : null;
+// I generi di Wikidata sono voci sue («action-adventure game», «role-playing video game»);
+// i filtri e i consigli parlano coi nomi di RAWG. Dall'etichetta inglese si risale a quelli.
+const GENERI_DA_WD = [
+  [/role-playing|\brpg\b/i, 'RPG'], [/shoot/i, 'Shooter'], [/platform|metroidvania/i, 'Platformer'],
+  [/strateg|4x|tower defense/i, 'Strategy'], [/simulat|sandbox/i, 'Simulation'],
+  [/puzzle/i, 'Puzzle'], [/racing|driving/i, 'Racing'], [/sport/i, 'Sports'],
+  [/fighting|beat 'em up/i, 'Fighting'], [/adventure/i, 'Adventure'], [/action/i, 'Action'],
+  [/arcade/i, 'Arcade'], [/massively multiplayer|\bmmo/i, 'Massively Multiplayer'],
+  [/card/i, 'Card'], [/board/i, 'Board Games'], [/educational/i, 'Educational'],
+  [/casual|party/i, 'Casual'], [/indie/i, 'Indie'],
+];
+const generiDaWikidata = nomiEn => {
+  const out = [];
+  for (const n of nomiEn) for (const [re, g] of GENERI_DA_WD) if (n && re.test(n) && !out.includes(g)) out.push(g);
+  return out;
+};
+
+async function cercaGiochiWikidata(q){
+  // i videogiochi, più tutto quello che RAWG conosce (qualche gioco ha un «è un» diverso)
+  const s = await chiamaWikidata({action:'query', list:'search', srlimit:'10',
+    srsearch: q + ' haswbstatement:P31=Q7889|P9968'});
+  const ids = ((s.query || {}).search || []).map(x => x.title).filter(t => /^Q\d+$/.test(t));
+  if (!ids.length) return [];
+  const ent = (await chiamaWikidata({action:'wbgetentities', ids:ids.join('|'),
+    props:'labels|claims', languages:'it|en|mul'})).entities || {};
+  return ids.map(id => ent[id]).filter(e => e && !('missing' in e)).map(e => ({
+    id:-parseInt(e.id.slice(1), 10), title:etichettaWD(e) || e.id,
+    release_date:uscitaWD(e.claims) || '', poster_path:null,
+    posterUrl:fileCommons(valoriWD(e.claims, 'P18')[0])
+  }));
+}
+
+// Trama e, se Wikidata non ha un'immagine, quella della voce di Wikipedia: prima in
+// italiano, poi in inglese. Se non va, pazienza: la scheda si fa lo stesso.
+async function dallaWikipedia(sitelinks){
+  for (const [sito, lingua] of [['itwiki', 'it'], ['enwiki', 'en']]){
+    const t = ((sitelinks || {})[sito] || {}).title; if (!t) continue;
+    try {
+      const r = await fetchConTempo(`https://${lingua}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(t.replace(/ /g, '_'))}`, 8000, PRESENTAZIONE_WD);
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (j.extract) return {trama:j.extract.slice(0, 900), img:(j.thumbnail || {}).source || null};
+    } catch(e){}
+  }
+  return {trama:'', img:null};
+}
+
+async function dettagliGiocoWikidata(id){
+  const q = 'Q' + Math.abs(id);
+  const e = ((await chiamaWikidata({action:'wbgetentities', ids:q,
+    props:'labels|descriptions|claims|sitelinks', languages:'it|en|mul', sitefilter:'itwiki|enwiki'})).entities || {})[q];
+  if (!e || 'missing' in e) throw new Error('wikidata: gioco non trovato');
+  const c = e.claims || {};
+  const rif = p => valoriWD(c, p).map(v => v.id).filter(Boolean);
+  // sviluppatori, editori, generi e piattaforme sono altre voci: i nomi in una chiamata sola
+  const voluti = [...new Set([...rif('P178'), ...rif('P123'), ...rif('P136'), ...rif('P400')])].slice(0, 50);
+  const nomi = new Map();
+  if (voluti.length){
+    const ee = (await chiamaWikidata({action:'wbgetentities', ids:voluti.join('|'),
+      props:'labels', languages:'it|en|mul'})).entities || {};
+    for (const [k, x] of Object.entries(ee)) nomi.set(k, x);
+  }
+  const nomiDi = (p, lingua) => rif(p).map(k => etichettaWD(nomi.get(k), lingua)).filter(Boolean);
+  const piattaforme = nomiDi('P400');
+  const uscita = uscitaWD(c);
+  const wp = await dallaWikipedia(e.sitelinks);
+  const img = fileCommons(valoriWD(c, 'P18')[0]) || wp.img;
+  return {
+    tmdbId:id, titolo:etichettaWD(e) || q, anno:(uscita || '').slice(0, 4),
+    uscita, collezione:null, collezioneNome:null, stagioni:null, stato:null,
+    durata:null, oreGioco:null,                    // le ore per finirlo le sa solo RAWG
+    regista:nomiDi('P178').slice(0, 2).join(', '),
+    generi:generiDaWikidata(nomiDi('P136', 'en')),
+    paese:nomiDi('P123').slice(0, 2).join(', '),
+    piattaforme, negozi:[], cast:piattaforme.slice(0, 6), keywords:[],
+    voto:null, votoFonte:'rawg',
+    trama:wp.trama || ((e.descriptions || {}).it || {}).value || '',
+    posterUrl:img, sfondoUrl:img, locandina:null, sfondo:null,
+    // i segni del provvisorio: servono a convertirlo quando RAWG torna
+    provvisorio:true, wikidata:q,
+    rawgSlug:valoriWD(c, 'P9968')[0] || null,
+    titoloEn:etichettaWD(e, 'en') || null
+  };
+}
+
+// ── Le due strade messe insieme ──
+async function cercaGiochi(q){
+  try {
+    const j = await chiamaRAWG('games', {page_size:'8', search:q});
+    // RAWG risponde: se in lista c'è qualcosa di provvisorio, è il momento di convertirlo
+    forseConverti();
+    return (j.results || []).slice(0, 8).map(g => ({
+      id:g.id, title:g.name, release_date:g.released || '', poster_path:null,
+      posterUrl:g.background_image || null
+    }));
+  } catch(e){
+    if (e.message !== 'rawggiu') throw e;
+    const ris = await cercaGiochiWikidata(q);
+    ris.daWikidata = true;     // chi disegna i risultati lo dice
+    return ris;
+  }
+}
+async function dettagliGioco(id){
+  if (giocoProvvisorio(id)) return await dettagliGiocoWikidata(id);
+  return schedaRAWG(await chiamaRAWG(`games/${id}`));
+}
+// La riga che va in testa ai risultati quando arrivano da Wikidata, e la spiegazione del
+// segno «provvisorio» su un gioco in lista.
+const AVVISO_WIKIDATA = '⚠ RAWG non risponde: questi risultati arrivano da Wikidata. ' +
+  'Il gioco entra in lista come provvisorio e si completa da solo quando RAWG torna.';
+const TITOLO_PROVVISORIO = 'Scheda presa da Wikidata mentre RAWG non rispondeva: voto, ore, ' +
+  'negozi e trofei arrivano da soli quando RAWG torna.';
+
+// ── La conversione ──
+// Il gioco RAWG di una voce provvisoria, o null se non si sa con certezza. Prima lo slug
+// che conserva Wikidata; se manca, o RAWG nel frattempo l'ha cambiato, il titolo: vale
+// solo un risultato con lo stesso titolo (a meno di maiuscole e segni) e lo stesso anno, e
+// uno solo. Tirare a indovinare vorrebbe dire attaccare le serate di qualcuno al gioco
+// sbagliato: meglio restare provvisori e riprovare la volta dopo.
+async function giocoRAWGPer(voce){
+  if (voce.rawgSlug){
+    try {
+      const g = await chiamaRAWG(`games/${encodeURIComponent(voce.rawgSlug)}`);
+      if (g && g.id) return g;
+    } catch(e){ if (e.message !== 'rawg 404') throw e; }
+  }
+  const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ').trim();
+  const titoli = [voce.titoloEn, voce.titolo].filter(Boolean);
+  for (const t of [...new Set(titoli)]){
+    const j = await chiamaRAWG('games', {page_size:'10', search:t, search_precise:'true'});
+    const pari = (j.results || []).filter(g => titoli.some(x => norm(x) === norm(g.name))
+      && (!voce.anno || String(g.released || '').slice(0, 4) === voce.anno));
+    if (pari.length === 1) return await chiamaRAWG(`games/${pari[0].id}`);
+  }
+  return null;
+}
+// La voce convertita: i dati del gioco da RAWG, tutto il resto (desiderio, compagnia,
+// stato, date) com'era. Il Q di Wikidata resta: non costa niente e dice da dove viene.
+function voceConvertita(voce, d){
+  const nuova = {...voce};
+  for (const [k, v] of Object.entries(d)) if (k !== 'stato') nuova[k] = v;
+  delete nuova.provvisorio; delete nuova.rawgSlug; delete nuova.titoloEn; delete nuova._noPoster;
+  return nuova;
+}
+// Le voci provvisorie di una lista, convertite. Torna la mappa id provvisorio → scheda RAWG
+// di quelle riuscite; si ferma alla prima risposta da guasto (RAWG è ancora giù).
+async function schedeRAWGPerProvvisori(lista){
+  const fatte = new Map();
+  for (const voce of lista.filter(v => giocoProvvisorio(v.tmdbId))){
+    let g;
+    try { g = await giocoRAWGPer(voce); }
+    catch(e){ if (e.message === 'rawggiu' || e.message === 'nokey' || e.message === 'rawgkey') break; continue; }
+    if (g) fatte.set(voce.tmdbId, schedaRAWG(g));
+  }
+  return fatte;
+}
+// Applica le conversioni a una lista: la voce provvisoria prende la scheda RAWG; se nel
+// frattempo lo stesso gioco è entrato in lista da RAWG, resta quello e il doppione se ne va.
+function convertiLista(lista, schede){
+  const out = [];
+  for (const v of lista){
+    const d = schede.get(v.tmdbId);
+    if (!d){ out.push(v); continue; }
+    if (lista.some(x => x.tmdbId === d.tmdbId)) continue;
+    out.push(voceConvertita(v, d));
+  }
+  return out;
+}
+// Il nome del file di una recensione con l'id cambiato («-17185964-s2.json» → «22511-s2.json»).
+const nomeRecensioneConvertito = (nome, cambi) => {
+  const m = /^(-?\d+)(.*)$/.exec(nome || '');
+  return (m && cambi.has(Number(m[1]))) ? cambi.get(Number(m[1])) + m[2] : null;
+};
+// Il messaggio di una ricerca andata male, col codice del guasto davanti.
+const erroreRicerca = e => inGiochi() ? erroreRicercaGiochi(e)
+  : testoErrore(e.message === 'nokey' ? 'RETE-01' : 'RETE-02', LIBRERIA());
+
+// ── La conversione, lato PC ──
+// Si prova all'apertura, quando si entra nei giochi, a ogni rilettura e ogni volta che una
+// ricerca trova RAWG di nuovo in piedi. Se RAWG è ancora giù costa una chiamata ogni due
+// minuti al massimo (rawgGiuFinoA), e non disturba nessuno.
+let conversioneInCorso = false;
+function forseConverti(){
+  if (inGiochi() && !S.demo) convertiProvvisori().catch(e => console.warn('conversione giochi:', e));
+}
+async function convertiProvvisori(){
+  if (conversioneInCorso || !chiaveAPI('rawgKey')) return;
+  const mio = mioProfilo(); if (!mio) return;
+  const chiave = CHIAVI_MODO.giochi.lista;    // non listaDi(): la categoria può cambiare a metà
+  if (!(mio[chiave] || []).some(v => giocoProvvisorio(v.tmdbId))) return;
+  conversioneInCorso = true;
+  try {
+    const schede = await schedeRAWGPerProvvisori(mio[chiave]);
+    if (!schede.size) return;
+    // la lista si riprende DOPO le chiamate: nel frattempo può essere cambiata
+    mio[chiave] = convertiLista(mio[chiave], schede);
+    await salvaMioProfilo();
+    await spostaRiferimenti(new Map([...schede].map(([da, d]) => [da, d.tmdbId])));
+    if (inGiochi()){ await caricaTutto(); disegnaTutto(); }
+    const primo = [...schede.values()][0];
+    toast(schede.size === 1 ? `RAWG è tornato: «${primo.titolo}» ora ha la scheda completa ✓`
+                            : `RAWG è tornato: ${schede.size} giochi provvisori ora hanno la scheda completa ✓`);
+  } finally { conversioneInCorso = false; }
+}
+// Gli altri posti dove sta l'id di un gioco: lo storico delle serate (di tutti), le mie
+// recensioni (il file si chiama come l'id) e, per l'host, l'archivio. La sostituzione è la
+// stessa su ogni dispositivo: se due persone convertono insieme, scrivono la stessa cosa.
+// Le liste e le recensioni degli altri le converte ognuno sul suo, come sempre.
+async function spostaRiferimenti(cambi){
+  const nuovo = id => cambi.has(id) ? cambi.get(id) : id;
+  const st = await FS.readJSON(PM('giochi', 'storico.json'));
+  if (st && Array.isArray(st.visioni) && st.visioni.some(v => cambi.has(v.tmdbId))){
+    st.visioni.forEach(v => { v.tmdbId = nuovo(v.tmdbId); });
+    await FS.writeJSON(PM('giochi', 'storico.json'), st);
+  }
+  let files = [];
+  try { files = (await FS.elenca(PM('giochi', 'recensioni', S.me))).files || []; } catch(e){}
+  for (const f of files){
+    const nome = nomeRecensioneConvertito(f, cambi);
+    // se c'è già una recensione col nome nuovo, quella vecchia resta dov'è: niente si perde
+    if (!nome || files.includes(nome)) continue;
+    const r = await FS.readJSON(PM('giochi', 'recensioni', S.me, f)); if (!r) continue;
+    r.tmdbId = nuovo(r.tmdbId);
+    await FS.writeJSON(PM('giochi', 'recensioni', S.me, nome), r);
+    await FS.cancella(PM('giochi', 'recensioni', S.me, f));
+  }
+  if (S.host){
+    const arch = await FS.readJSON(PM('giochi', 'archivio.json'));
+    const tocca = arch && ((arch.pronti || []).some(id => cambi.has(id))
+      || Object.keys(arch.dove || {}).some(k => cambi.has(Number(k))));
+    if (tocca){
+      arch.pronti = (arch.pronti || []).map(nuovo);
+      arch.dove = Object.fromEntries(Object.entries(arch.dove || {}).map(([k, v]) => [nuovo(Number(k)), v]));
+      await FS.writeJSON(PM('giochi', 'archivio.json'), arch);
+    }
+  }
 }
 async function salvaImmagini(){ /* niente cache poster: gli URL remoti bastano */ }
 
@@ -4060,6 +4363,7 @@ async function avviaApp(){
   // nello stesso istante in cui lo scaffale va dipinto (vedi scaldaLibreria).
   if (inLibri()) await scaldaLibreria();
   disegnaTutto();
+  forseConverti();
 }
 
 /* ════════════════════════ RENDER — SALA ════════════════════════ */
@@ -4321,7 +4625,7 @@ function sezioneHTML(s, i, editabile){
    quello il segnale che si deve usare la barra. La lista resta in cache per la sessione,
    che la quota RAWG e' quella che e'. */
 async function trofeiGioco(id){
-  if (id == null) return [];
+  if (id == null || giocoProvvisorio(id)) return [];   // i trofei li sa solo RAWG
   if (S.trofeiCache.has(id)) return S.trofeiCache.get(id);
   const k = chiaveAPI('rawgKey');
   if (!k) return [];
@@ -4732,7 +5036,7 @@ function modaleCercaFilm(onScegli, opts={}){
         const res = await cercaFilm(q);
         $('#rn-ris').innerHTML = res.map(f => `<div class="rn-item" data-id="${f.id}">${miniaturaConRipiego(f)}<div><div>${esc(f.title)}</div><div style="color:var(--dim2);font-size:12px">${(f.release_date||'').slice(0,4)}</div></div></div>`).join('') || '<div style="color:var(--dim);padding:8px">Nessun risultato</div>';
         $('#rn-ris').querySelectorAll('.rn-item').forEach(el => el.onclick = () => onScegli(parseInt(el.dataset.id,10)));
-      } catch(e){ $('#rn-ris').innerHTML = `<div style="color:var(--dim);padding:8px">${e.message==='nokey'?'Manca la chiave TMDB (Impostazioni)':'Ricerca non riuscita'}</div>`; }
+      } catch(e){ $('#rn-ris').innerHTML = `<div style="color:var(--dim);padding:8px">${esc(erroreRicerca(e))}</div>`; }
     }, 350);
   };
   $('#rn-q').oninput = cerca;
@@ -5862,7 +6166,8 @@ function cardFilm(v){
     </div>
     <div class="corpo">
       <h4>${esc(v.titolo)}${conStato() && giocoInCorso(v.tmdbId, S.me)
-        ? ` <span class="badge-corso" title="Ci avete già giocato ${serateGiocate(v.tmdbId, S.me)} volte senza segnarlo finito">▶ in corso</span>` : ''}</h4>
+        ? ` <span class="badge-corso" title="Ci avete già giocato ${serateGiocate(v.tmdbId, S.me)} volte senza segnarlo finito">▶ in corso</span>` : ''}${giocoProvvisorio(v.tmdbId)
+        ? ` <span class="badge-corso" title="${esc(TITOLO_PROVVISORIO)}">⏳ provvisorio</span>` : ''}</h4>
       <div class="sotto">${esc(v.anno || '')} · ${fmtMin(v.durata)}${v.regista ? ' · '+esc(v.regista) : ''}</div>
       ${stelleHTML(v.desiderio || 3)}
       <div class="compagnia">${chipsCompagnia(v)}</div>
@@ -5979,17 +6284,16 @@ function agganciaRicerca(){
     cercaTimer = setTimeout(async () => {
       try {
         const ris = await cercaFilm(q);
-        box.innerHTML = ris.length ? ris.map(r => `
+        box.innerHTML = (ris.daWikidata ? `<div class="risultato avviso-wd">${esc(AVVISO_WIKIDATA)}</div>` : '') +
+          (ris.length ? ris.map(r => `
           <div class="risultato" data-id="${r.id}">
             ${miniaturaConRipiego(r)}
             <div><div>${esc(r.title)}</div><div class="r-anno">${esc((r.release_date || '').slice(0,4) || '—')}</div></div>
-          </div>`).join('') : '<div class="risultato">Nessun risultato</div>';
+          </div>`).join('') : '<div class="risultato">Nessun risultato</div>');
         box.hidden = false;
         $$('#risultati .risultato[data-id]').forEach(el => el.onclick = () => { box.hidden = true; input.value = ''; modaleAggiungi(parseInt(el.dataset.id, 10)); });
       } catch(e){
-        box.innerHTML = `<div class="risultato">${e.message === 'nokey'
-          ? 'Manca la chiave TMDB: impostala in ⚙ Impostazioni'
-          : 'Ricerca non riuscita (sei offline?)'}</div>`;
+        box.innerHTML = `<div class="risultato">${esc(erroreRicerca(e))}</div>`;
         box.hidden = false;
       }
     }, 350);
@@ -6131,6 +6435,7 @@ async function modaleAggiungi(id){
       <div style="flex:1">
         <div class="m-meta">${esc(d.anno || '')} · ${fmtMin(d.durata)}${d.regista ? ' · '+esc(d.regista) : ''}<br>
           ${esc((d.generi || []).join(', '))}${d.voto ? ` · ★ ${fmtNum(d.voto,1)} ${fonteVoto(d)}` : ''}</div>
+        ${d.provvisorio ? `<div class="m-meta" style="color:var(--dim2)">⏳ ${esc(TITOLO_PROVVISORIO)}</div>` : ''}
         ${doppione ? '<div class="m-meta" style="color:var(--rosso2)">⚠ È già nella tua lista.</div>' : `
         <div class="m-blocco"><label>QUANTO VOGLIO ${inLibri() ? 'LEGGERLO' : (inGiochi() ? 'GIOCARCI' : (inSerie() ? 'VEDERLA' : 'VEDERLO'))}</label><div id="m-stelle">${stelleHTML(3)}</div></div>
         <div class="m-blocco"><label>COMPAGNIA (facoltativo)</label><div class="compagnia" id="m-chips">${chipsCompagnia(voce)}</div></div>`}
@@ -6554,6 +6859,7 @@ async function ricarica(silenziosa){
   await caricaTutto();
   disegnaTutto();
   if (!silenziosa) toast('Dati riletti dalla cartella ⟳');
+  forseConverti();
 }
 
 function agganciaGlobali(){

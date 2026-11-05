@@ -183,6 +183,8 @@ Le chiavi abilitano l'interrogazione delle librerie online da cui provengono tit
 Le chiavi inserite in questa sezione sono **condivise** e valide per tutti i profili collegati alla stessa cartella. Ciascun profilo può in alternativa configurare **chiavi personali**, memorizzate nel proprio file e prevalenti su quelle condivise: la funzione consente di ripartire il carico ed evitare l'esaurimento della quota condivisa.
 
 <table><thead><tr><th>Categoria</th><th>Libreria</th><th>Chiave</th></tr></thead><tbody><tr><td>Film, Serie TV</td><td>TMDB</td><td>Gratuita — themoviedb.org → Impostazioni → API</td></tr><tr><td>Videogiochi</td><td>RAWG</td><td>Gratuita, 20.000 richieste mensili — rawg.io/apidocs</td></tr><tr><td>Libri</td><td>Open Library</td><td>Non richiesta</td></tr></tbody></table>
+
+Se RAWG non risponde, la ricerca dei videogiochi ripiega su **Wikidata**, che non richiede chiave: i risultati sono preceduti da un avviso e il titolo scelto entra in lista come **provvisorio** (⏳). La scheda provvisoria riporta titolo, anno, sviluppatore, editore, generi e piattaforme; mancano voto, ore di gioco, negozi e obiettivi. Al primo contatto riuscito con RAWG la voce viene completata automaticamente, conservando desiderio, compagnia e stato; nello stesso passaggio si aggiornano lo storico delle partite e le recensioni del titolo. Una chiave mancante o rifiutata non attiva il ripiego: va corretta.
 ### Parametri della formula
 Coefficienti impiegati nel calcolo del punteggio: peso della coralità, entità del bonus di compagnia, passo di variazione dell'indice di soddisfazione. La definizione dei singoli fattori è riportata nel capitolo «Algoritmo di classifica». I valori risiedono in `config.json` e sono comuni a tutti i profili.
 
@@ -257,7 +259,7 @@ Le validazioni («serve almeno un titolo») non hanno codice: non sono guasti.
 <tr><td>`AGG-07`</td><td>Scaricamento dell'aggiornamento non riuscito.</td><td>Riprovare, oppure scaricare manualmente dalla pagina delle versioni.</td></tr>
 <tr><td>`AGG-08`</td><td>Manca il consenso a installare applicazioni da questa fonte.</td><td>Concederlo nelle impostazioni che l'applicazione apre, quindi riprovare.</td></tr>
 <tr><td>`RETE-01`</td><td>Manca la chiave della libreria (è indicata quale).</td><td>Inserirla in ⚙ Impostazioni.</td></tr>
-<tr><td>`RETE-02`</td><td>La libreria non ha risposto.</td><td>Verificare la connessione e riprovare.</td></tr>
+<tr><td>`RETE-02`</td><td>La libreria non ha risposto.</td><td>Verificare la connessione e riprovare. Per i videogiochi la ricerca ripiega prima su Wikidata: il codice compare solo se non risponde nemmeno quella.</td></tr>
 <tr><td>`RETE-03`</td><td>La libreria ha rifiutato la chiave.</td><td>Ricontrollare la chiave: spazi iniziali o finali ne determinano il rifiuto.</td></tr>
 <tr><td>`CART-01`</td><td>Scrittura nella cartella condivisa non riuscita.</td><td>Verificare che la cartella sia raggiungibile e che vi sia spazio.</td></tr>
 <tr><td>`CART-02`</td><td>Lettura della cartella condivisa non riuscita.</td><td>Se la cartella è stata spostata, riselezionarla.</td></tr>
